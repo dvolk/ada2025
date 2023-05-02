@@ -1,0 +1,52 @@
+# Use Ubuntu 22.04 as the base image
+FROM ubuntu:22.04
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive \
+    VNC_PORT=5900 \
+    NOVNC_PORT=6080 \
+    VNC_PW=vncpassword \
+    USER=ubuntu
+
+# Install required packages
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        xfce4 \
+        xfce4-goodies \
+        xfonts-base \
+        xfonts-100dpi \
+        xfonts-75dpi \
+        xfonts-scalable \
+        tigervnc-standalone-server \
+        tigervnc-common \
+        tigervnc-tools \
+        tigervnc-xorg-extension \
+        novnc \
+        nginx \
+        sudo && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create a user and set up permissions
+RUN useradd -m -s /bin/bash $USER && \
+    echo "$USER:$USER" | chpasswd && \
+    echo "$USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER && \
+    chmod 0440 /etc/sudoers.d/$USER && \
+    usermod -aG audio,video,cdrom,plugdev,sudo $USER
+
+# Set up the VNC server
+RUN mkdir -p /home/$USER/.vnc && \
+    echo $VNC_PW | vncpasswd -f > /home/$USER/.vnc/passwd && \
+    chown -R $USER:$USER /home/$USER/.vnc && \
+    chmod 600 /home/$USER/.vnc/passwd
+
+# Configure noVNC
+COPY novnc.conf /etc/nginx/sites-enabled/novnc.conf
+
+# Expose ports
+EXPOSE $VNC_PORT $NOVNC_PORT
+
+CMD nginx && \
+    su - ubuntu -c "vncserver :1 -geometry 1280x800 -depth 24" && \
+    tail -f /home/ubuntu/.vnc/*.log
+
