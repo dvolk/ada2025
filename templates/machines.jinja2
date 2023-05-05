@@ -2,91 +2,113 @@
 
 {% block content %}
 
-<h2>Create new machine</h2>
+  <h2>Create new machine</h2>
 
-{{ info("This lists all templates that are available to the group you are in: {g}", g=current_user.group.name) }}
+  {{ info("This lists all templates that are available to the group you are in: {g}", g=current_user.group.name) }}
 
-<p>
+  <p>
     {% if current_user.is_admin %}
-    {% set mts = MachineTemplate.query.all() %}
+      {% set mts = MachineTemplate.query.all() %}
     {% else %}
-    {% set mts = current_user.group.machine_templates %}
+      {% set mts = current_user.group.machine_templates %}
     {% endif %}
     {% for mt in mts %}
-    <p>
+      <p>
         <div class="w3-card w3-padding">
-            <div class="w3-row" style="display: flex; align-items: center;">
-                <div class="w3-col m8" style="display: flex; align-items: center;">
-                    <h3>{{ mt.name }}</h3>
-                </div>
-                <div class="w3-col m4 w3-right-align">
-                    <a href="#" class="w3-button w3-green w3-round">
-                        {{ icon("plus") }} Launch instance
-                    </a>
-                </div>
+          <div class="w3-row" style="display: flex; align-items: center;">
+            <div class="w3-col m8" style="display: flex; align-items: center;">
+              <h3>{{ mt.name }}</h3>
             </div>
-            <div class="w3-row">
-                <div class="w3-col m8">
-                    <p>{{ mt.description }}</p>
-                </div>
-                <div class="w3-col m4 w3-right-align">
-                    <p>
-                        Group: {{ mt.group.name }}<br/>
-                        Type: {{ mt.type }}<br/>
-                        {% if mt.memory_limit_gb %}
-                        Memory (GB): {{ mt.memory_limit_gb }}<br/>
-                        {% endif %}
-                        {% if mt.memory_limit_gb %}
-                        CPU (cores): {{ mt.cpu_limit_cores }}<br/>
-                        {% endif %}
-                        Created on: {{ mt.creation_date.strftime("%Y-%m-%d %H:%M") }}
-                    </p>
-                </div>
+            <div class="w3-col m4 w3-right-align">
+              <form method="POST" action="/new_machine">
+                <input type="hidden" name="machine_template_name" value="{{ mt.name }}">
+                <button type="submit" class="w3-button w3-green w3-round">
+                  {{ icon("plus") }} Launch instance
+                </button>
+              </form>
             </div>
+          </div>
+          <div class="w3-row">
+            <div class="w3-col m8">
+              <p>{{ mt.description }}</p>
+            </div>
+            <div class="w3-col m4 w3-right-align">
+              <p>
+                Group: {{ mt.group.name }}<br/>
+                Type: {{ mt.type }}<br/>
+                {% if mt.memory_limit_gb %}
+                  Memory (GB): {{ mt.memory_limit_gb }}<br/>
+                {% endif %}
+                {% if mt.memory_limit_gb %}
+                  CPU (cores): {{ mt.cpu_limit_cores }}<br/>
+                {% endif %}
+                Created: {{ humanize.naturaldelta(now - mt.creation_date) }} ago
+              </p>
+            </div>
+          </div>
         </div>
-    </p>
+      </p>
     {% endfor %}
-</p>
+  </p>
 
 
-<h2>List of machines</h2>
-{{ info("This lists all machines you have access to, both your own and those shared with you by other users.") }}
-<p>
-    {% for machine in current_user.owned_machines + current_user.shared_machines %}
-    <p>
+  <h2>List of machines</h2>
+  {{ info("This lists all machines you have access to, both your own and those shared with you by other users.") }}
+  <p>
+    {% for machine in current_user.owned_machines|reverse|list + current_user.shared_machines|reverse|list %}
+      <p>
         <div class="w3-card w3-padding">
-            <div class="w3-row" style="display: flex; align-items: center;">
-                <div class="w3-col m8" style="display: flex; align-items: center;">
-                    <h3>{{ machine.name }}</h3>
-                </div>
-                <div class="w3-col m4 w3-right-align">
-                    <a href="http://{{ machine.ip }}" class="w3-button w3-blue w3-round">
-                        {{ icon("external-link") }} Open</a>
-                </div>
+          <div class="w3-row" style="display: flex; align-items: center;">
+            <div class="w3-col m6" style="display: flex; align-items: center;">
+              <h3>{{ machine.name }}</h3>
             </div>
-            <div class="w3-row">
-                <div class="w3-col m8">
-                    <p>{{ machine.machine_template.name }}<p>
-                </div>
-                <div class="w3-col m4 w3-right-align">
-                    <p>
-                        {% if machine.owner.id != current_user.id %}
-                        Shared with you by: {{ machine.owner.name }}<br/>
-                        {% else %}
-                        Owner: {{ machine.owner.name }}<br/>
+            <div class="w3-col m6 w3-right-align">
+              {% if machine.state == MachineState.READY %}
+                <a href="http://{{ machine.ip }}" class="w3-button w3-blue w3-round">
+                  {{ icon("external-link") }} Open
+                </a>
+              {% elif machine.state == MachineState.PROVISIONING %}
+                <button class="w3-button w3-blue w3-round" disabled>
+                  <i class="fa-solid fa-spinner fa-spin"></i> PROVISIONING
+                </button>
+              {% else %}
+                <button class="w3-button w3-red w3-round" disabled>
+                  {{ icon("circle-xmark") }} {{ machine.state.name }}
+                </button>
+              {% endif %}
+              {% if machine.owner.id == current_user.id %}
+                <a href="http://{{ machine.ip }}" class="w3-button w3-blue w3-round">
+                  {{ icon('share-from-square') }} Share
+                </a>
+              {% endif %}
 
-                        {% if machine.shared_users %}
-                        Shared with other users: {{ machine.shared_users|join(", ", attribute="name") }}<br/>
-                        {% endif %}
-                        {% endif %}
-                        Hostname: {{ machine.ip }}<br/>
-                        Created on: {{ machine.creation_date.strftime("%Y-%m-%d %H:%M") }}
-                    </p>
-                </div>
             </div>
+          </div>
+          <div class="w3-row">
+            <div class="w3-col m8">
+              <p>{{ machine.machine_template.name }}<p>
+            </div>
+            <div class="w3-col m4 w3-right-align">
+              <p>
+                {% if machine.owner.id != current_user.id %}
+                  Shared with you by: {{ machine.owner.name }}<br/>
+                {% else %}
+                  Owner: {{ machine.owner.name }}<br/>
+
+                  {% if machine.shared_users %}
+                    Shared with other users: {{ machine.shared_users|join(", ", attribute="name") }}<br/>
+                  {% endif %}
+                {% endif %}
+                {% if machine.ip %}
+                  Hostname: {{ machine.ip }}<br/>
+                {% endif %}
+                Created: {{ humanize.naturaldelta(now - machine.creation_date) }} ago
+              </p>
+            </div>
+          </div>
         </div>
-    </p>
+      </p>
     {% endfor %}
-</p>
-<br/>
+  </p>
+  <br/>
 {% endblock %}

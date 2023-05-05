@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
+  {% if do_refresh %}
+    <meta http-equiv="refresh" content="5">
+  {% endif %}
   <link rel="icon" href="/atom.png" type="image/png" sizes="16x16">
   {# w3.css #}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/w3-css/4.1.0/w3.css">
@@ -17,23 +19,23 @@
   {% endblock %}
 
   <style>
-   * {
-       font-family: 'Roboto Condensed', sans-serif !important;
-   }
-   a {
-       text-decoration: none;
-   }
-   .hidden {
-       display: none
-   }
-   .uppercase {
-       text-transform: uppercase;
-   }
-   .ada-blue {
-       background-color: rgb(2, 70, 179);
-       color: white
-   }
-   td { vertical-align: middle }
+    * {
+    font-family: 'Roboto Condensed', sans-serif !important;
+    }
+    a {
+    text-decoration: none;
+    }
+    .hidden {
+    display: none
+    }
+    .uppercase {
+    text-transform: uppercase;
+    }
+    .ada-blue {
+    background-color: rgb(2, 70, 179);
+    color: white
+    }
+    td { vertical-align: middle }
 
   </style>
 
@@ -49,7 +51,7 @@
         <a href="/"><img class="ada-blue" style="border-radius: 19px" src="/static/ada.png" height=38/> Data Analysis</a>
       </p>
       <p class="w3-bar-item w3-large w3-pale-green">
-          Hey there! {{ icon_regular("face-smile") }} {{ icon_regular('hand-spock') }}
+        Hey there! {{ icon_regular("face-smile") }} {{ icon_regular('hand-spock') }}
       </p>
 
       {% for menu_item in main_menu %}
@@ -77,10 +79,10 @@
         </div>
       </div>
       <div class="w3-container w3-light-gray">
-          <div class="w3-panel w3-white">
-              {% block content %}
-              {% endblock %}
-          </div>
+        <div class="w3-panel w3-white">
+          {% block content %}
+          {% endblock %}
+        </div>
 
         <div class="w3-container w3-panel w3-white">
           <p>ADA version: 1.0 - <a href="/index">About</a></p>
@@ -90,11 +92,11 @@
 
     <script>
       function w3_open() {
-        document.getElementById("mySidebar").style.display = "block";
+      document.getElementById("mySidebar").style.display = "block";
       }
 
       function w3_close() {
-        document.getElementById("mySidebar").style.display = "none";
+      document.getElementById("mySidebar").style.display = "none";
       }
     </script>
 

@@ -1,6 +1,8 @@
-# ada2
+# ada2025
 
-Prototype desktop machines in the cloud
+<img src="https://i.postimg.cc/Hp8vxZR6/localhost-5000-machines-1.png">
+
+Desktop machines in the cloud prototype
 
 ## Setup
 

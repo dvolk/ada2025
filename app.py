@@ -1,5 +1,9 @@
 import logging
 import datetime
+import enum
+import threading
+import time
+import json
 
 import argh
 from flask import Flask, render_template, url_for, redirect, flash, request
@@ -18,6 +22,8 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired
 
+import humanize
+import docker
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "your_secret_key"
@@ -90,10 +96,18 @@ class MachineTemplate(db.Model):
     machines = db.relationship("Machine", back_populates="machine_template")
 
 
+class MachineState(enum.Enum):
+    PROVISIONING = "P"
+    READY = "R"
+    FAILED = "F"
+    DELETED = "D"
+
+
 class Machine(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     ip = db.Column(db.String(45), nullable=False)
+    state = db.Column(db.Enum(MachineState), nullable=False)
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
@@ -187,6 +201,7 @@ def inject_globals():
         "info": info,
         "idea": idea,
         "main_menu": MAIN_MENU,
+        "humanize": humanize,
     }
 
 
@@ -232,7 +247,12 @@ def index():
 @login_required
 def machines():
     return render_template(
-        "machines.jinja2", title="Machines", MachineTemplate=MachineTemplate
+        "machines.jinja2",
+        title="Machines",
+        MachineTemplate=MachineTemplate,
+        MachineState=MachineState,
+        Machine=Machine,
+        now=datetime.datetime.utcnow(),
     )
 
 
@@ -242,72 +262,155 @@ def settings():
     return render_template("settings.jinja2", title="Settings")
 
 
+def mk_safe_machine_name(username):
+    machine_name = username + "_" + datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    machine_name = machine_name.replace(" ", "_")
+    machine_name = "".join([c for c in machine_name if c.isalnum() or c == "_"])
+    return machine_name
+
+
+@app.route("/new_machine", methods=["POST"])
+@login_required
+def new_machine():
+    machine_template_name = request.form.get(
+        "machine_template_name", "Muon analysis template"
+    )
+
+    machine_name = mk_safe_machine_name(current_user.name)
+
+    mt = MachineTemplate.query.filter_by(name=machine_template_name).first_or_404()
+
+    m = Machine(
+        name=machine_name,
+        ip="",
+        state=MachineState.PROVISIONING,
+        owner=current_user,
+        shared_users=[],
+        machine_template=mt,
+    )
+    db.session.add(m)
+    db.session.commit()
+
+    logging.warning("starting thread")
+    threading.Thread(target=start_container, args=(m.id, mt.id)).start()
+    return redirect(url_for("machines"))
+
+
+def docker_get_ip(client, container_name, network):
+    container = client.containers.get(container_name)
+    maybe_ip = container.attrs["NetworkSettings"]["Networks"][network]["IPAddress"]
+    return maybe_ip
+
+
+def docker_wait_for_ip(client, container_name, network):
+    while not (ip := docker_get_ip(client, container_name, network)):
+        time.sleep(1)
+    return ip
+
+
+def start_container(m_id, mt_id):
+    logging.warning("entered thread")
+    with app.app_context():
+        try:
+            m = Machine.query.filter_by(id=m_id).first()
+            mt = MachineTemplate.query.filter_by(id=mt_id).first()
+            client = docker.from_env()
+
+            # Define container options, including CPU and memory limits
+            container_options = {
+                "name": m.name,
+                "image": mt.image,
+                "network": "adanet",
+            }
+
+            # Start the container
+            container = client.containers.run(
+                **container_options,
+                detach=True,
+            )
+
+            m.ip = docker_wait_for_ip(client, m.name, "adanet")
+
+            m.state = MachineState.READY
+            db.session.commit()
+        except:
+            logging.exception("Error: ")
+            try:
+                container.stop()
+            except:
+                logging.exception("Error: ")
+            try:
+                container.remove()
+            except:
+                logging.exception("Error: ")
+
+            m.state = MachineState.FAILED
+            db.session.commit()
+
+    logging.warning("all done!")
+
+
+def create_initial_db():
+    with app.app_context():
+        if not User.query.filter_by(name="admin").first():
+            logging.warning("Creating default data. First user is admin/admin.")
+            admin_group = Group(name="admins")
+            normal_user_group = Group(name="XRAY scientists")
+            admin_user = User(
+                name="admin",
+                group=admin_group,
+                is_admin=True,
+                email="denis.volk@stfc.ac.uk",
+            )
+            admin_user.set_password("admin")
+            normal_user = User(
+                name="xrayscientist",
+                group=normal_user_group,
+                email="xrays.smith@llnl.gov",
+            )
+            normal_user.set_password("xrayscientist")
+
+            test_machine_template1 = MachineTemplate(
+                name="Muon analysis template",
+                type="docker",
+                memory_limit_gb="16",
+                cpu_limit_cores="4",
+                image="workspace",
+                group=admin_group,
+                description="This is a machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",
+            )
+            test_machine_template2 = MachineTemplate(
+                name="XRAY analysis template",
+                type="docker",
+                memory_limit_gb="16",
+                cpu_limit_cores="4",
+                image="workspace",
+                group=normal_user_group,
+                description="This is a machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",
+            )
+
+            test_machine1 = Machine(
+                name="Muon test",
+                ip="10.10.10.3",
+                state=MachineState.FAILED,
+                owner=normal_user,
+                shared_users=[admin_user],
+                machine_template=test_machine_template2,
+            )
+
+            db.session.add(admin_group)
+            db.session.add(admin_user)
+            db.session.add(normal_user_group)
+            db.session.add(normal_user)
+            db.session.add(test_machine_template1)
+            db.session.add(test_machine_template2)
+            db.session.add(test_machine1)
+            db.session.commit()
+
+
 def main(debug=False):
-    if debug:
-        # in debug mode, add an admin user and test machinetemplate and machine
-        with app.app_context():
-            if not User.query.filter_by(name="admin").first():
-                logging.warning("Creating default data. First user is admin/admin.")
-                admin_group = Group(name="admins")
-                normal_user_group = Group(name="XRAY scientists")
-                admin_user = User(
-                    name="admin",
-                    group=admin_group,
-                    is_admin=True,
-                    email="denis.volk@stfc.ac.uk",
-                )
-                admin_user.set_password("admin")
-                normal_user = User(
-                    name="xrayscientist",
-                    group=normal_user_group,
-                    email="xrays.smith@llnl.gov",
-                )
-                normal_user.set_password("xrayscientist")
-
-                test_machine_template1 = MachineTemplate(
-                    name="Muon analysis template",
-                    type="docker",
-                    memory_limit_gb="16",
-                    cpu_limit_cores="4",
-                    image="workspace",
-                    group=admin_group,
-                    description="This is a machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",
-                )
-                test_machine_template2 = MachineTemplate(
-                    name="XRAY analysis template",
-                    type="docker",
-                    memory_limit_gb="16",
-                    cpu_limit_cores="4",
-                    image="workspace",
-                    group=normal_user_group,
-                    description="This is a machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",
-                )
-
-                test_machine1 = Machine(
-                    name="XRAY test",
-                    ip="10.10.10.2",
-                    owner=admin_user,
-                    shared_users=[],
-                    machine_template=test_machine_template1,
-                )
-
-                test_machine2 = Machine(
-                    name="Muon test",
-                    ip="10.10.10.3",
-                    owner=normal_user,
-                    shared_users=[admin_user],
-                    machine_template=test_machine_template2,
-                )
-
-                db.session.add(admin_group)
-                db.session.add(admin_user)
-                db.session.add(normal_user_group)
-                db.session.add(normal_user)
-                db.session.add(test_machine_template1)
-                db.session.add(test_machine_template2)
-                db.session.add(test_machine1)
-                db.session.add(test_machine2)
-                db.session.commit()
+    # add an admin user and test machinetemplate and machine
+    create_initial_db()
 
     app.run(debug=debug)
 
