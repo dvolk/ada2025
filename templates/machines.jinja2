@@ -64,7 +64,9 @@
             </div>
             <div class="w3-col m6 w3-right-align">
               {% if machine.state == MachineState.READY %}
-                <a href="http://{{ machine.ip }}" class="w3-button w3-blue w3-round">
+                <a
+                    href="http://{{ machine.ip }}/Sw8OSELATBzI74XT"
+                    class="w3-button w3-blue w3-round">
                   {{ icon("external-link") }} Open
                 </a>
               {% elif machine.state == MachineState.PROVISIONING %}

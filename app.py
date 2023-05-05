@@ -135,9 +135,29 @@ MAIN_MENU = [
         "href": "/machines",
     },
     {
+        "icon": "database",
+        "name": "Data",
+        "href": "/data",
+    },
+    {
+        "icon": "book",
+        "name": "Citations",
+        "href": "/citations",
+    },
+    {
         "icon": "gear",
         "name": "Settings",
         "href": "/settings",
+    },
+    {
+        "icon": "lightbulb",
+        "name": "help",
+        "href": "/help",
+    },
+    {
+        "icon": "circle-question",
+        "name": "About",
+        "href": "/about",
     },
 ]
 
@@ -269,6 +289,11 @@ def mk_safe_machine_name(username):
     return machine_name
 
 
+@app.route("/register")
+def register():
+    return render_template("register.jinja2")
+
+
 @app.route("/new_machine", methods=["POST"])
 @login_required
 def new_machine():
@@ -293,6 +318,10 @@ def new_machine():
 
     logging.warning("starting thread")
     threading.Thread(target=start_container, args=(m.id, mt.id)).start()
+    flash(
+        "Creating machine in the background. Refresh page to update status.",
+        category="success",
+    )
     return redirect(url_for("machines"))
 
 
@@ -345,6 +374,7 @@ def start_container(m_id, mt_id):
                 logging.exception("Error: ")
 
             m.state = MachineState.FAILED
+            m.ip = ""
             db.session.commit()
 
     logging.warning("all done!")
@@ -390,8 +420,8 @@ def create_initial_db():
             )
 
             test_machine1 = Machine(
-                name="Muon test",
-                ip="10.10.10.3",
+                name="XRAY failed test",
+                ip="",
                 state=MachineState.FAILED,
                 owner=normal_user,
                 shared_users=[admin_user],

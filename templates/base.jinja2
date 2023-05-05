@@ -79,8 +79,19 @@
         </div>
       </div>
       <div class="w3-container w3-light-gray">
-        <div class="w3-panel w3-white">
-          {% block content %}
+          <div class="w3-panel w3-white">
+              {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+              {% for category, message in messages %}
+              {% if category == "danger" %}
+              <p class="w3-red w3-padding-large w3-round">{{ message }}</li>
+                  {% else %}
+                  <p class="w3-green w3-padding-large w3-round">{{ message }}</li>
+                      {% endif %}
+                      {% endfor %}
+                      {% endif %}
+                      {% endwith %}
+                      {% block content %}
           {% endblock %}
         </div>
 
@@ -92,11 +103,11 @@
 
     <script>
       function w3_open() {
-      document.getElementById("mySidebar").style.display = "block";
+        document.getElementById("mySidebar").style.display = "block";
       }
 
       function w3_close() {
-      document.getElementById("mySidebar").style.display = "none";
+        document.getElementById("mySidebar").style.display = "none";
       }
     </script>
 

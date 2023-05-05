@@ -24,6 +24,7 @@ RUN apt-get update && \
         novnc \
         websockify \
         nginx \
+        nginx-extras \
         sudo \
         curl \
         unzip
@@ -60,7 +61,7 @@ RUN mkdir -p /home/$USER/.vnc && \
     rm  /etc/nginx/sites-enabled/default
 
 # Copy the nginx config file
-COPY novnc.conf /etc/nginx/sites-enabled/novnc.conf
+COPY novnc.conf  /etc/nginx/sites-enabled/novnc.conf
 # Copy nginx front page
 COPY index.html  /var/www/html/index.html
 
