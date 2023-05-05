@@ -2,7 +2,7 @@
 
 Desktop machines in the cloud
 
-<img src="https://i.postimg.cc/Hp8vxZR6/localhost-5000-machines-1.png">
+<img src="https://i.postimg.cc/w98KvNxz/localhost-5000-machines-3.png">
 
 ## Setup
 
