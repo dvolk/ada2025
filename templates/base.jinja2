@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="icon" href="/atom.png" type="image/png" sizes="16x16">
+  {# w3.css #}
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/w3-css/4.1.0/w3.css">
+  {# fontawesome 6 #}
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
+  {# google fonts - Raleway #}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Raleway&display=swap" rel="stylesheet">
+
+  {% block head %}
+  {% endblock %}
+
+  <style>
+   * {
+       font-family: 'Roboto Condensed', sans-serif !important;
+   }
+   a {
+       text-decoration: none;
+   }
+   .hidden {
+       display: none
+   }
+   .uppercase {
+       text-transform: uppercase;
+   }
+   .ada-blue {
+       background-color: rgb(2, 70, 179);
+       color: white
+   }
+   td { vertical-align: middle }
+
+  </style>
+
+  <title>{{ title }}</title>
+
+  <body>
+
+    <div class="w3-sidebar w3-bar-block w3-collapse w3-card" style="width:250px;" id="mySidebar">
+      <button class="w3-bar-item w3-button w3-hide-large" onclick="w3_close()">
+        Close &times;
+      </button>
+      <p class="w3-bar-item w3-xlarge">
+        <a href="/"><img class="ada-blue" style="border-radius: 19px" src="/static/ada.png" height=38/> Data Analysis</a>
+      </p>
+      <p class="w3-bar-item w3-large w3-pale-green">
+          Hey there! {{ icon_regular("face-smile") }} {{ icon_regular('hand-spock') }}
+      </p>
+
+      {% for menu_item in main_menu %}
+        {% if title == menu_item["name"] %}
+          {# this is the page we're on so highlight it in blue #}
+          <a class="w3-bar-item w3-large w3-button ada-blue" href="{{ menu_item['href'] }}">{{ icon(menu_item['icon']) }} {{ menu_item['name'] }}</a>
+        {% else %}
+          <a class="w3-bar-item w3-large w3-button" href="{{ menu_item['href'] }}">{{ icon(menu_item['icon']) }} {{ menu_item['name'] }}</a>
+        {% endif %}
+      {% endfor %}
+      <br/>
+      <a class="w3-bar-item w3-large w3-button w3-pale-red" href="/logout">{{ icon("sign-out") }} Sign out</a>
+    </div>
+
+    <div class="w3-main" style="margin-left:250px">
+
+      <div class="ada-blue">
+        <button class="w3-button w3-hide-large w3-xlarge" onclick="w3_open()">&#9776;</button>
+        <div class="w3-container">
+          {% for menu_item in main_menu %}
+            {% if menu_item["name"] == title %}
+              <h1>{{ icon(menu_item["icon"]) }} {{ title }}</h1>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      <div class="w3-container w3-light-gray">
+          <div class="w3-panel w3-white">
+              {% block content %}
+              {% endblock %}
+          </div>
+
+        <div class="w3-container w3-panel w3-white">
+          <p>ADA version: 1.0 - <a href="/index">About</a></p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      function w3_open() {
+        document.getElementById("mySidebar").style.display = "block";
+      }
+
+      function w3_close() {
+        document.getElementById("mySidebar").style.display = "none";
+      }
+    </script>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/js/all.min.js"></script>
+    {% block javascript %}
+    {% endblock %}
+
+  </body>
+</html>

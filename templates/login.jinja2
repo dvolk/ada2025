@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+        <title>Login</title>
+        <style>
+         .center {
+             display: flex;
+             justify-content: center;
+             align-items: center;
+             height: 100%;
+             margin: 0;
+             padding: 0;
+         }
+        </style>
+    </head>
+    <body class="w3-container w3-center w3-teal">
+        <div class="center">
+            <form class="w3-container w3-card-4 w3-padding-24" method="POST" action="{{ url_for('login') }}">
+                {{ form.csrf_token }}
+                <h2 class="w3-xxlarge w3-padding-16">Login</h2>
+                <label for="{{ form.username.id }}">Username</label>
+                <input class="w3-input w3-border" type="text" id="{{ form.username.id }}" name="{{ form.username.name }}" required>
+                <br>
+                <label for="{{ form.password.id }}">Password</label>
+                <input class="w3-input w3-border" type="password" id="{{ form.password.id }}" name="{{ form.password.name }}" required>
+                <br>
+                <input class="w3-btn w3-teal" type="submit" value="Sign In">
+            </form>
+        </div>
+    </body>
+</html>
