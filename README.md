@@ -1,8 +1,8 @@
 # ada2025
 
-<img src="https://i.postimg.cc/Hp8vxZR6/localhost-5000-machines-1.png">
+Desktop machines in the cloud
 
-Desktop machines in the cloud prototype
+<img src="https://i.postimg.cc/Hp8vxZR6/localhost-5000-machines-1.png">
 
 ## Setup
 
