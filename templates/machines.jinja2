@@ -55,7 +55,7 @@
   <h2>List of machines</h2>
   {{ info("This lists all machines you have access to, both your own and those shared with you by other users.") }}
   <p>
-    {% for machine in current_user.owned_machines|reverse|list + current_user.shared_machines|reverse|list %}
+    {% for machine in current_user.owned_machines|reverse|list + current_user.shared_machines|reverse|list if machine.state not in [MachineState.DELETED, MachineState.DELETING] %}
       <p>
         <div class="w3-card w3-padding">
           <div class="w3-row" style="display: flex; align-items: center;">
@@ -78,20 +78,30 @@
                   {{ icon("circle-xmark") }} {{ machine.state.name }}
                 </button>
               {% endif %}
-              {% if machine.owner.id == current_user.id %}
-                <a href="http://{{ machine.ip }}" class="w3-button w3-blue w3-round">
-                  {{ icon('share-from-square') }} Share
-                </a>
+              <a href="/share_machine/{{ machine.id }}" class="w3-button w3-blue w3-round">
+                {{ icon('share-from-square') }} Share
+              </a>
+              {% if machine.owner == current_user %}
+              <a href="#" onclick="document.getElementById('stop-form-{{ machine.id }}').submit();" class="w3-button w3-red w3-round">
+                {{ icon('trash') }}
+              </a>
+              <form id="stop-form-{{ machine.id }}" action="/stop_machine" method="POST">
+                <input type="hidden" name="machine_id" value="{{ machine.id }}">
+              </form>
               {% endif %}
-
             </div>
           </div>
           <div class="w3-row">
             <div class="w3-col m8">
-              <p>{{ machine.machine_template.name }}<p>
+                    <p>
+                        <a href="http://{{ machine.ip }}/screenshots/screenshot.png" target="_blank">
+                            <img src="http://{{ machine.ip }}/screenshots/screenshot-thumb.png" onerror="this.onerror=null;this.src='fallback-image.jpg';" alt="Alternative text" style="display: none; max-width: 300px; max-height: 175px;" onload="this.style.display = 'inline-block';">
+                        </a>
+                    </p>
             </div>
             <div class="w3-col m4 w3-right-align">
               <p>
+                Template: {{ machine.machine_template.name }}<br/>
                 {% if machine.owner.id != current_user.id %}
                   Shared with you by: {{ machine.owner.name }}<br/>
                 {% else %}

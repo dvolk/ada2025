@@ -4,9 +4,11 @@ import enum
 import threading
 import time
 import json
+import string
+import secrets
 
 import argh
-from flask import Flask, render_template, url_for, redirect, flash, request
+from flask import Flask, render_template, url_for, redirect, flash, request, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import (
@@ -18,6 +20,7 @@ from flask_login import (
     current_user,
 )
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.exceptions import HTTPException
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired
@@ -40,6 +43,15 @@ shared_user_machine = db.Table(
     db.Column("user_id", db.Integer, db.ForeignKey("user.id")),
     db.Column("machine_id", db.Integer, db.ForeignKey("machine.id")),
 )
+
+
+def gen_token(length):
+    """
+    Generate a cryptographically secure alphanumeric string of the given length.
+    """
+    alphabet = string.ascii_letters + string.digits
+    secure_string = "".join(secrets.choice(alphabet) for _ in range(length))
+    return secure_string
 
 
 class User(db.Model, UserMixin):
@@ -100,13 +112,15 @@ class MachineState(enum.Enum):
     PROVISIONING = "P"
     READY = "R"
     FAILED = "F"
-    DELETED = "D"
+    DELETING = "D"
+    DELETED = "DD"
 
 
 class Machine(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     ip = db.Column(db.String(45), nullable=False)
+    token = db.Column(db.String(16), nullable=False, default=lambda: gen_token(16))
     state = db.Column(db.Enum(MachineState), nullable=False)
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
@@ -151,7 +165,7 @@ MAIN_MENU = [
     },
     {
         "icon": "lightbulb",
-        "name": "help",
+        "name": "Help",
         "href": "/help",
     },
     {
@@ -208,6 +222,32 @@ def idea(text, **kwargs):
     """
     paragraph = f'<p><i class="fas fa-fw fa-lightbulb"></i> {text}</p>'
     return paragraph.format(**kwargs)
+
+
+@app.errorhandler(403)
+def forbidden(e):
+    t = "Access denied"
+    m = "Sorry, you don't have access to that page or resource."
+
+    return render_template("error.jinja2", message=m, title=t, code=403), 403
+
+
+# 404 error handler
+@app.errorhandler(404)
+def forbidden(e):
+    t = "Not found"
+    m = "Sorry, that page or resource could not be found."
+
+    return render_template("error.jinja2", message=m, title=t, code=404), 404
+
+
+# 500 error handler
+@app.errorhandler(500)
+def forbidden(e):
+    t = "Application error"
+    m = "Sorry, the application encountered a problem."
+
+    return render_template("error.jinja2", message=m, title=t, code=500), 500
 
 
 @app.context_processor
@@ -325,6 +365,49 @@ def new_machine():
     return redirect(url_for("machines"))
 
 
+@app.route("/share_machine/<machine_id>")
+def share_machine(machine_id):
+    machine_id = int(machine_id)
+    machine = Machine.query.filter_by(id=machine_id).first_or_404()
+    if not machine.ip:
+        logging.warning(f"machine {machine_id} doesn't have an ip in the database")
+        abort(404)
+
+    return render_template("share.jinja2", machine=machine)
+
+
+@app.route("/share_accept/<machine_token>")
+def share_accept(machine_token):
+    machine = Machine.query.filter_by(token=machine_token).first_or_404()
+    if current_user == machine.owner:
+        flash("You own that machine.")
+        return redirect(url_for("machines"))
+    if current_user in machine.shared_users:
+        flash("You already have that machine.")
+        return redirect(url_for("machines"))
+
+    machine.shared_users.append(current_user)
+    db.session.commit()
+    flash("Shared machine has been added to your account.")
+    return redirect(url_for("machines"))
+
+
+@app.route("/share_revoke/<machine_id>")
+def share_revoke(machine_id):
+    machine = Machine.query.filter_by(id=machine_id).first_or_404()
+    if current_user != machine.owner:
+        flash("You can't revoke shares on a machine you don't own.")
+        return redirect(url_for("machines"))
+
+    machine.token = gen_token(16)
+    machine.shared_users = []
+    db.session.commit()
+    flash(
+        "Shares for machine have been removed and a new share link has been generated"
+    )
+    return redirect(url_for("machines"))
+
+
 def docker_get_ip(client, container_name, network):
     container = client.containers.get(container_name)
     maybe_ip = container.attrs["NetworkSettings"]["Networks"][network]["IPAddress"]
@@ -335,6 +418,97 @@ def docker_wait_for_ip(client, container_name, network):
     while not (ip := docker_get_ip(client, container_name, network)):
         time.sleep(1)
     return ip
+
+
+@app.route("/stop_machine", methods=["POST"])
+def stop_machine():
+    machine_id = request.form.get("machine_id")
+    if not machine_id:
+        logging.warning(f"machine {machine_id} not found")
+        abort(404)
+    machine_id = int(machine_id)
+    machine = Machine.query.filter_by(id=machine_id).first_or_404()
+    if current_user != machine.owner:
+        logging.warning(
+            f"user {current_user.id} is not the owner of machine {machine_id}"
+        )
+        abort(403)
+    if not machine.ip:
+        logging.warning(f"machine {machine_id} doesn't have an ip in the database")
+        abort(404)
+    if (
+        machine.state == MachineState.PROVISIONING
+        or machine.state == MachineState.DELETED
+        or machine.state == MachineState.DELETING
+    ):
+        logging.warning(
+            f"machine {machine_id} is not in correct state for deletion: {machine.state}"
+        )
+        abort(500)
+
+    # good to go
+    logging.info(f"deleting container with machine id {machine_id}")
+    machine.state = MachineState.DELETING
+    db.session.commit()
+
+    threading.Thread(target=stop_container, args=(machine_id,)).start()
+    flash("Deleting machine in the background", category="success")
+    return redirect(url_for("machines"))
+
+
+def get_container_by_ip(ip_address):
+    try:
+        client = docker.from_env()
+        network = client.networks.get("adanet")
+        containers = network.containers
+
+        # Search for the container with the specified IP address
+        container = None
+        for cont in containers:
+            cont_ips = [
+                x["IPAddress"]
+                for x in cont.attrs["NetworkSettings"]["Networks"].values()
+            ]
+            if ip_address in cont_ips:
+                container = cont
+                break
+
+        if container is None:
+            logging.error("container with ip {ip_address} not found")
+            return
+
+        container_id = container.id
+        container = client.containers.get(container_id)
+        return container
+    except docker.errors.APIError as e:
+        logging.exception("Error getting container by IP address")
+    except Exception as e:
+        logging.exception("Error: Unknown error occurred")
+
+
+def stop_container(machine_id):
+    with app.app_context():
+        machine = Machine.query.filter_by(id=machine_id).first_or_404()
+        machine_ip = machine.ip
+
+    try:
+        container = get_container_by_ip(machine.ip)
+        if not container:
+            with app.app_context():
+                abort(404)
+        container.stop()
+    except docker.errors.APIError as e:
+        logging.exception("Error stopping and removing container")
+        abort(500)
+    except Exception as e:
+        logging.exception("Error: Unknown error occurred")
+        abort(500)
+
+    with app.app_context():
+        machine = Machine.query.filter_by(id=machine_id).first_or_404()
+        machine.state = MachineState.DELETED
+        db.session.commit()
+    logging.info(f"deleted container with machine id {machine_id}")
 
 
 def start_container(m_id, mt_id):

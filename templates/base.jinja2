@@ -62,6 +62,7 @@
           <a class="w3-bar-item w3-large w3-button" href="{{ menu_item['href'] }}">{{ icon(menu_item['icon']) }} {{ menu_item['name'] }}</a>
         {% endif %}
       {% endfor %}
+
       <br/>
       <a class="w3-bar-item w3-large w3-button w3-pale-red" href="/logout">{{ icon("sign-out") }} Sign out</a>
     </div>
@@ -79,19 +80,19 @@
         </div>
       </div>
       <div class="w3-container w3-light-gray">
-          <div class="w3-panel w3-white">
-              {% with messages = get_flashed_messages(with_categories=true) %}
-              {% if messages %}
+        <div class="w3-panel w3-white">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
               {% for category, message in messages %}
-              {% if category == "danger" %}
-              <p class="w3-red w3-padding-large w3-round">{{ message }}</li>
-                  {% else %}
-                  <p class="w3-green w3-padding-large w3-round">{{ message }}</li>
-                      {% endif %}
-                      {% endfor %}
-                      {% endif %}
-                      {% endwith %}
-                      {% block content %}
+                {% if category == "danger" %}
+                  <p class="w3-red w3-padding-large w3-round">{{ message }}</p>
+                {% else %}
+                  <p class="w3-green w3-padding-large w3-round">{{ message }}</p>
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+          {% block content %}
           {% endblock %}
         </div>
 

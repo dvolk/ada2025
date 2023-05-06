@@ -27,7 +27,9 @@ RUN apt-get update && \
         nginx-extras \
         sudo \
         curl \
-        unzip
+        unzip \
+        scrot \
+        cron
 
 # Download and install filebrowser
 RUN curl -fsSL $FILEBROWSER_DL -o filebrowser.tar.gz && \
@@ -60,17 +62,24 @@ RUN mkdir -p /home/$USER/.vnc && \
     apt purge -y xfce4-power-manager && \
     rm  /etc/nginx/sites-enabled/default
 
+# allow the user to save screenshots to web server
+RUN mkdir /var/www/html/screenshots && \
+    chown -R $USER:$USER /var/www/html/screenshots
+
 # Copy the nginx config file
-COPY novnc.conf  /etc/nginx/sites-enabled/novnc.conf
+COPY novnc.conf /etc/nginx/sites-enabled/novnc.conf
 # Copy nginx front page
-COPY index.html  /var/www/html/index.html
+COPY index.html /var/www/html/index.html
 
 EXPOSE $NOVNC_PORT
 WORKDIR /home/$USER
 
 # Start nginx, vncserver, filebrowser and websockify
 CMD exec nginx & \
+    cron && \
     su -c "vncserver :0 -geometry 1280x800 -SecurityTypes=None && \
     filebrowser --baseurl=/browse --noauth -r /home/$USER & \
+    sleep 1 && \
+    crontab -l -u $USER | { cat; echo '* * * * * DISPLAY=:0 scrot -t 20 -o /var/www/html/screenshots/screenshot.png'; } | crontab -u $USER - && \
     websockify --web /usr/share/novnc/ 5901 localhost:$VNC_PORT && \
-    tail -f /home/$USER/.vnc/*:0.log" $USER
+    tail -F /home/$USER/.vnc/*:0.log" $USER
