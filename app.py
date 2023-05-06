@@ -290,6 +290,14 @@ def login():
     return render_template("login.jinja2", form=form)
 
 
+@app.route("/")
+def index():
+    if current_user.is_authenticated:
+        return redirect(url_for("welcome"))
+    else:
+        return redirect(url_for("login"))
+
+
 @app.route("/logout")
 @login_required
 def logout():
@@ -297,10 +305,10 @@ def logout():
     return redirect(url_for("index"))
 
 
-@app.route("/")
+@app.route("/welcome")
 @login_required
-def index():
-    return render_template("index.jinja2", title="Welcome page")
+def welcome():
+    return render_template("welcome.jinja2", title="Welcome page")
 
 
 @app.route("/machines")
