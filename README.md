@@ -50,10 +50,11 @@ Create docker bridge network:
 docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.1 adanet
 ```
 
-Build docker desktop container:
+Build example docker desktop container:
 
 ```
-docker build . -f Dockerfile.ws -t workspace
+cd machines/docker_example
+docker build . -f Dockerfile -t workspace
 ```
 
 ### Run web app
