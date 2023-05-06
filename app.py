@@ -444,11 +444,11 @@ def stop_machine():
     if not machine.ip:
         logging.warning(f"machine {machine_id} doesn't have an ip in the database")
         abort(404)
-    if (
-        machine.state == MachineState.PROVISIONING
-        or machine.state == MachineState.DELETED
-        or machine.state == MachineState.DELETING
-    ):
+    if machine.state in [
+        MachineState.PROVISIONING,
+        MachineState.DELETED,
+        MachineState.DELETING,
+    ]:
         logging.warning(
             f"machine {machine_id} is not in correct state for deletion: {machine.state}"
         )

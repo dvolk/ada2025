@@ -6,11 +6,11 @@ Flask web app for desktop machines in the cloud
 
 ## Features
 
-- Docker containers with full Debian XFCE desktop
 - Create machines from machine templates
 - Share machines with other users
 - Open desktop in a web browser
 - Upload and download files with integrated file browser
+- Example docker container with Debian 11 XFCE desktop
 
 ## Tech used
 
@@ -20,7 +20,11 @@ Flask web app for desktop machines in the cloud
 - Flask-Migrate
 - Flask-WTForms
 - Flask-Login
+- nginx
 - Docker
+- TigerVNC
+- noVNC
+- filebrowser
 
 ## Setup
 
