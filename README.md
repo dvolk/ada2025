@@ -20,10 +20,10 @@ Flask web app for desktop machines in the cloud
 ## Features
 
 - Create machines from machine templates
+- Run machines as docker containers and libvirt virtual machines
 - Share machines with other users
 - Open desktop in a web browser
 - Upload and download files with integrated file browser
-- Example docker container with Debian 11 XFCE desktop
 
 ## Tech used
 
@@ -35,6 +35,7 @@ Flask web app for desktop machines in the cloud
 - Flask-Login
 - nginx
 - Docker
+- libvirt
 - TigerVNC
 - noVNC
 - filebrowser
@@ -73,6 +74,13 @@ Build example docker desktop container:
 cd machines/docker_example
 docker build . -f Dockerfile -t workspace
 ```
+
+### libvirt setup
+
+1. Install a new debian 11 system on a virtual machine named "debian11-5"
+2. Copy the files in machines/debian11_vm to the virtual machine
+3. ssh into the virtual machine and run setup.bash
+4. Shut down the virtual machine
 
 ### Run web app
 
