@@ -22,7 +22,7 @@ from flask_login import (
 )
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
+from wtforms import StringField, PasswordField, SelectField, SubmitField
 from wtforms.validators import DataRequired
 
 import humanize
@@ -43,6 +43,12 @@ shared_user_machine = db.Table(
     "shared_user_machine",
     db.Column("user_id", db.Integer, db.ForeignKey("user.id")),
     db.Column("machine_id", db.Integer, db.ForeignKey("machine.id")),
+)
+# Association table
+user_data_source_association = db.Table(
+    "user_data_source",
+    db.Column("user_id", db.Integer, db.ForeignKey("user.id")),
+    db.Column("data_source_id", db.Integer, db.ForeignKey("data_source.id")),
 )
 
 
@@ -73,12 +79,55 @@ class User(db.Model, UserMixin):
     shared_machines = db.relationship(
         "Machine", secondary=shared_user_machine, back_populates="shared_users"
     )
+    data_sources = db.relationship(
+        "DataSource", secondary=user_data_source_association, back_populates="users"
+    )
+    data_transfer_jobs = db.relationship("DataTransferJob", back_populates="user")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+
+
+class DataSource(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    source_host = db.Column(db.String, nullable=False)
+    source_dir = db.Column(db.String, nullable=False)
+    data_size = db.Column(db.Integer, nullable=False)
+    creation_date = db.Column(
+        db.DateTime, default=datetime.datetime.utcnow, nullable=False
+    )
+
+    users = db.relationship(
+        "User", secondary=user_data_source_association, back_populates="data_sources"
+    )
+    data_transfer_jobs = db.relationship(
+        "DataTransferJob", back_populates="data_source"
+    )
+
+
+class DataTransferJobState(enum.Enum):
+    RUNNING = "R"
+    DONE = "D"
+    FAILED = "F"
+    REMOVED = "R"
+
+
+class DataTransferJob(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    status = db.Column(db.Enum(DataTransferJobState), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    data_source_id = db.Column(db.Integer, db.ForeignKey("data_source.id"))
+    machine_id = db.Column(db.Integer, db.ForeignKey("machine.id"))
+    creation_date = db.Column(
+        db.DateTime, default=datetime.datetime.utcnow, nullable=False
+    )
+
+    user = db.relationship("User", back_populates="data_transfer_jobs")
+    data_source = db.relationship("DataSource", back_populates="data_transfer_jobs")
+    machine = db.relationship("Machine", back_populates="data_transfer_jobs")
 
 
 class Group(db.Model):
@@ -136,6 +185,7 @@ class Machine(db.Model):
         "User", secondary=shared_user_machine, back_populates="shared_machines"
     )
     machine_template = db.relationship("MachineTemplate", back_populates="machines")
+    data_transfer_jobs = db.relationship("DataTransferJob", back_populates="machine")
 
 
 MAIN_MENU = [
@@ -226,7 +276,7 @@ def idea(text, **kwargs):
 
 
 @app.errorhandler(403)
-def forbidden(e):
+def forbidden_handler(e):
     t = "Access denied"
     m = "Sorry, you don't have access to that page or resource."
 
@@ -235,7 +285,7 @@ def forbidden(e):
 
 # 404 error handler
 @app.errorhandler(404)
-def forbidden(e):
+def notfound_handler(e):
     t = "Not found"
     m = "Sorry, that page or resource could not be found."
 
@@ -244,7 +294,7 @@ def forbidden(e):
 
 # 500 error handler
 @app.errorhandler(500)
-def forbidden(e):
+def applicationerror_handler(e):
     t = "Application error"
     m = "Sorry, the application encountered a problem."
 
@@ -368,6 +418,104 @@ def mk_safe_machine_name(username):
 @app.route("/register")
 def register():
     return render_template("register.jinja2")
+
+
+class DataTransferForm(FlaskForm):
+    data_source = SelectField("Data Source", validators=[DataRequired()], coerce=int)
+    machine = SelectField("Machine", validators=[DataRequired()], coerce=int)
+    submit = SubmitField("Submit")
+
+
+@app.route("/data", methods=["GET", "POST"])
+def data():
+    form = DataTransferForm()
+
+    if current_user.is_admin:
+        data_sources = DataSource.query.all()
+        machines = Machine.query.filter_by(state=MachineState.READY)
+    else:
+        data_sources = current_user.data_sources
+        machines = current_user.owned_machines + current_user.shared_machines
+
+    form.data_source.choices = [
+        (ds.id, f"{ds.source_host}:{ds.source_dir} ({ds.data_size} MB)")
+        for ds in data_sources
+    ]
+    form.machine.choices = [
+        (m.id, m.name) for m in machines if m.state == MachineState.READY
+    ]
+
+    if form.validate_on_submit():
+        machine = Machine.query.filter_by(id=form.machine.data).first()
+        data_source = DataSource.query.filter_by(id=form.data_source.data).first()
+
+        if not machine or not data_source:
+            abort(404)
+
+        if machine not in machines or data_source not in data_sources:
+            abort(403)
+
+        # security checks ok
+
+        job = DataTransferJob(
+            status=DataTransferJobState.RUNNING,
+            user=current_user,
+            data_source=data_source,
+            machine=machine,
+        )
+        db.session.add(job)
+        db.session.commit()
+
+        threading.Thread(target=start_data_transfer, args=(job.id,)).start()
+
+        flash("Starting data transfer. Refresh page to update the status.")
+
+    return render_template("data.jinja2", title="Data", form=form)
+
+
+def do_rsync(source_host, source_dir, dest_host, dest_dir):
+    try:
+        # Construct the rsync command
+        rsync_cmd = (
+            f"rsync -avz -e 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' "
+            f"{source_dir} {dest_host}:{dest_dir}"
+        )
+        print(rsync_cmd)
+
+        # Construct the ssh command to run the rsync command on the source_host
+        ssh_cmd = (
+            f"ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "
+            f'{source_host} "{rsync_cmd}"'
+        )
+        print(ssh_cmd)
+
+        # Execute the ssh command
+        subprocess.run(ssh_cmd, shell=True, check=True, stderr=subprocess.PIPE)
+
+        print("Data transfer completed successfully.")
+        return True
+
+    except Exception as e:
+        logging.exception("Error occurred during data transfer: ")
+        return False
+
+
+def start_data_transfer(job_id):
+    with app.app_context():
+        job = DataTransferJob.query.filter_by(id=job_id).first()
+
+        result = do_rsync(
+            "dv@" + job.data_source.source_host,
+            job.data_source.source_dir,
+            "ubuntu@" + job.machine.ip,
+            "",
+        )
+
+        if result:
+            job.status = DataTransferJobState.DONE
+        else:
+            job.status = DataTransferJobState.FAILED
+        db.session.commit()
 
 
 @app.route("/new_machine", methods=["POST"])
@@ -653,6 +801,22 @@ def create_initial_db():
     with app.app_context():
         if not User.query.filter_by(name="admin").first():
             logging.warning("Creating default data. First user is admin/admin.")
+            demo_source1 = DataSource(
+                source_host="localhost",
+                source_dir="/tmp/demo1",
+                data_size="123",
+            )
+            demo_source2 = DataSource(
+                source_host="localhost",
+                source_dir="/tmp/demo2",
+                data_size="321",
+            )
+            demo_source3 = DataSource(
+                source_host="localhost",
+                source_dir="/tmp/demo3",
+                data_size="432",
+            )
+
             admin_group = Group(name="admins")
             normal_user_group = Group(name="XRAY scientists")
             admin_user = User(
@@ -660,12 +824,14 @@ def create_initial_db():
                 group=admin_group,
                 is_admin=True,
                 email="denis.volk@stfc.ac.uk",
+                data_sources=[demo_source1, demo_source2],
             )
             admin_user.set_password("admin")
             normal_user = User(
                 name="xrayscientist",
                 group=normal_user_group,
                 email="xrays.smith@llnl.gov",
+                data_sources=[demo_source2, demo_source3],
             )
             normal_user.set_password("xrayscientist")
 
@@ -695,6 +861,12 @@ def create_initial_db():
                 owner=normal_user,
                 shared_users=[admin_user],
                 machine_template=test_machine_template2,
+            )
+            demo_data_transfer1 = DataTransferJob(
+                status="RUNNING",
+                user=admin_user,
+                data_source=demo_source1,
+                machine=test_machine1,
             )
 
             db.session.add(admin_group)

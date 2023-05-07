@@ -1,0 +1,65 @@
+{% extends 'base.jinja2' %}
+
+{% macro render_field(field, css_class='') %}
+  <label class="w3-label">{{ field.label }}</label>
+  {{ field(class=css_class) }}
+{% endmacro %}
+
+{% block content %}
+  {% if current_user.data_transfer_jobs %}
+    {{ info("This table shows the state of your data transfers. Refresh page to update status.") }}
+    <div class="w3-container w3-blue">
+      <h2>Your Data Transfers</h2>
+    </div>
+    <div class="w3-container w3-pale-blue">
+      <p>
+        <table class="w3-table-all">
+          <thead>
+            <th>From (Data Source)</th>
+            <th>To (Machine)</th>
+            <th>Status</th>
+            <th></th>
+          </thead>
+          {% for j in current_user.data_transfer_jobs %}
+            <tr>
+              <td style="vertical-align: middle;">{{ j.data_source.source_host }}:{{ j.data_source.source_dir }}</td>
+              <td style="vertical-align: middle;">{{ j.machine.name }}</td>
+              <td style="vertical-align: middle;">{{ j.status.name }}</td>
+              <td style="vertical-align: middle;"><a href="#" class="w3-btn w3-red w3-small w3-round">{{ icon('trash') }}</a></td>
+            </tr>
+          {% endfor %}
+        </table>
+      </p>
+    </div>
+  {% endif %}
+
+  {{ info("Here you can transfer data into your machine from registered data sources") }}
+
+  {{ idea("Select the data source and a machine you want to copy the data to and then click submit. The data will be copied into your machine.") }}
+
+  {{ idea("Please ensure you have enough space on your chosen machine to copy the data. If your machine disk becomes completely full, the machine may stop working.") }}
+
+  {{ idea("Data source sizes are not updated in real-time and may be outdated.") }}
+
+  <form action="/data" method="POST">
+    {{ form.csrf_token }}
+    <div class="w3-container w3-yellow">
+      <h2>New Data Transfer</h2>
+    </div>
+    <div class="w3-container w3-pale-yellow">
+      <p>
+        {{ render_field(form.data_source, css_class="w3-input w3-white") }}
+      </p>
+
+      <p>
+        {{ render_field(form.machine, css_class="w3-input w3-white") }}
+      </p>
+
+      {{ form.submit(class="w3-btn w3-blue") }}
+      <br/>
+      <br/>
+    </div>
+    <br/>
+  </form>
+
+{% endblock %}
