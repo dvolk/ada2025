@@ -1,55 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Login</title>
-        <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-        <style>
-         body {
-             background-color: white;
-         }
-
-         .login-form-container {
-             display: flex;
-             justify-content: center;
-             align-items: center;
-             height: 100vh;
-         }
-
-         .login-form {
-             background-color: lightgrey;
-             padding: 2rem;
-             border-radius: 10px;
-         }
-        </style>
-    </head>
-    <body>
-
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        {% for category, message in messages %}
+{% extends 'base-bare.jinja2' %}
+{% block content %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
         {% if category == "danger" %}
-        <p class="w3-red w3-padding-large w3-round">{{ message }}</li>
-            {% else %}
-            <p class="w3-green w3-padding-large w3-round">{{ message }}</li>
-                {% endif %}
-                {% endfor %}
-                {% endif %}
-                {% endwith %}
+          <p class="w3-red w3-padding-large w3-round">{{ message }}</li>
+        {% else %}
+          <p class="w3-green w3-padding-large w3-round">{{ message }}</li>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
 
-
-                <div class="login-form-container">
-                    <form class="w3-container login-form" method="POST" action="{{ url_for('login') }}">
-                        {{ form.csrf_token }}
-                        <label class="w3-text-black"><b>Username</b></label>
-                        <input class="w3-input w3-border w3-light-grey" type="text" name="username" required>
-                        <br>
-                        <label class="w3-text-black"><b>Password</b></label>
-                        <input class="w3-input w3-border w3-light-grey" type="password" name="password" required>
-                        <br>
-                        <button class="w3-btn w3-black" type="submit">Log In</button>
-                    </form>
-                </div>
-    </body>
-</html>
+  <form method="POST" action="{{ url_for('login') }}">
+    {{ form.csrf_token }}
+    <label class="w3-text-black"><b>Username</b></label>
+    <input class="w3-input w3-border w3-rounded w3-light-grey" type="text" name="username" required>
+    <br>
+    <label class="w3-text-black"><b>Password</b></label>
+    <input class="w3-input w3-border w3-rounded w3-light-grey" type="password" name="password" required>
+    <br>
+    <button class="w3-btn ada-blue" type="submit">Log In</button>
+  </form>
+{% endblock %}

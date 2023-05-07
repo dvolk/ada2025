@@ -67,9 +67,10 @@ RUN mkdir /var/www/html/screenshots && \
     chown -R $USER:$USER /var/www/html/screenshots
 
 # Copy the nginx config file
-COPY novnc.conf /etc/nginx/sites-enabled/novnc.conf
+COPY nginx-ada.conf /etc/nginx/sites-enabled/nginx-ada.conf
 # Copy nginx front page
 COPY index.html /var/www/html/index.html
+COPY ada.png /var/www/html/ada.png
 
 EXPOSE $NOVNC_PORT
 WORKDIR /home/$USER

@@ -20,12 +20,12 @@ from flask_login import (
     current_user,
 )
 from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.exceptions import HTTPException
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired
 
 import humanize
+
 import docker
 
 app = Flask(__name__)
@@ -327,13 +327,40 @@ def machines():
 @app.route("/settings")
 @login_required
 def settings():
-    return render_template("settings.jinja2", title="Settings")
+    return render_template(
+        "settings.jinja2",
+        title="Settings",
+        threading=threading,
+    )
+
+
+def encode_date_time(date_time):
+    """
+    Encode the date and time into a 6 character string
+    """
+    base_chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+    base = len(base_chars)
+
+    # Encode year, month, day, hour, minute, and second separately
+    encoded_parts = []
+    encoded_parts.append(
+        base_chars[date_time.year % 100 // 4]
+    )  # Encoded year (4-year granularity)
+    encoded_parts.append(
+        base_chars[date_time.month - 1]
+    )  # Encoded month (0-based index)
+    encoded_parts.append(base_chars[date_time.day - 1])  # Encoded day (0-based index)
+    encoded_parts.append(base_chars[date_time.hour])  # Encoded hour
+    encoded_parts.append(base_chars[date_time.minute])  # Encoded minute
+    encoded_parts.append(base_chars[date_time.second])  # Encoded second
+
+    # Combine encoded parts into a single string
+    encoded_date_time = "".join(encoded_parts)
+    return encoded_date_time
 
 
 def mk_safe_machine_name(username):
-    machine_name = username + "_" + datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-    machine_name = machine_name.replace(" ", "_")
-    machine_name = "".join([c for c in machine_name if c.isalnum() or c == "_"])
+    machine_name = username + "-" + encode_date_time(datetime.datetime.utcnow())
     return machine_name
 
 
@@ -345,9 +372,7 @@ def register():
 @app.route("/new_machine", methods=["POST"])
 @login_required
 def new_machine():
-    machine_template_name = request.form.get(
-        "machine_template_name", "Muon analysis template"
-    )
+    machine_template_name = request.form.get("machine_template_name", "")
 
     machine_name = mk_safe_machine_name(current_user.name)
 
@@ -377,9 +402,6 @@ def new_machine():
 def share_machine(machine_id):
     machine_id = int(machine_id)
     machine = Machine.query.filter_by(id=machine_id).first_or_404()
-    if not machine.ip:
-        logging.warning(f"machine {machine_id} doesn't have an ip in the database")
-        abort(404)
 
     return render_template("share.jinja2", machine=machine)
 
@@ -430,9 +452,10 @@ def docker_wait_for_ip(client, container_name, network):
 
 @app.route("/stop_machine", methods=["POST"])
 def stop_machine():
+    # sanity checks
     machine_id = request.form.get("machine_id")
     if not machine_id:
-        logging.warning(f"machine {machine_id} not found")
+        logging.warning(f"machine_id parameter missing: {machine_id}")
         abort(404)
     machine_id = int(machine_id)
     machine = Machine.query.filter_by(id=machine_id).first_or_404()
@@ -441,9 +464,6 @@ def stop_machine():
             f"user {current_user.id} is not the owner of machine {machine_id}"
         )
         abort(403)
-    if not machine.ip:
-        logging.warning(f"machine {machine_id} doesn't have an ip in the database")
-        abort(404)
     if machine.state in [
         MachineState.PROVISIONING,
         MachineState.DELETED,
@@ -496,24 +516,20 @@ def get_container_by_ip(ip_address):
 
 def stop_container(machine_id):
     with app.app_context():
-        machine = Machine.query.filter_by(id=machine_id).first_or_404()
+        machine = Machine.query.filter_by(id=machine_id).first()
         machine_ip = machine.ip
 
     try:
         container = get_container_by_ip(machine.ip)
-        if not container:
-            with app.app_context():
-                abort(404)
-        container.stop()
+        if container:
+            container.stop()
     except docker.errors.APIError as e:
-        logging.exception("Error stopping and removing container")
-        abort(500)
+        logging.exception("Error: stopping and removing container")
     except Exception as e:
         logging.exception("Error: Unknown error occurred")
-        abort(500)
 
     with app.app_context():
-        machine = Machine.query.filter_by(id=machine_id).first_or_404()
+        machine = Machine.query.filter_by(id=machine_id).first()
         machine.state = MachineState.DELETED
         db.session.commit()
     logging.info(f"deleted container with machine id {machine_id}")

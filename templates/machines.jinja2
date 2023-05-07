@@ -31,6 +31,7 @@
           <div class="w3-row">
             <div class="w3-col m8">
               <p>{{ mt.description }}</p>
+              <p>Created: {{ humanize.naturaldelta(now - mt.creation_date) }} ago</p>
             </div>
             <div class="w3-col m4 w3-right-align">
               <p>
@@ -42,7 +43,6 @@
                 {% if mt.memory_limit_gb %}
                   CPU (cores): {{ mt.cpu_limit_cores }}<br/>
                 {% endif %}
-                Created: {{ humanize.naturaldelta(now - mt.creation_date) }} ago
               </p>
             </div>
           </div>
@@ -65,6 +65,7 @@
             <div class="w3-col m6 w3-right-align">
               {% if machine.state == MachineState.READY %}
                 <a
+                    target="_blank"
                     href="http://{{ machine.ip }}/Sw8OSELATBzI74XT"
                     class="w3-button w3-blue w3-round">
                   {{ icon("external-link") }} Open

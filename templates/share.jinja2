@@ -1,64 +1,21 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Share machine</title>
-    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-    <style>
-      body {
-      background-color: white;
-      }
+{% extends 'base-bare.jinja2' %}
 
-      .login-form-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      }
+{% block content %}
+  <h2>Sharing machine</h2>
 
-      .login-form {
-      background-color: lightgrey;
-      padding: 2rem;
-      border-radius: 10px;
-      }
-    </style>
-  </head>
-  <body>
+  <p>Users will have the same level of access as you do, including full desktop access and file browser access.{% if current_user == machine.owner %} However only you can revoke shares by clicking the button below.{% endif %}</p>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          {% if category == "danger" %}
-            <p class="w3-red w3-padding-large w3-round">{{ message }}</p>
-          {% else %}
-            <p class="w3-green w3-padding-large w3-round">{{ message }}</p>
-          {% endif %}
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
+  <p>The user must have an account and be logged into the service when they visit the link.</p>
 
+  <p>You can share this link with users to give them access to the machine:</p>
 
-    <div class="login-form-container">
-      <div class="w3-container login-form" style="width: 600px;">
-        <h1>Sharing machine</h1>
+  <h2><a style="text-decoration: underline;" href="/share_accept/{{ machine.token }}">{{ icon('link') }} Share link</a></h2>
 
-        <p>Users will have the same level of access as you do, including full desktop access and file browser access.{% if current_user == machine.owner %} However only you can revoke shares by clicking the button below.{% endif %}</p>
+  <p>Right click on the link and select <i>copy link address.</i></p>
 
-        <p>The user must have an account and be logged into the service when they visit the link.</p>
+  {% if current_user == machine.owner %}
+    <p>As the owner you can revoke all shares and generate a new share link:</p>
 
-        <p>You can share this link with users to give them access to the machine:</p>
-
-        <h2><a href="/share_accept/{{ machine.token }}">Share link</a></h2>
-
-        <p>Right click on the link and select <i>copy link address.</i></p>
-
-        {% if current_user == machine.owner %}
-        <p>As the owner you can revoke all shares and generate a new share link:</p>
-
-        <p><a class="w3-btn w3-red w3-round" href="/share_revoke/{{ machine.id }}">Revoke share</a></p>
-        {% endif %}
-      </div>
-    </div>
-  </body>
-</html>
+    <p><a class="w3-btn w3-red w3-round" href="/share_revoke/{{ machine.id }}">{{ icon('link-slash') }} Revoke share</a></p>
+  {% endif %}
+{% endblock %}
