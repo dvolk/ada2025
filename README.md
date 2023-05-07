@@ -2,8 +2,20 @@
 
 Flask web app for desktop machines in the cloud
 
-<img src="https://i.postimg.cc/Nsx40Jj5/localhost-5000-machines-12.png"> <img src="https://i.postimg.cc/GLRKdwrW/10-10-10-4.png">
-
+<table>
+<thead>
+<th>Web app</th>
+<th>Machine page</th>
+</thead>
+<tr>
+<td>
+<img src="https://i.postimg.cc/Nsx40Jj5/localhost-5000-machines-12.png">
+</td>
+<td>
+<img src="https://i.postimg.cc/GLRKdwrW/10-10-10-4.png">
+</td>
+</tr>
+</table>
 
 ## Features
 
