@@ -862,12 +862,6 @@ def create_initial_db():
                 shared_users=[admin_user],
                 machine_template=test_machine_template2,
             )
-            demo_data_transfer1 = DataTransferJob(
-                status="RUNNING",
-                user=admin_user,
-                data_source=demo_source1,
-                machine=test_machine1,
-            )
 
             db.session.add(admin_group)
             db.session.add(admin_user)

@@ -18,14 +18,14 @@
             <th>From (Data Source)</th>
             <th>To (Machine)</th>
             <th>Status</th>
-            <th></th>
+            <th>Dismiss</th>
           </thead>
           {% for j in current_user.data_transfer_jobs %}
             <tr>
               <td style="vertical-align: middle;">{{ j.data_source.source_host }}:{{ j.data_source.source_dir }}</td>
               <td style="vertical-align: middle;">{{ j.machine.name }}</td>
               <td style="vertical-align: middle;">{{ j.status.name }}</td>
-              <td style="vertical-align: middle;"><a href="#" class="w3-btn w3-red w3-small w3-round">{{ icon('trash') }}</a></td>
+              <td style="vertical-align: middle;"><a href="#" class="w3-btn w3-green w3-small w3-round">{{ icon('check') }}</a></td>
             </tr>
           {% endfor %}
         </table>
