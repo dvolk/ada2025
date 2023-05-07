@@ -6,6 +6,7 @@ import time
 import json
 import string
 import secrets
+import subprocess
 
 import argh
 from flask import Flask, render_template, url_for, redirect, flash, request, abort
@@ -390,7 +391,11 @@ def new_machine():
     db.session.commit()
 
     logging.warning("starting thread")
-    threading.Thread(target=start_container, args=(m.id, mt.id)).start()
+
+    if mt.type == "docker":
+        threading.Thread(target=start_container, args=(m.id, mt.id)).start()
+    elif mt.type == "libvirt":
+        threading.Thread(target=start_libvirt_vm, args=(m.id, mt.id)).start()
     flash(
         "Creating machine in the background. Refresh page to update status.",
         category="success",
@@ -479,7 +484,11 @@ def stop_machine():
     machine.state = MachineState.DELETING
     db.session.commit()
 
-    threading.Thread(target=stop_container, args=(machine_id,)).start()
+    if machine.machine_template.type == "docker":
+        threading.Thread(target=stop_container, args=(machine_id,)).start()
+    elif machine.machine_template.type == "libvirt":
+        threading.Thread(target=libvirt_stop_vm, args=(machine.name,)).start()
+
     flash("Deleting machine in the background", category="success")
     return redirect(url_for("machines"))
 
@@ -578,6 +587,68 @@ def start_container(m_id, mt_id):
     logging.warning("all done!")
 
 
+def get_libvirt_vm_ip(vm_name):
+    command = ["virsh", "domifaddr", vm_name]
+    result = subprocess.run(command, capture_output=True)
+    output = result.stdout.decode("utf-8")
+    lines = output.split("\n")
+    for line in lines:
+        if "ipv4" in line:
+            parts = line.split()
+            return parts[3].split("/")[0]
+    return None
+
+
+def libvirt_wait_for_ip(vm_name):
+    while not (ip := get_libvirt_vm_ip(vm_name)):
+        time.sleep(1)
+    return ip
+
+
+def libvirt_wait_for_vm(vm_name):
+    # Wait for the virtual machine to be in the running state
+    while True:
+        output = subprocess.check_output(["virsh", "domstate", vm_name]).decode()
+        if "running" in output:
+            print(f"Virtual machine {vm_name} is now running")
+            break
+        time.sleep(1)
+
+
+def start_libvirt_vm(m_id, mt_id):
+    logging.warning("entered thread")
+    with app.app_context():
+        m = Machine.query.filter_by(id=m_id).first()
+        mt = MachineTemplate.query.filter_by(id=mt_id).first()
+
+        name = m.name
+        image = mt.image
+        cores = mt.cpu_limit_cores
+        mem = mt.memory_limit_gb
+
+        subprocess.run(
+            ["virt-clone", "--original", image, "--name", name, "--auto-clone"]
+        )
+        subprocess.run(["virsh", "start", name])
+
+        libvirt_wait_for_vm(name)
+        ip = libvirt_wait_for_ip(name)
+
+        m.ip = ip
+        m.state = MachineState.READY
+        db.session.commit()
+
+
+def libvirt_stop_vm(vm_name):
+    # Stop the virtual machine
+    subprocess.run(["virsh", "destroy", vm_name])
+
+    # Delete the disk
+    subprocess.run(["virsh", "undefine", vm_name, "--remove-all-storage"])
+
+    print(f"Stopped virtual machine {vm_name} and deleted its disk")
+
+
 def create_initial_db():
     with app.app_context():
         if not User.query.filter_by(name="admin").first():
@@ -600,12 +671,12 @@ def create_initial_db():
 
             test_machine_template1 = MachineTemplate(
                 name="Muon analysis template",
-                type="docker",
+                type="libvirt",
                 memory_limit_gb="16",
                 cpu_limit_cores="4",
-                image="workspace",
+                image="debian11-5",
                 group=admin_group,
-                description="This is a machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",
+                description="This is a libvirt machine template that's added by default when you're running in debug mode. It references the image \"debian11-5\"",
             )
             test_machine_template2 = MachineTemplate(
                 name="XRAY analysis template",
@@ -614,7 +685,7 @@ def create_initial_db():
                 cpu_limit_cores="4",
                 image="workspace",
                 group=normal_user_group,
-                description="This is a machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",
+                description="This is a docker machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",
             )
 
             test_machine1 = Machine(
