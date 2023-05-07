@@ -4,15 +4,29 @@ Flask web app for desktop machines in the cloud
 
 <table>
 <thead>
-<th>Web app</th>
 <th>Machine page</th>
+<th>Data page</th>
 </thead>
 <tr>
 <td>
-<img src="https://i.postimg.cc/Nsx40Jj5/localhost-5000-machines-12.png">
+<img src="https://i.postimg.cc/VfCymncV/localhost-5000-machines-17.png">
 </td>
 <td>
+<img src="https://i.postimg.cc/2msdXv6K/localhost-5000-data-1.png">
+</td>
+</tr>
+</table>
+<table>
+<thead>
+<th>Machine menu</th>
+<th>Share page</th>
+</thead>
+<tr>
+<td>
 <img src="https://i.postimg.cc/GLRKdwrW/10-10-10-4.png">
+</td>
+<td>
+<img src="https://i.postimg.cc/Tf8dL27b/localhost-5000-share-machine-3.png">
 </td>
 </tr>
 </table>
