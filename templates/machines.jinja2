@@ -120,8 +120,8 @@
               </p>
               {% if machine.data_transfer_jobs %}
                 <p>Data:<br/>
-                  {% for j in machine.data_transfer_jobs %}
-                    {{ j.data_source.source_host }}:{{ j.data_source.source_dir }}<br/>
+                  {% for job_fmt in machine_format_dtj(machine) %}
+                    {{ job_fmt }}<br/>
                   {% endfor %}
                 </p>
               {% endif %}

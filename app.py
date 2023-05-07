@@ -11,6 +11,8 @@ import subprocess
 import argh
 from flask import Flask, render_template, url_for, redirect, flash, request, abort
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.orm import aliased
+from sqlalchemy import Index
 from flask_migrate import Migrate
 from flask_login import (
     LoginManager,
@@ -108,6 +110,9 @@ class DataSource(db.Model):
     )
 
 
+Index("source_host_source_dir_idx", DataSource.source_host, DataSource.source_dir)
+
+
 class DataTransferJobState(enum.Enum):
     RUNNING = "R"
     DONE = "D"
@@ -117,7 +122,7 @@ class DataTransferJobState(enum.Enum):
 
 class DataTransferJob(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    status = db.Column(db.Enum(DataTransferJobState), nullable=False)
+    status = db.Column(db.Enum(DataTransferJobState), nullable=False, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     data_source_id = db.Column(db.Integer, db.ForeignKey("data_source.id"))
     machine_id = db.Column(db.Integer, db.ForeignKey("machine.id"))
@@ -171,7 +176,7 @@ class Machine(db.Model):
     name = db.Column(db.String(100), nullable=False)
     ip = db.Column(db.String(45), nullable=False)
     token = db.Column(db.String(16), nullable=False, default=lambda: gen_token(16))
-    state = db.Column(db.Enum(MachineState), nullable=False)
+    state = db.Column(db.Enum(MachineState), nullable=False, index=True)
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
@@ -372,6 +377,7 @@ def machines():
         MachineState=MachineState,
         Machine=Machine,
         now=datetime.datetime.utcnow(),
+        machine_format_dtj=machine_format_dtj,
     )
 
 
@@ -426,6 +432,33 @@ class DataTransferForm(FlaskForm):
     submit = SubmitField("Submit")
 
 
+@app.route("/dismiss_datatransferjob", methods=["POST"])
+def dismiss_datatransferjob():
+    job_id = request.form.get("job_id")
+    if not job_id:
+        abort(404)
+
+    job = DataTransferJob.query.filter_by(id=job_id).first_or_404()
+    job.status = DataTransferJobState.REMOVED
+    db.session.commit()
+    return "OK"
+
+
+def machine_format_dtj(machine):
+    """
+    Returns a set of unique formatted data transfer job entries for a specific machine.
+    """
+    Source = aliased(DataSource)
+    jobs = (
+        DataTransferJob.query.join(Source, DataTransferJob.data_source)
+        .filter(DataTransferJob.machine == machine)
+        .with_entities(Source.source_host, Source.source_dir)
+        .distinct()
+    )
+
+    return {f"{source_host}:{source_dir}" for source_host, source_dir in jobs}
+
+
 @app.route("/data", methods=["GET", "POST"])
 def data():
     form = DataTransferForm()
@@ -470,7 +503,13 @@ def data():
 
         flash("Starting data transfer. Refresh page to update the status.")
 
-    return render_template("data.jinja2", title="Data", form=form)
+    return render_template(
+        "data.jinja2",
+        title="Data",
+        form=form,
+        DataTransferJobState=DataTransferJobState,
+        MachineState=MachineState,
+    )
 
 
 def do_rsync(source_host, source_dir, dest_host, dest_dir):
@@ -538,12 +577,12 @@ def new_machine():
     db.session.add(m)
     db.session.commit()
 
-    logging.warning("starting thread")
+    logging.warning("starting new machine thread")
 
     if mt.type == "docker":
-        threading.Thread(target=start_container, args=(m.id, mt.id)).start()
+        threading.Thread(target=docker_start_container, args=(m.id, mt.id)).start()
     elif mt.type == "libvirt":
-        threading.Thread(target=start_libvirt_vm, args=(m.id, mt.id)).start()
+        threading.Thread(target=libvirt_start_vm, args=(m.id, mt.id)).start()
     flash(
         "Creating machine in the background. Refresh page to update status.",
         category="success",
@@ -613,7 +652,7 @@ def stop_machine():
     machine_id = int(machine_id)
     machine = Machine.query.filter_by(id=machine_id).first_or_404()
     if current_user != machine.owner:
-        logging.warning(
+        logging.error(
             f"user {current_user.id} is not the owner of machine {machine_id}"
         )
         abort(403)
@@ -633,7 +672,7 @@ def stop_machine():
     db.session.commit()
 
     if machine.machine_template.type == "docker":
-        threading.Thread(target=stop_container, args=(machine_id,)).start()
+        threading.Thread(target=docker_stop_container, args=(machine_id,)).start()
     elif machine.machine_template.type == "libvirt":
         threading.Thread(target=libvirt_stop_vm, args=(machine.name,)).start()
 
@@ -641,7 +680,7 @@ def stop_machine():
     return redirect(url_for("machines"))
 
 
-def get_container_by_ip(ip_address):
+def docker_get_container_by_ip(ip_address):
     try:
         client = docker.from_env()
         network = client.networks.get("adanet")
@@ -671,13 +710,13 @@ def get_container_by_ip(ip_address):
         logging.exception("Error: Unknown error occurred")
 
 
-def stop_container(machine_id):
+def docker_stop_container(machine_id):
     with app.app_context():
         machine = Machine.query.filter_by(id=machine_id).first()
         machine_ip = machine.ip
 
     try:
-        container = get_container_by_ip(machine.ip)
+        container = docker_get_container_by_ip(machine.ip)
         if container:
             container.stop()
     except docker.errors.APIError as e:
@@ -692,20 +731,28 @@ def stop_container(machine_id):
     logging.info(f"deleted container with machine id {machine_id}")
 
 
-def start_container(m_id, mt_id):
-    logging.warning("entered thread")
+def docker_start_container(m_id, mt_id):
+    logging.warning("entered start_container thread")
     with app.app_context():
         try:
             m = Machine.query.filter_by(id=m_id).first()
             mt = MachineTemplate.query.filter_by(id=mt_id).first()
             client = docker.from_env()
 
+            cpu_shares = int(1024 * cores / client.info()["NCPU"])
+            mem_limit = str(mem_gb) + "g"
+
             # Define container options, including CPU and memory limits
             container_options = {
                 "name": m.name,
                 "image": mt.image,
                 "network": "adanet",
+                "cpuset_cpus": str(0 - (client.info()["NCPU"] - 1)),
+                # ^^ Use all available CPUs
+                "cpu_shares": cpu_shares,
+                "mem_limit": mem_limit,
             }
+            print(json.dumps(container_options, indent=4))
 
             # Start the container
             container = client.containers.run(
@@ -735,7 +782,7 @@ def start_container(m_id, mt_id):
     logging.warning("all done!")
 
 
-def get_libvirt_vm_ip(vm_name):
+def libvirt_get_vm_ip(vm_name):
     command = ["virsh", "domifaddr", vm_name]
     result = subprocess.run(command, capture_output=True)
     output = result.stdout.decode("utf-8")
@@ -748,7 +795,7 @@ def get_libvirt_vm_ip(vm_name):
 
 
 def libvirt_wait_for_ip(vm_name):
-    while not (ip := get_libvirt_vm_ip(vm_name)):
+    while not (ip := libvirt_get_vm_ip(vm_name)):
         time.sleep(1)
     return ip
 
@@ -763,8 +810,8 @@ def libvirt_wait_for_vm(vm_name):
         time.sleep(1)
 
 
-def start_libvirt_vm(m_id, mt_id):
-    logging.warning("entered thread")
+def libvirt_start_vm(m_id, mt_id):
+    logging.info("entered start_libvirt_vm thread")
     with app.app_context():
         m = Machine.query.filter_by(id=m_id).first()
         mt = MachineTemplate.query.filter_by(id=mt_id).first()
@@ -772,11 +819,20 @@ def start_libvirt_vm(m_id, mt_id):
         name = m.name
         image = mt.image
         cores = mt.cpu_limit_cores
-        mem = mt.memory_limit_gb
+        mem = int(mt.memory_limit_gb) * 1024 * 1024
 
+        # clone vm
         subprocess.run(
             ["virt-clone", "--original", image, "--name", name, "--auto-clone"]
         )
+
+        # Set the CPU and memory limits
+        subprocess.run(["virsh", "setvcpus", name, str(cores), "--config", "--maximum"])
+        subprocess.run(["virsh", "setvcpus", name, str(cores), "--config"])
+        subprocess.run(["virsh", "setmaxmem", name, str(mem), "--config"])
+        subprocess.run(["virsh", "setmem", name, str(mem), "--config"])
+
+        # start vm
         subprocess.run(["virsh", "start", name])
 
         libvirt_wait_for_vm(name)
