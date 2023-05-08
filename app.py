@@ -25,7 +25,7 @@ from flask_login import (
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, SubmitField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, Email, Length
 
 import humanize
 
@@ -384,6 +384,39 @@ def login():
     return render_template("login.jinja2", form=form)
 
 
+class RegistrationForm(FlaskForm):
+    name = StringField("Name", validators=[DataRequired()])
+    password = PasswordField(
+        "Password", validators=[DataRequired(), Length(min=8, max=128)]
+    )
+    real_name = StringField("Real Name", validators=[DataRequired()])
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    organization = StringField("Organization", validators=[DataRequired()])
+    group = SelectField("Group", choices=[], validators=[DataRequired()])
+    job_title = StringField("Job Title", validators=[DataRequired()])
+    submit = SubmitField("Register")
+
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    form = RegistrationForm()
+    form.group.choices = [x[0] for x in Group.query.with_entities(Group.name).all()]
+
+    if request.method == "POST" and form.validate_on_submit():
+        print(f"Name: {form.name.data}")
+        print(f"Real Name: {form.real_name.data}")
+        print(f"Email: {form.email.data}")
+        print(f"Organization: {form.organization.data}")
+        print(f"Group: {form.group.data}")
+        print(f"Job Title: {form.job_title.data}")
+        flash(
+            "Thank you for registering. You will be emailed when your account is activated"
+        )
+        return redirect(url_for("login"))
+
+    return render_template("register.jinja2", form=form, title="Register account")
+
+
 @app.route("/")
 def index():
     if current_user.is_authenticated:
@@ -481,11 +514,6 @@ def mk_safe_machine_name(username):
     """
     machine_name = username + "-" + encode_date_time(datetime.datetime.utcnow())
     return machine_name
-
-
-@app.route("/register")
-def register():
-    return render_template("register.jinja2")
 
 
 class DataTransferForm(FlaskForm):

@@ -1,71 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
-    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
-    <style>
-        body {
-            background-color: white;
-        }
+{% extends 'base-bare.jinja2' %}
 
-        .register-form-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
+{% block content %}
 
-        .register-form {
-            background-color: lightgrey;
-            padding: 2rem;
-            border-radius: 10px;
-            width: 400px;
-        }
-    </style>
-</head>
-<body>
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, message in messages %}
-        {% if category == "danger" %}
-          <p class="w3-red w3-padding-large w3-round">{{ message }}</li>
-        {% else %}
-          <p class="w3-green w3-padding-large w3-round">{{ message }}</li>
-        {% endif %}
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
+  <form method="POST" action="{{ url_for('register') }}">
+    {{ form.csrf_token }}
+    <label class="w3-text-black"><b>Name</b></label>
+    {{ form.name(class="w3-input w3-border w3-light-grey") }}
+    <br>
+    <label class="w3-text-black"><b>Password</b></label>
+    {{ form.password(class="w3-input w3-border w3-light-grey") }}
+    <br>
+    <label class="w3-text-black"><b>Real Name</b></label>
+    {{ form.real_name(class="w3-input w3-border w3-light-grey") }}
+    <br>
+    <label class="w3-text-black"><b>Email</b></label>
+    {{ form.email(class="w3-input w3-border w3-light-grey") }}
+    <br>
+    <label class="w3-text-black"><b>Organization</b></label>
+    {{ form.organization(class="w3-input w3-border w3-light-grey") }}
+    <br>
+    <label class="w3-text-black"><b>Group</b></label>
+    {{ form.group(class="w3-select w3-border w3-light-grey") }}
+    <br><br>
+    <label class="w3-text-black"><b>Job Title</b></label>
+    {{ form.job_title(class="w3-input w3-border w3-light-grey") }}
+    <br>
+    <button class="w3-btn ada-blue w3-round" type="submit">Submit</button>
+  </form>
 
-
-    <div class="register-form-container">
-        <form class="w3-container register-form" method="POST" action="{{ url_for('register') }}">
-            {#{{ form.csrf_token }}#}
-            <label class="w3-text-black"><b>Name</b></label>
-            <input class="w3-input w3-border w3-light-grey" type="text" name="name" required>
-            <br>
-            <label class="w3-text-black"><b>Real Name</b></label>
-            <input class="w3-input w3-border w3-light-grey" type="text" name="real_name" required>
-            <br>
-            <label class="w3-text-black"><b>Email</b></label>
-            <input class="w3-input w3-border w3-light-grey" type="email" name="email" required>
-            <br>
-            <label class="w3-text-black"><b>Organization</b></label>
-            <input class="w3-input w3-border w3-light-grey" type="text" name="organization" required>
-            <br>
-            <label class="w3-text-black"><b>Group</b></label>
-            <select class="w3-select w3-border w3-light-grey" name="group" required>
-                {#{% for value, label in form.group.choices %}
-                <option value="{{ value }}">{{ label }}</option>
-                {% endfor %}#}
-            </select>
-            <br><br>
-            <label class="w3-text-black"><b>Job Title</b></label>
-            <input class="w3-input w3-border w3-light-grey" type="text" name="job_title" required>
-            <br>
-            <button class="w3-btn w3-black" type="submit">Register</button>
-        </form>
-    </div>
-</body>
-</html>
+{% endblock %}
