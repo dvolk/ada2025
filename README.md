@@ -26,7 +26,7 @@ Flask web app for desktop machines in the cloud
 <img src="https://i.postimg.cc/fzNW4fJ8/10-10-10-2.png">
 </td>
 <td>
-<img src="https://i.postimg.cc/gGx230CH/localhost-5000-share-machine-2.png">
+<img src="https://i.postimg.cc/gGx230CH/localhost-5000-share-machine-2.png ">
 </td>
 </tr>
 </table>
