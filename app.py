@@ -425,11 +425,25 @@ def machines():
 @app.route("/settings")
 @login_required
 def settings():
-    return render_template(
-        "settings.jinja2",
-        title="Settings",
-        threading=threading,
-    )
+    return render_template("settings.jinja2", title="Settings", threading=threading)
+
+
+@app.route("/citations")
+@login_required
+def citations():
+    return render_template("citations.jinja2", title="Citations")
+
+
+@app.route("/about")
+@login_required
+def about():
+    return render_template("about.jinja2", title="About")
+
+
+@app.route("/help")
+@login_required
+def help():
+    return render_template("help.jinja2", title="Help")
 
 
 def encode_date_time(date_time):
