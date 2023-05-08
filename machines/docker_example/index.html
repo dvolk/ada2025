@@ -14,11 +14,19 @@
 
 
         <style>
-         .login-form-container {
+         html, body {
+             height: 100%;
+             margin: 0;
+         }
+
+         .center-container {
              display: flex;
              justify-content: center;
              align-items: center;
-             height: 75vh;
+             min-height: 100%;
+             margin: auto;
+             box-sizing: border-box;
+             padding: 20px; /* You can adjust this value according to your needs */
          }
          * {
              font-family: 'Roboto Condensed', sans-serif !important;
@@ -44,7 +52,7 @@
     </head>
     <body>
 
-        <div class="login-form-container">
+        <div class="center-container">
             <div class="w3-white" style="width: 600px;">
 
 

@@ -1,17 +1,19 @@
-{% extends 'base-bare.jinja2' %}
+{% extends 'base.jinja2' %}
 
 {% block content %}
   <h2>Sharing machine</h2>
 
-  <p>Users will have the same level of access as you do, including full desktop access and file browser access.{% if current_user == machine.owner %} However only you can revoke shares by clicking the button below.{% endif %}</p>
+  {{ info("Users with the share link will have the same level of access to the machine as you do, including full desktop access and file browser access.") }}
 
-  <p>The user must have an account and be logged into the service when they visit the link.</p>
+  {{ info("The user must have an account and be logged into the service when they visit the link.") }}
 
-  <p>You can share this link with users to give them access to the machine:</p>
+  <div class="w3-container w3-pale-yellow">
+  <p class="w3-large">You can share this link with users to give them access to the machine:</p>
 
-  <h2><a style="text-decoration: underline;" href="/share_accept/{{ machine.token }}">{{ icon('link') }} Share link</a></h2>
+  <h2>{{ icon('link') }} <a style="text-decoration: underline;" href="/share_accept/{{ machine.token }}">Share link</a></h2>
+  {{ idea("Right click on the link and select <i>copy link address.</i>") }}
+  </div>
 
-  <p>Right click on the link and select <i>copy link address.</i></p>
 
   {% if current_user == machine.owner %}
     <p>As the owner you can revoke all shares and generate a new share link:</p>

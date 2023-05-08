@@ -31,6 +31,8 @@ import humanize
 
 import docker
 
+logging.basicConfig(level=logging.DEBUG)
+
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "your_secret_key"
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
@@ -71,6 +73,9 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     password_hash = db.Column(db.String(100), nullable=False)
+    real_name = db.Column(db.String(100), default="")
+    organization = db.Column(db.String(200), default="")
+    job_title = db.Column(db.String(200), default="")
     email = db.Column(db.String(200), nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey("group.id"))
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
@@ -232,7 +237,7 @@ MAIN_MENU = [
         "href": "/",
     },
     {
-        "icon": "server",
+        "icon": "cubes",
         "name": "Machines",
         "href": "/machines",
     },
@@ -385,15 +390,23 @@ def login():
 
 
 class RegistrationForm(FlaskForm):
-    name = StringField("Name", validators=[DataRequired()])
+    name = StringField("Name", validators=[DataRequired(), Length(min=4, max=64)])
     password = PasswordField(
-        "Password", validators=[DataRequired(), Length(min=8, max=128)]
+        "Password", validators=[DataRequired(), Length(min=8, max=100)]
     )
-    real_name = StringField("Real Name", validators=[DataRequired()])
-    email = StringField("Email", validators=[DataRequired(), Email()])
-    organization = StringField("Organization", validators=[DataRequired()])
+    real_name = StringField(
+        "Real Name", validators=[DataRequired(), Length(min=4, max=100)]
+    )
+    email = StringField(
+        "Email", validators=[DataRequired(), Email(), Length(min=4, max=200)]
+    )
+    organization = StringField(
+        "Organization", validators=[DataRequired(), Length(min=4, max=200)]
+    )
     group = SelectField("Group", choices=[], validators=[DataRequired()])
-    job_title = StringField("Job Title", validators=[DataRequired()])
+    job_title = StringField(
+        "Job Title", validators=[DataRequired(), Length(min=4, max=200)]
+    )
     submit = SubmitField("Register")
 
 
@@ -453,6 +466,59 @@ def machines():
         now=datetime.datetime.utcnow(),
         machine_format_dtj=machine_format_dtj,
     )
+
+
+def contains_non_alphanumeric_chars(string):
+    # or -
+    for char in string:
+        if not char.isalnum() and char != "-":
+            return True
+
+
+@app.route("/rename_machine", methods=["POST"])
+@login_required
+def rename_machine():
+    machine_id = request.form.get("machine_id")
+    machine_new_name = request.form.get("machine_new_name")
+    if not machine_new_name or not machine_id:
+        flash("Invalid values for machine rename", category="danger")
+        return redirect(url_for("machines"))
+
+    if len(machine_new_name) <= 3 or len(machine_new_name) > 80:
+        logging.error(f"len(machine_new_name) = {len(machine_new_name)}")
+        flash(
+            "New name must be between 4 and 80 characters long, and can contain characters a-Z,0-9 and -",
+            category="danger",
+        )
+        return redirect(url_for("machines"))
+
+    if contains_non_alphanumeric_chars(machine_new_name):
+        flash(
+            "New name contains non-alphanumeric characters. Characters that are allowed are a-Z,0-9 and -",
+            category="danger",
+        )
+        return redirect(url_for("machines"))
+
+    try:
+        machine_id = int(machine_id)
+    except:
+        flash("Invalid values for machine rename", category="danger")
+        return redirect(url_for("machines"))
+
+    machine = Machine.query.filter_by(id=machine_id).first()
+
+    if Machine.query.filter_by(name=machine_new_name).first():
+        flash("The requested machine name is already taken", category="danger")
+        return redirect(url_for("machines"))
+
+    # TODO: check if the new name includes a username other than CU.name
+
+    old_name = machine.name
+    machine.name = machine_new_name
+    db.session.commit()
+
+    flash(f"Machine {old_name} renamed to {machine_new_name}")
+    return redirect(url_for("machines"))
 
 
 @app.route("/settings")
@@ -594,8 +660,8 @@ def data():
         )
         db.session.add(job)
         db.session.commit()
-
         threading.Thread(target=start_data_transfer, args=(job.id,)).start()
+        time.sleep(0.1)
 
         flash("Starting data transfer. Refresh page to update status.")
         return redirect(url_for("data"))
@@ -642,6 +708,8 @@ def start_data_transfer(job_id):
     """
     with app.app_context():
         job = DataTransferJob.query.filter_by(id=job_id).first()
+        if not job:
+            logging.error(f"job {job_id} not found!")
 
         result = do_rsync(
             "dv@" + job.data_source.source_host,
@@ -702,7 +770,7 @@ def share_machine(machine_id):
     machine_id = int(machine_id)
     machine = Machine.query.filter_by(id=machine_id).first_or_404()
 
-    return render_template("share.jinja2", machine=machine)
+    return render_template("share.jinja2", title="Machines", machine=machine)
 
 
 @app.route("/share_accept/<machine_token>")
@@ -931,6 +999,9 @@ def libvirt_wait_for_vm(vm_name):
 
 
 def libvirt_start_vm(m_id, mt_id):
+    """
+    Start a vm and wait for it to have an ip
+    """
     logging.info("entered start_libvirt_vm thread")
     with app.app_context():
         m = Machine.query.filter_by(id=m_id).first()
@@ -974,6 +1045,7 @@ def libvirt_stop_vm(vm_name):
 
 
 def create_initial_db():
+    # add an admin user and test machinetemplate and machine
     with app.app_context():
         if not User.query.filter_by(name="admin").first():
             logging.warning("Creating default data. First user is admin/admin.")
@@ -1049,9 +1121,30 @@ def create_initial_db():
             db.session.commit()
 
 
+def clean_up_db():
+    """
+    Because threads are used for background tasks, anything that
+    was running when the application closed will be interrupted.
+
+    This function sets any database entries that were running into
+    a failed state.
+
+    We could also try to recover or restart some things.
+    """
+    with app.app_context():
+        for m in Machine.query.all():
+            if m.state == MachineState.PROVISIONING:
+                m.state = MachineState.FAILED
+                # TODO: make sure all machine resources are deleted
+        for j in DataTransferJob.query.all():
+            if j.status == DataTransferJobState.RUNNING:
+                m.state = DataTransferJobState.FAILED
+                # Could also restart?
+
+
 def main(debug=False):
-    # add an admin user and test machinetemplate and machine
     create_initial_db()
+    clean_up_db()
 
     app.run(debug=debug)
 

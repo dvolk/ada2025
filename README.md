@@ -9,10 +9,10 @@ Flask web app for desktop machines in the cloud
 </thead>
 <tr>
 <td>
-<img src="https://i.postimg.cc/VfCymncV/localhost-5000-machines-17.png">
+<img src="https://i.postimg.cc/v88QT879/localhost-5000-machines-18.png">
 </td>
 <td>
-<img src="https://i.postimg.cc/2msdXv6K/localhost-5000-data-1.png">
+<img src="https://i.postimg.cc/38F830GY/localhost-5000-data-3.png">
 </td>
 </tr>
 </table>
@@ -23,10 +23,10 @@ Flask web app for desktop machines in the cloud
 </thead>
 <tr>
 <td>
-<img src="https://i.postimg.cc/GLRKdwrW/10-10-10-4.png">
+<img src="https://i.postimg.cc/fzNW4fJ8/10-10-10-2.png">
 </td>
 <td>
-<img src="https://i.postimg.cc/Tf8dL27b/localhost-5000-share-machine-3.png">
+<img src="https://i.postimg.cc/gGx230CH/localhost-5000-share-machine-2.png">
 </td>
 </tr>
 </table>
@@ -53,6 +53,7 @@ Flask web app for desktop machines in the cloud
 - TigerVNC
 - noVNC
 - filebrowser
+- rsync
 
 ## Setup
 

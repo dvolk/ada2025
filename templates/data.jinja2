@@ -27,7 +27,7 @@
               <td style="vertical-align: middle;">{{ j.status.name }}</td>
 
               <td style="vertical-align: middle;">
-                <a href="#" class="w3-btn w3-green w3-small w3-round"
+                <a href="#" class="w3-button w3-green w3-small w3-round"
                    onclick="event.preventDefault();
                    var xhr = new XMLHttpRequest();
                    xhr.open('POST', '/dismiss_datatransferjob');
@@ -70,7 +70,7 @@
         {{ render_field(form.machine, css_class="w3-input w3-white") }}
       </p>
 
-      {{ form.submit(class="w3-btn w3-round w3-blue") }}
+      {{ form.submit(class="w3-button w3-round w3-blue") }}
       <br/>
       <br/>
     </div>
