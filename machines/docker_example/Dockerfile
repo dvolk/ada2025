@@ -64,7 +64,7 @@ COPY index.html /var/www/html/index.html
 COPY ada.png /var/www/html/ada.png
 COPY dvolk.keys /home/ubuntu/.ssh/authorized_keys
 
-RUN chown $USER:$USER /home/$USER/.ssh/authorized_keys && \
+RUN chown $USER:$USER /home/$USER/.ssh/authorized_keys
 
 # Set up VNC
 RUN mkdir -p /home/$USER/.vnc && \
