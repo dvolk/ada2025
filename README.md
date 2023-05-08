@@ -4,8 +4,8 @@ Flask web app for desktop machines in the cloud
 
 <table>
 <thead>
-<th>Machine page</th>
-<th>Data page</th>
+<th width=50%>Machine page</th>
+<th width=50%>Data page</th>
 </thead>
 <tr>
 <td>
@@ -18,8 +18,8 @@ Flask web app for desktop machines in the cloud
 </table>
 <table>
 <thead>
-<th>Machine menu</th>
-<th>Share page</th>
+<th width=50%>Machine menu</th>
+<th width=50%>Share page</th>
 </thead>
 <tr>
 <td>
