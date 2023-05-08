@@ -597,7 +597,7 @@ def data():
 
         threading.Thread(target=start_data_transfer, args=(job.id,)).start()
 
-        flash("Starting data transfer. Refresh page to update the status.")
+        flash("Starting data transfer. Refresh page to update status.")
         return redirect(url_for("data"))
 
     return render_template(
@@ -769,7 +769,7 @@ def stop_machine():
         abort(404)
     machine_id = int(machine_id)
     machine = Machine.query.filter_by(id=machine_id).first_or_404()
-    if not current_user.is_admin or not current_user == machine.owner:
+    if not current_user.is_admin and not current_user == machine.owner:
         logging.error(
             f"user {current_user.id} is not the owner of machine {machine_id} nor admin"
         )
@@ -794,7 +794,7 @@ def stop_machine():
     elif machine.machine_template.type == "libvirt":
         threading.Thread(target=libvirt_stop_vm, args=(machine.name,)).start()
 
-    flash("Deleting machine in the background", category="success")
+    flash("Deleting machine", category="success")
     return redirect(url_for("machines"))
 
 
