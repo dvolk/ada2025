@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  {% if do_refresh %}
-    <meta http-equiv="refresh" content="5">
-  {% endif %}
-  <link rel="icon" href="/atom.png" type="image/png" sizes="16x16">
+  <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
   {# w3.css #}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/w3-css/4.1.0/w3.css">
   {# fontawesome 6 #}
@@ -36,7 +35,12 @@
     color: white
     }
     td { vertical-align: middle }
-
+   .blur-on-hover:hover {
+       filter: blur(2px); /* apply a blur effect to the image */
+   }
+   .lighten-on-hover:hover {
+       opacity: 0.7; /* decrease the opacity to lighten the image */
+   }
   </style>
 
   <title>{{ title }}</title>
