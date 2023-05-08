@@ -64,6 +64,10 @@ def gen_token(length):
 
 
 class User(db.Model, UserMixin):
+    """
+    User model, also used for flask-login
+    """
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     password_hash = db.Column(db.String(100), nullable=False)
@@ -94,6 +98,14 @@ class User(db.Model, UserMixin):
 
 
 class DataSource(db.Model):
+    """
+    The DataSource model represents a source of data for users that
+    they can use to copy into their machine.
+
+    This is done by SSHing into the source_host and then running
+    rsync to sync the data into the machine ip.
+    """
+
     id = db.Column(db.Integer, primary_key=True)
     source_host = db.Column(db.String, nullable=False)
     source_dir = db.Column(db.String, nullable=False)
@@ -121,6 +133,10 @@ class DataTransferJobState(enum.Enum):
 
 
 class DataTransferJob(db.Model):
+    """
+    The DataTransferJob tracks a copy from a DataSource into a Machine
+    """
+
     id = db.Column(db.Integer, primary_key=True)
     status = db.Column(db.Enum(DataTransferJobState), nullable=False, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
@@ -136,6 +152,12 @@ class DataTransferJob(db.Model):
 
 
 class Group(db.Model):
+    """
+    A group that users belong to. A user can belong to a single group
+
+    The group determines which MachineTemplates a user can see.
+    """
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     creation_date = db.Column(
@@ -147,6 +169,10 @@ class Group(db.Model):
 
 
 class MachineTemplate(db.Model):
+    """
+    A MachineTemplate is a template from which the user builds Machines
+    """
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     type = db.Column(db.String(100), nullable=False)
@@ -172,6 +198,11 @@ class MachineState(enum.Enum):
 
 
 class Machine(db.Model):
+    """
+    A Machine represents a container or virtual machine that the user
+    uses.
+    """
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     ip = db.Column(db.String(45), nullable=False)
@@ -193,6 +224,7 @@ class Machine(db.Model):
     data_transfer_jobs = db.relationship("DataTransferJob", back_populates="machine")
 
 
+# This is used in base.jinja2 to build the side bar menu
 MAIN_MENU = [
     {
         "icon": "house",
@@ -323,6 +355,9 @@ def inject_globals():
 
 @login_manager.user_loader
 def load_user(user_id):
+    """
+    This is called by flask-login on every request to load the user
+    """
     return User.query.filter_by(id=int(user_id)).first()
 
 
@@ -334,6 +369,9 @@ class LoginForm(FlaskForm):
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    """
+    Login page and login logic
+    """
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(name=form.username.data).first()
@@ -370,6 +408,9 @@ def welcome():
 @app.route("/machines")
 @login_required
 def machines():
+    """
+    The machine page displays and controls the user's machines
+    """
     return render_template(
         "machines.jinja2",
         title="Machines",
@@ -417,6 +458,13 @@ def encode_date_time(date_time):
 
 
 def mk_safe_machine_name(username):
+    """
+    We need a unique name in some circumstances, so we use the username
+    and encoded datetime.
+
+    This assumes the user doesn't want to make more than 1 machine
+    per second
+    """
     machine_name = username + "-" + encode_date_time(datetime.datetime.utcnow())
     return machine_name
 
@@ -434,6 +482,10 @@ class DataTransferForm(FlaskForm):
 
 @app.route("/dismiss_datatransferjob", methods=["POST"])
 def dismiss_datatransferjob():
+    """
+    Endpoint for hiding the data transfer job from the data page
+    by setting its state to REMOVED
+    """
     job_id = request.form.get("job_id")
     if not job_id:
         abort(404)
@@ -461,15 +513,17 @@ def machine_format_dtj(machine):
 
 @app.route("/data", methods=["GET", "POST"])
 def data():
-    form = DataTransferForm()
-
     if current_user.is_admin:
+        # the admin can see everything
         data_sources = DataSource.query.all()
         machines = Machine.query.filter_by(state=MachineState.READY)
     else:
+        # a normal user can see their own stuff
         data_sources = current_user.data_sources
         machines = current_user.owned_machines + current_user.shared_machines
 
+    # fill in the form select options
+    form = DataTransferForm()
     form.data_source.choices = [
         (ds.id, f"{ds.source_host}:{ds.source_dir} ({ds.data_size} MB)")
         for ds in data_sources
@@ -502,6 +556,7 @@ def data():
         threading.Thread(target=start_data_transfer, args=(job.id,)).start()
 
         flash("Starting data transfer. Refresh page to update the status.")
+        return redirect(url_for("data"))
 
     return render_template(
         "data.jinja2",
@@ -519,19 +574,19 @@ def do_rsync(source_host, source_dir, dest_host, dest_dir):
             f"rsync -avz -e 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' "
             f"{source_dir} {dest_host}:{dest_dir}"
         )
-        print(rsync_cmd)
+        logging.info(rsync_cmd)
 
         # Construct the ssh command to run the rsync command on the source_host
         ssh_cmd = (
             f"ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "
             f'{source_host} "{rsync_cmd}"'
         )
-        print(ssh_cmd)
+        logging.info(ssh_cmd)
 
         # Execute the ssh command
         subprocess.run(ssh_cmd, shell=True, check=True, stderr=subprocess.PIPE)
 
-        print("Data transfer completed successfully.")
+        logging.info("Data transfer completed successfully.")
         return True
 
     except Exception as e:
@@ -540,6 +595,9 @@ def do_rsync(source_host, source_dir, dest_host, dest_dir):
 
 
 def start_data_transfer(job_id):
+    """
+    Thread function that takes a job and runs the data transfer
+    """
     with app.app_context():
         job = DataTransferJob.query.filter_by(id=job_id).first()
 
@@ -560,6 +618,9 @@ def start_data_transfer(job_id):
 @app.route("/new_machine", methods=["POST"])
 @login_required
 def new_machine():
+    """
+    Launches thread to create the container/vm
+    """
     machine_template_name = request.form.get("machine_template_name", "")
 
     machine_name = mk_safe_machine_name(current_user.name)
@@ -583,6 +644,7 @@ def new_machine():
         threading.Thread(target=docker_start_container, args=(m.id, mt.id)).start()
     elif mt.type == "libvirt":
         threading.Thread(target=libvirt_start_vm, args=(m.id, mt.id)).start()
+
     flash(
         "Creating machine in the background. Refresh page to update status.",
         category="success",
@@ -592,6 +654,9 @@ def new_machine():
 
 @app.route("/share_machine/<machine_id>")
 def share_machine(machine_id):
+    """
+    Shows the share page
+    """
     machine_id = int(machine_id)
     machine = Machine.query.filter_by(id=machine_id).first_or_404()
 
@@ -600,6 +665,9 @@ def share_machine(machine_id):
 
 @app.route("/share_accept/<machine_token>")
 def share_accept(machine_token):
+    """
+    This is the endpoint hit by the user accepting a share
+    """
     machine = Machine.query.filter_by(token=machine_token).first_or_404()
     if current_user == machine.owner:
         flash("You own that machine.")
@@ -616,6 +684,10 @@ def share_accept(machine_token):
 
 @app.route("/share_revoke/<machine_id>")
 def share_revoke(machine_id):
+    """
+    The owner revokes all shares. We do this by removing shared_users
+    and resetting the machine token
+    """
     machine = Machine.query.filter_by(id=machine_id).first_or_404()
     if current_user != machine.owner:
         flash("You can't revoke shares on a machine you don't own.")
@@ -644,6 +716,10 @@ def docker_wait_for_ip(client, container_name, network):
 
 @app.route("/stop_machine", methods=["POST"])
 def stop_machine():
+    """
+    Start thread to stop machine
+    """
+
     # sanity checks
     machine_id = request.form.get("machine_id")
     if not machine_id:
@@ -651,9 +727,9 @@ def stop_machine():
         abort(404)
     machine_id = int(machine_id)
     machine = Machine.query.filter_by(id=machine_id).first_or_404()
-    if current_user != machine.owner:
+    if not current_user.is_admin or not current_user == machine.owner:
         logging.error(
-            f"user {current_user.id} is not the owner of machine {machine_id}"
+            f"user {current_user.id} is not the owner of machine {machine_id} nor admin"
         )
         abort(403)
     if machine.state in [
