@@ -36,6 +36,7 @@ Flask web app for desktop machines in the cloud
 - Create machines from machine templates
 - Run machines as docker containers and libvirt virtual machines
 - Share machines with other users
+- Copy data from data sources into machines
 - Open desktop in a web browser
 - Upload and download files with integrated file browser
 
@@ -47,6 +48,7 @@ Flask web app for desktop machines in the cloud
 - Flask-Migrate
 - Flask-WTForms
 - Flask-Login
+- Flask-Admin
 - nginx
 - Docker
 - libvirt

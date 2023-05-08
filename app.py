@@ -22,6 +22,8 @@ from flask_login import (
     login_required,
     current_user,
 )
+from flask_admin import Admin
+from flask_admin.contrib.sqla import ModelView
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, SubmitField
@@ -41,6 +43,21 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
+admin = Admin(url="/flaskyadmin")
+admin.init_app(app)
+
+
+# make the flask-admin interface only accessible to admins
+class ProtectedModelView(ModelView):
+    def is_accessible(self):
+        if not (current_user.is_authenticated and current_user.is_admin):
+            abort(403)
+        else:
+            return True
+
+    def inaccessible_callback(self, name, **kwargs):
+        return redirect(url_for("welcome"))
+
 
 # Association table for many-to-many relationship between User and Machine (shared_users)
 shared_user_machine = db.Table(
@@ -71,8 +88,9 @@ class User(db.Model, UserMixin):
     """
 
     id = db.Column(db.Integer, primary_key=True)
+    is_enabled = db.Column(db.Boolean, nullable=False, default=False)
     name = db.Column(db.String(100), nullable=False)
-    password_hash = db.Column(db.String(100), nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
     real_name = db.Column(db.String(100), default="")
     organization = db.Column(db.String(200), default="")
     job_title = db.Column(db.String(200), default="")
@@ -101,6 +119,49 @@ class User(db.Model, UserMixin):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    def __repr__(self):
+        return f"<{self.name}>"
+
+
+class ProtectedUserModelView(ProtectedModelView):
+    column_list = (
+        "id",
+        "is_enabled",
+        "name",
+        "real_name",
+        "organization",
+        "job_title",
+        "email",
+        "group",
+        "is_admin",
+        "creation_date",
+    )
+    form_columns = (
+        "is_enabled",
+        "name",
+        "password",
+        "real_name",
+        "organization",
+        "job_title",
+        "email",
+        "group",
+        "is_admin",
+        "creation_date",
+        "owned_machines",
+        "shared_machines",
+        "data_sources",
+        "data_transfer_jobs",
+    )
+    column_searchable_list = ("name", "email")
+    column_sortable_list = ("id", "name", "email", "creation_date")
+    column_filters = ("is_enabled", "is_admin", "group")
+    column_auto_select_related = True
+    form_extra_fields = {"password": PasswordField("Password")}
+
+    def on_model_change(self, form, model, is_created):
+        if form.password.data:
+            model.set_password(form.password.data)
+
 
 class DataSource(db.Model):
     """
@@ -125,6 +186,31 @@ class DataSource(db.Model):
     data_transfer_jobs = db.relationship(
         "DataTransferJob", back_populates="data_source"
     )
+
+    def __repr__(self):
+        return f"{self.source_host}:{self.source_dir}"
+
+
+class ProtectedDataSourceModelView(ProtectedModelView):
+    column_list = (
+        "id",
+        "source_host",
+        "source_dir",
+        "data_size",
+        "creation_date",
+        "users",
+    )
+    form_columns = (
+        "source_host",
+        "source_dir",
+        "data_size",
+        "users",
+        "data_transfer_jobs",
+    )
+    column_searchable_list = ("source_host", "source_dir")
+    column_sortable_list = ("id", "source_host", "data_size", "creation_date")
+    column_filters = ("source_host", "source_dir", "data_size")
+    column_auto_select_related = True
 
 
 Index("source_host_source_dir_idx", DataSource.source_host, DataSource.source_dir)
@@ -156,6 +242,15 @@ class DataTransferJob(db.Model):
     machine = db.relationship("Machine", back_populates="data_transfer_jobs")
 
 
+class ProtectedDataTransferJobModelView(ProtectedModelView):
+    column_list = ("id", "status", "user", "data_source", "machine", "creation_date")
+    form_columns = ("status", "user", "data_source", "machine")
+    column_searchable_list = ("status",)
+    column_sortable_list = ("id", "status", "creation_date")
+    column_filters = ("status", "user", "data_source", "machine")
+    column_auto_select_related = True
+
+
 class Group(db.Model):
     """
     A group that users belong to. A user can belong to a single group
@@ -171,6 +266,18 @@ class Group(db.Model):
 
     users = db.relationship("User", back_populates="group")
     machine_templates = db.relationship("MachineTemplate", back_populates="group")
+
+    def __repr__(self):
+        return f"<{self.name}>"
+
+
+class ProtectedGroupModelView(ProtectedModelView):
+    column_list = ("id", "name", "creation_date", "users", "machine_templates")
+    form_columns = ("name", "users", "machine_templates")
+    column_searchable_list = ("name",)
+    column_sortable_list = ("id", "name", "creation_date")
+    column_filters = ("name",)
+    column_auto_select_related = True
 
 
 class MachineTemplate(db.Model):
@@ -192,6 +299,45 @@ class MachineTemplate(db.Model):
 
     group = db.relationship("Group", back_populates="machine_templates")
     machines = db.relationship("Machine", back_populates="machine_template")
+
+    def __repr__(self):
+        return f"<{self.name}>"
+
+
+class ProtectedMachineTemplateModelView(ProtectedModelView):
+    column_list = (
+        "id",
+        "name",
+        "type",
+        "image",
+        "description",
+        "creation_date",
+        "memory_limit_gb",
+        "cpu_limit_cores",
+        "group",
+        "machines",
+    )
+    form_columns = (
+        "name",
+        "type",
+        "image",
+        "description",
+        "memory_limit_gb",
+        "cpu_limit_cores",
+        "group",
+    )
+    column_searchable_list = ("name", "type", "image")
+    column_sortable_list = (
+        "id",
+        "name",
+        "type",
+        "image",
+        "creation_date",
+        "memory_limit_gb",
+        "cpu_limit_cores",
+    )
+    column_filters = ("type", "group")
+    column_auto_select_related = True
 
 
 class MachineState(enum.Enum):
@@ -228,6 +374,45 @@ class Machine(db.Model):
     machine_template = db.relationship("MachineTemplate", back_populates="machines")
     data_transfer_jobs = db.relationship("DataTransferJob", back_populates="machine")
 
+    def __repr__(self):
+        return f"<{self.name}>"
+
+
+class ProtectedMachineModelView(ProtectedModelView):
+    column_list = (
+        "id",
+        "name",
+        "ip",
+        "token",
+        "state",
+        "creation_date",
+        "owner",
+        "machine_template",
+        "shared_users",
+    )
+    form_columns = (
+        "name",
+        "ip",
+        "token",
+        "state",
+        "owner",
+        "shared_users",
+        "machine_template",
+        "data_transfer_jobs",
+    )
+    column_searchable_list = ("name", "ip", "token", "state")
+    column_sortable_list = ("id", "name", "ip", "state", "creation_date")
+    column_filters = ("state", "owner", "machine_template")
+    column_auto_select_related = True
+
+
+# add flask-sqlalchemy views to flask-admin
+admin.add_view(ProtectedUserModelView(User, db.session))
+admin.add_view(ProtectedDataSourceModelView(DataSource, db.session))
+admin.add_view(ProtectedDataTransferJobModelView(DataTransferJob, db.session))
+admin.add_view(ProtectedGroupModelView(Group, db.session))
+admin.add_view(ProtectedMachineTemplateModelView(MachineTemplate, db.session))
+admin.add_view(ProtectedMachineModelView(Machine, db.session))
 
 # This is used in base.jinja2 to build the side bar menu
 MAIN_MENU = [
@@ -265,6 +450,12 @@ MAIN_MENU = [
         "icon": "circle-question",
         "name": "About",
         "href": "/about",
+    },
+    {
+        "icon": "toolbox",
+        "name": "Admin",
+        "href": "/admin",
+        "admin_only": True,
     },
 ]
 
@@ -325,6 +516,14 @@ def forbidden_handler(e):
     return render_template("error.jinja2", message=m, title=t, code=403), 403
 
 
+@app.route("/myadmin")
+@login_required
+def myadmin():
+    if not current_user.is_admin:
+        abort(403)
+    return admin.index()
+
+
 # 404 error handler
 @app.errorhandler(404)
 def notfound_handler(e):
@@ -355,6 +554,7 @@ def inject_globals():
         "idea": idea,
         "main_menu": MAIN_MENU,
         "humanize": humanize,
+        "time_now": int(time.time()),
     }
 
 
@@ -422,6 +622,30 @@ def register():
         print(f"Organization: {form.organization.data}")
         print(f"Group: {form.group.data}")
         print(f"Job Title: {form.job_title.data}")
+
+        if form.group.data not in form.group.choices:
+            abort(404)
+
+        group = Group.query.filter_by(name=form.group.data).first_or_404()
+
+        new_user = User(
+            is_enabled=True,  # TODO change this to False when user management is finished
+            is_admin=False,
+            name=form.name.data,
+            real_name=form.real_name.data,
+            email=form.email.data,
+            organization=form.organization.data,
+            group=group,
+            job_title=form.job_title.data,
+        )
+        new_user.set_password(form.password.data)
+
+        # Give new users admin's data sources TODO: remove this
+        new_user.data_sources = User.query.filter_by(id=1).first().data_sources
+
+        db.session.add(new_user)
+        db.session.commit()
+
         flash(
             "Thank you for registering. You will be emailed when your account is activated"
         )
@@ -525,6 +749,19 @@ def rename_machine():
 @login_required
 def settings():
     return render_template("settings.jinja2", title="Settings", threading=threading)
+
+
+@app.route("/admin")
+@login_required
+def admin():
+    if not current_user.is_admin:
+        abort(403)
+    return render_template(
+        "admin.jinja2",
+        title="Admin",
+        User=User,
+        Machine=Machine,
+    )
 
 
 @app.route("/citations")
@@ -659,9 +896,10 @@ def data():
             machine=machine,
         )
         db.session.add(job)
+        db.session.flush()
         db.session.commit()
         threading.Thread(target=start_data_transfer, args=(job.id,)).start()
-        time.sleep(0.1)
+        time.sleep(0.2)
 
         flash("Starting data transfer. Refresh page to update status.")
         return redirect(url_for("data"))
@@ -1068,6 +1306,7 @@ def create_initial_db():
             admin_group = Group(name="admins")
             normal_user_group = Group(name="XRAY scientists")
             admin_user = User(
+                is_enabled=True,
                 name="admin",
                 group=admin_group,
                 is_admin=True,
@@ -1076,6 +1315,7 @@ def create_initial_db():
             )
             admin_user.set_password("admin")
             normal_user = User(
+                is_enabled=True,
                 name="xrayscientist",
                 group=normal_user_group,
                 email="xrays.smith@llnl.gov",

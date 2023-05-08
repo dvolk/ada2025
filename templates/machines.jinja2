@@ -93,7 +93,7 @@
               <a href="/share_machine/{{ machine.id }}"
                  class="w3-button w3-blue w3-round"
                  title="Open share page for machine">
-                {{ icon('share-from-square') }} Share
+                {{ icon('share-nodes') }}
               </a>
               {% if machine.owner == current_user %}
                 <button
@@ -101,9 +101,14 @@
                   title="Rename machine"
                   onclick="renameObject('{{ machine.name }}', {{ machine.id }})"
                   >
-                  {{ icon('pen-to-square') }}
+                  {{ icon('pen') }}
                 </button>
               {% endif %}
+              <a href="/report_problem/"
+                 class="w3-button w3-blue w3-round"
+                 title="Report problem">
+                {{ icon('flag') }}
+              </a>
               {% if machine.owner == current_user %}
                 <a href="#"
                    onclick="document.getElementById('stop-form-{{ machine.id }}').submit();"
@@ -122,7 +127,9 @@
             <div class="w3-col m8">
               <p>
                 <a href="http://{{ machine.ip }}/Sw8OSELATBzI74XT" target="_blank">
-                  <img src="http://{{ machine.ip }}/screenshots/screenshot-thumb.png" onerror="this.onerror=null;this.src='fallback-image.jpg';" alt="Alternative text" style="display: none; max-width: 300px; max-height: 175px;" onload="this.style.display = 'inline-block';">
+
+                  <div class="fallback-div" style="display: none; width: 240px; height: 140px; border: 3px dashed gray; text-align: center; line-height: 140px;">Thumbnail Not Available</div>
+                  <img class="vm-thumbnail" src="http://{{ machine.ip }}/screenshots/screenshot-thumb.png" alt="Alternative text" style="display: none; max-width: 300px; max-height: 175px;">
                 </a>
               </p>
             </div>
@@ -185,5 +192,34 @@
         form.submit();
       }
     }
+    document.addEventListener('DOMContentLoaded', function() {
+      function displayThumbnail(thumbnail, fallbackDiv) {
+        if (thumbnail.naturalWidth === 0) {
+          fallbackDiv.style.display = 'block';
+        } else {
+          thumbnail.style.display = 'inline-block';
+          fallbackDiv.style.display = 'none';
+        }
+      }
+
+      var thumbnails = document.getElementsByClassName('vm-thumbnail');
+      var fallbackDivs = document.getElementsByClassName('fallback-div');
+
+      for (var i = 0; i < thumbnails.length; i++) {
+        (function(i) {
+          if (thumbnails[i].complete) {
+            displayThumbnail(thumbnails[i], fallbackDivs[i]);
+          } else {
+            thumbnails[i].addEventListener('load', function() {
+              displayThumbnail(thumbnails[i], fallbackDivs[i]);
+            });
+
+            thumbnails[i].addEventListener('error', function() {
+              fallbackDivs[i].style.display = 'block';
+            });
+          }
+        })(i);
+      }
+    });
   </script>
 {% endblock %}

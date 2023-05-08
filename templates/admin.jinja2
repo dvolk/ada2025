@@ -1,0 +1,73 @@
+{% extends 'base.jinja2' %}
+
+{% block content %}
+{{ idea("<a href='/flaskyadmin'>click here to access the flask-admin interface</a>.") }}
+
+<div class="w3-container w3-yellow">
+    <h3>Users</h3>
+</div>
+<div class="w3-container w3-pale-yellow">
+    <p>
+        <table class="w3-table-all">
+            <thead>
+                <th>Username</th>
+                <th>Properties</th>
+                <th>Actions</th>
+            </thead>
+            {% for u in User.query.all() %}
+            <tr>
+                <td>{{ u.name }}</td>
+                <td>
+                    Real name: {{ u.real_name }}<br/>
+                    Email: {{ u.email }}<br/>
+                    Organization: {{ u.organization }}<br/>
+                    Group: {{ u.group.name }}<br/>
+                    Job title: {{ u.job_title }}<br/>
+                </td>
+                <td>
+                    {% if u.is_enabled %}
+                    <a class="w3-button w3-red">Disable</a>
+                    {% else %}
+                    <a class="w3-button w3-blue">Enable</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </p>
+</div>
+<br/>
+<div class="w3-container w3-blue">
+    <h3>Machines</h3>
+</div>
+<div class="w3-container w3-pale-blue">
+    <p>
+        <table class="w3-table-all">
+            <thead>
+                <th>Name</th>
+                <th>Properties</th>
+                <th>Actions</th>
+            </thead>
+            {% for m in Machine.query.all() %}
+            <tr>
+                <td>{{ m.name }}</td>
+                <td>
+                    Template: {{ m.machine_template.name }}<br/>
+                    IP: {{ m.ip }}<br/>
+                    State: {{ m.state.name }}<br/>
+                    Creation_date: {{ m.creation_date }}<br/>
+                    Owner username: {{ m.owner.name }}<br/>
+                    Shared with: {{ m.shared_users|join(", ", attribute=name) }}
+                    <br/>
+                </td>
+                <td>
+                    <a class="w3-button w3-red">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </p>
+</div>
+<br/>
+
+{% endblock %}
