@@ -1,8 +1,12 @@
 {% extends 'base.jinja2' %}
 
 {% block content %}
-{{ idea("<a href='/flaskyadmin'>click here to access the flask-admin interface</a>.") }}
 
+<br>
+<div class="w3-container w3-green">
+    {{ idea("<a target='_blank' href='/flaskyadmin'>Click here to access the flask-admin interface</a>.") }}
+</div>
+<br>
 <div class="w3-container w3-yellow">
     <h3>Users</h3>
 </div>
@@ -26,9 +30,9 @@
                 </td>
                 <td>
                     {% if u.is_enabled %}
-                    <a class="w3-button w3-red">Disable</a>
+                    <a class="w3-button w3-round w3-red">Disable</a>
                     {% else %}
-                    <a class="w3-button w3-blue">Enable</a>
+                    <a class="w3-button w3-round w3-blue">Enable</a>
                     {% endif %}
                 </td>
             </tr>
@@ -61,7 +65,7 @@
                     <br/>
                 </td>
                 <td>
-                    <a class="w3-button w3-red">Delete</a>
+                    <a class="w3-button w3-round w3-red">Delete</a>
                 </td>
             </tr>
             {% endfor %}

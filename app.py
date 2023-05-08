@@ -325,6 +325,7 @@ class ProtectedMachineTemplateModelView(ProtectedModelView):
         "memory_limit_gb",
         "cpu_limit_cores",
         "group",
+        "machines",
     )
     column_searchable_list = ("name", "type", "image")
     column_sortable_list = (
@@ -567,8 +568,12 @@ def load_user(user_id):
 
 
 class LoginForm(FlaskForm):
-    username = StringField("Username", validators=[DataRequired()])
-    password = PasswordField("Password", validators=[DataRequired()])
+    username = StringField(
+        "Username", validators=[DataRequired(), Length(min=4, max=32)]
+    )
+    password = PasswordField(
+        "Password", validators=[DataRequired(), Length(min=8, max=100)]
+    )
     submit = SubmitField("Sign In")
 
 
@@ -578,34 +583,63 @@ def login():
     Login page and login logic
     """
     form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(name=form.username.data).first()
-        if user is not None and user.check_password(form.password.data):
-            login_user(user)
-            flash("Logged in successfully.", "success")
-            return redirect(url_for("index"))
+    if request.method == "POST":
+        if form.validate_on_submit():
+            user = User.query.filter_by(name=form.username.data).first()
+            if user is not None and user.check_password(form.password.data):
+                if not user.is_enabled:
+                    flash(
+                        "Your account hasn't been activated yet. If it's been more than 24 hours please contact support.",
+                        "danger",
+                    )
+                    return render_template("login.jinja2", form=form)
+
+                login_user(user)
+                flash("Logged in successfully.", "success")
+                return redirect(url_for("index"))
+            else:
+                flash("Invalid username or password.", "danger")
         else:
             flash("Invalid username or password.", "danger")
     return render_template("login.jinja2", form=form)
 
 
 class RegistrationForm(FlaskForm):
-    name = StringField("Name", validators=[DataRequired(), Length(min=4, max=64)])
+    name_min = 4
+    name_max = 32
+    name = StringField(
+        "Name", validators=[DataRequired(), Length(min=name_min, max=name_max)]
+    )
+    password_min = 8
+    password_max = 100
     password = PasswordField(
-        "Password", validators=[DataRequired(), Length(min=8, max=100)]
+        "Password",
+        validators=[DataRequired(), Length(min=password_min, max=password_max)],
     )
+    real_name_min = 4
+    real_name_max = 100
     real_name = StringField(
-        "Real Name", validators=[DataRequired(), Length(min=4, max=100)]
+        "Real Name",
+        validators=[DataRequired(), Length(min=real_name_min, max=real_name_max)],
     )
+    email_min = 4
+    email_max = 200
     email = StringField(
-        "Email", validators=[DataRequired(), Email(), Length(min=4, max=200)]
+        "Email",
+        validators=[DataRequired(), Email(), Length(min=email_min, max=email_max)],
     )
+    organization_min = 4
+    organization_max = 200
     organization = StringField(
-        "Organization", validators=[DataRequired(), Length(min=4, max=200)]
+        "Organization",
+        validators=[DataRequired(), Length(min=organization_min, max=organization_max)],
     )
     group = SelectField("Group", choices=[], validators=[DataRequired()])
+    job_title_min = 4
+    job_title_max = 200
     job_title = StringField(
-        "Job Title", validators=[DataRequired(), Length(min=4, max=200)]
+        "Job Title",
+        validators=[DataRequired(), Length(min=job_title_min, max=job_title_max)],
     )
     submit = SubmitField("Register")
 
@@ -615,41 +649,44 @@ def register():
     form = RegistrationForm()
     form.group.choices = [x[0] for x in Group.query.with_entities(Group.name).all()]
 
-    if request.method == "POST" and form.validate_on_submit():
-        print(f"Name: {form.name.data}")
-        print(f"Real Name: {form.real_name.data}")
-        print(f"Email: {form.email.data}")
-        print(f"Organization: {form.organization.data}")
-        print(f"Group: {form.group.data}")
-        print(f"Job Title: {form.job_title.data}")
+    if request.method == "POST":
+        if form.validate_on_submit():
+            print(f"Name: {form.name.data}")
+            print(f"Real Name: {form.real_name.data}")
+            print(f"Email: {form.email.data}")
+            print(f"Organization: {form.organization.data}")
+            print(f"Group: {form.group.data}")
+            print(f"Job Title: {form.job_title.data}")
 
-        if form.group.data not in form.group.choices:
-            abort(404)
+            if form.group.data not in form.group.choices:
+                abort(404)
 
-        group = Group.query.filter_by(name=form.group.data).first_or_404()
+            group = Group.query.filter_by(name=form.group.data).first_or_404()
 
-        new_user = User(
-            is_enabled=True,  # TODO change this to False when user management is finished
-            is_admin=False,
-            name=form.name.data,
-            real_name=form.real_name.data,
-            email=form.email.data,
-            organization=form.organization.data,
-            group=group,
-            job_title=form.job_title.data,
-        )
-        new_user.set_password(form.password.data)
+            new_user = User(
+                is_enabled=True,  # TODO change this to False when user management is finished
+                is_admin=False,
+                name=form.name.data,
+                real_name=form.real_name.data,
+                email=form.email.data,
+                organization=form.organization.data,
+                group=group,
+                job_title=form.job_title.data,
+            )
+            new_user.set_password(form.password.data)
 
-        # Give new users admin's data sources TODO: remove this
-        new_user.data_sources = User.query.filter_by(id=1).first().data_sources
+            # Give new users admin's data sources TODO: remove this
+            new_user.data_sources = User.query.filter_by(id=1).first().data_sources
 
-        db.session.add(new_user)
-        db.session.commit()
+            db.session.add(new_user)
+            db.session.commit()
 
-        flash(
-            "Thank you for registering. You will be emailed when your account is activated"
-        )
-        return redirect(url_for("login"))
+            flash(
+                "Thank you for registering. You will be emailed when your account is activated"
+            )
+            return redirect(url_for("login"))
+        else:
+            flash(f"Sorry, the form could not be validated.")
 
     return render_template("register.jinja2", form=form, title="Register account")
 
@@ -705,34 +742,34 @@ def rename_machine():
     machine_id = request.form.get("machine_id")
     machine_new_name = request.form.get("machine_new_name")
     if not machine_new_name or not machine_id:
-        flash("Invalid values for machine rename", category="danger")
+        flash("Invalid values for machine rename", "danger")
         return redirect(url_for("machines"))
 
     if len(machine_new_name) <= 3 or len(machine_new_name) > 80:
         logging.error(f"len(machine_new_name) = {len(machine_new_name)}")
         flash(
             "New name must be between 4 and 80 characters long, and can contain characters a-Z,0-9 and -",
-            category="danger",
+            "danger",
         )
         return redirect(url_for("machines"))
 
     if contains_non_alphanumeric_chars(machine_new_name):
         flash(
             "New name contains non-alphanumeric characters. Characters that are allowed are a-Z,0-9 and -",
-            category="danger",
+            "danger",
         )
         return redirect(url_for("machines"))
 
     try:
         machine_id = int(machine_id)
     except:
-        flash("Invalid values for machine rename", category="danger")
+        flash("Invalid values for machine rename", "danger")
         return redirect(url_for("machines"))
 
     machine = Machine.query.filter_by(id=machine_id).first()
 
     if Machine.query.filter_by(name=machine_new_name).first():
-        flash("The requested machine name is already taken", category="danger")
+        flash("The requested machine name is already taken", "danger")
         return redirect(url_for("machines"))
 
     # TODO: check if the new name includes a username other than CU.name
@@ -877,32 +914,36 @@ def data():
         (m.id, m.name) for m in machines if m.state == MachineState.READY
     ]
 
-    if form.validate_on_submit():
-        machine = Machine.query.filter_by(id=form.machine.data).first()
-        data_source = DataSource.query.filter_by(id=form.data_source.data).first()
+    if request.method == "POST":
+        if form.validate_on_submit():
+            machine = Machine.query.filter_by(id=form.machine.data).first()
+            data_source = DataSource.query.filter_by(id=form.data_source.data).first()
 
-        if not machine or not data_source:
-            abort(404)
+            if not machine or not data_source:
+                abort(404)
 
-        if machine not in machines or data_source not in data_sources:
-            abort(403)
+            if machine not in machines or data_source not in data_sources:
+                abort(403)
 
-        # security checks ok
+            # security checks ok
 
-        job = DataTransferJob(
-            status=DataTransferJobState.RUNNING,
-            user=current_user,
-            data_source=data_source,
-            machine=machine,
-        )
-        db.session.add(job)
-        db.session.flush()
-        db.session.commit()
-        threading.Thread(target=start_data_transfer, args=(job.id,)).start()
-        time.sleep(0.2)
+            job = DataTransferJob(
+                status=DataTransferJobState.RUNNING,
+                user=current_user,
+                data_source=data_source,
+                machine=machine,
+            )
+            db.session.add(job)
+            db.session.flush()
+            db.session.commit()
+            threading.Thread(target=start_data_transfer, args=(job.id,)).start()
+            time.sleep(0.2)
 
-        flash("Starting data transfer. Refresh page to update status.")
-        return redirect(url_for("data"))
+            flash("Starting data transfer. Refresh page to update status.")
+            return redirect(url_for("data"), form=form)
+        else:
+            flash("The data transfer job submission could not be validated.")
+            return redirect(url_for("data"), form=form)
 
     return render_template(
         "data.jinja2",
@@ -1038,7 +1079,7 @@ def share_revoke(machine_id):
     """
     machine = Machine.query.filter_by(id=machine_id).first_or_404()
     if current_user != machine.owner:
-        flash("You can't revoke shares on a machine you don't own.")
+        flash("You can't revoke shares on a machine you don't own.", "danger")
         return redirect(url_for("machines"))
 
     machine.token = gen_token(16)

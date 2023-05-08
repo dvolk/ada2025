@@ -1,28 +1,29 @@
 {% extends 'base-bare.jinja2' %}
 
 {% block content %}
+  <p>Thank you for your interest in using Ada 2025. Please fill in the following form and you will be emailed once your account is activated.</p>
 
   <form method="POST" action="{{ url_for('register') }}">
     {{ form.csrf_token }}
-    <label class="w3-text-black"><b>Username</b></label>
+    <label class="w3-text-black"><b>Username</b>* (character length min: {{ form.name_min }}, max: {{ form.name_max }})</label>
     {{ form.name(class="w3-input w3-border w3-light-grey") }}
     <br>
-    <label class="w3-text-black"><b>Password</b></label>
+    <label class="w3-text-black"><b>Password</b>* (min: {{ form.password_min }}, max: {{ form.password_max }})</label>
     {{ form.password(class="w3-input w3-border w3-light-grey") }}
     <br>
-    <label class="w3-text-black"><b>Real Name</b></label>
+    <label class="w3-text-black"><b>Real Name</b>* (min: {{ form.real_name_min }}, max: {{ form.real_name_max }})</label>
     {{ form.real_name(class="w3-input w3-border w3-light-grey") }}
     <br>
-    <label class="w3-text-black"><b>Email</b></label>
+    <label class="w3-text-black"><b>Email</b>* (min: {{ form.email_min }}, max: {{ form.email_max }})</label>
     {{ form.email(class="w3-input w3-border w3-light-grey") }}
     <br>
-    <label class="w3-text-black"><b>Organization</b></label>
+    <label class="w3-text-black"><b>Organization</b>* (min: {{ form.organization_min }}, max: {{ form.organization_max }})</label>
     {{ form.organization(class="w3-input w3-border w3-light-grey") }}
     <br>
-    <label class="w3-text-black"><b>Group</b></label>
+    <label class="w3-text-black"><b>Group</b>*</label>
     {{ form.group(class="w3-select w3-border w3-light-grey") }}
     <br><br>
-    <label class="w3-text-black"><b>Job Title</b></label>
+    <label class="w3-text-black"><b>Job Title</b>* (min: {{ form.job_title_min }}, max: {{ form.job_title_max }})</label>
     {{ form.job_title(class="w3-input w3-border w3-light-grey") }}
     <br>
     <button class="w3-btn ada-blue w3-round" type="submit">Submit</button>
