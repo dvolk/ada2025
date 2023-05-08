@@ -155,8 +155,8 @@ class MachineTemplate(db.Model):
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
-    memory_limit_gb = db.Column(db.String(16), nullable=True)
-    cpu_limit_cores = db.Column(db.String(16), nullable=True)
+    memory_limit_gb = db.Column(db.Integer, nullable=True)
+    cpu_limit_cores = db.Column(db.Integer, nullable=True)
     group_id = db.Column(db.Integer, db.ForeignKey("group.id"))
 
     group = db.relationship("Group", back_populates="machine_templates")
@@ -737,19 +737,21 @@ def docker_start_container(m_id, mt_id):
         try:
             m = Machine.query.filter_by(id=m_id).first()
             mt = MachineTemplate.query.filter_by(id=mt_id).first()
+            cpu_cores = mt.cpu_limit_cores
+            mem_limit_gb = mt.memory_limit_gb
             client = docker.from_env()
 
-            cpu_shares = int(1024 * cores / client.info()["NCPU"])
-            mem_limit = str(mem_gb) + "g"
+            cpu_period = 100000
+            cpu_quota = int(cpu_period * cpu_cores)
+            mem_limit = f"{mem_limit_gb * 1024}m"  # Convert GB to MB
 
             # Define container options, including CPU and memory limits
             container_options = {
                 "name": m.name,
                 "image": mt.image,
                 "network": "adanet",
-                "cpuset_cpus": str(0 - (client.info()["NCPU"] - 1)),
-                # ^^ Use all available CPUs
-                "cpu_shares": cpu_shares,
+                "cpu_period": cpu_period,
+                "cpu_quota": cpu_quota,
                 "mem_limit": mem_limit,
             }
             print(json.dumps(container_options, indent=4))
@@ -894,8 +896,8 @@ def create_initial_db():
             test_machine_template1 = MachineTemplate(
                 name="Muon analysis template",
                 type="libvirt",
-                memory_limit_gb="16",
-                cpu_limit_cores="4",
+                memory_limit_gb=16,
+                cpu_limit_cores=4,
                 image="debian11-5",
                 group=admin_group,
                 description="This is a libvirt machine template that's added by default when you're running in debug mode. It references the image \"debian11-5\"",
@@ -903,8 +905,8 @@ def create_initial_db():
             test_machine_template2 = MachineTemplate(
                 name="XRAY analysis template",
                 type="docker",
-                memory_limit_gb="16",
-                cpu_limit_cores="4",
+                memory_limit_gb=16,
+                cpu_limit_cores=4,
                 image="workspace",
                 group=normal_user_group,
                 description="This is a docker machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",

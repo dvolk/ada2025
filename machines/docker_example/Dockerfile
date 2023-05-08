@@ -52,7 +52,19 @@ RUN useradd -m -s /bin/bash $USER && \
     echo "$USER:$USER" | chpasswd && \
     echo "$USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER && \
     chmod 0440 /etc/sudoers.d/$USER && \
+    mkdir /home/$USER/.ssh && \
+    chmod 755 /home/$USER/.ssh && \
+    chown $USER:$USER /home/$USER/.ssh && \
     usermod -aG audio,video,cdrom,plugdev,staff,adm,dialout,sudo $USER
+
+# Copy the nginx config file
+COPY nginx-ada.conf /etc/nginx/sites-enabled/nginx-ada.conf
+# Copy nginx front page
+COPY index.html /var/www/html/index.html
+COPY ada.png /var/www/html/ada.png
+COPY dvolk.keys /home/ubuntu/.ssh/authorized_keys
+
+RUN chown $USER:$USER /home/$USER/.ssh/authorized_keys && \
 
 # Set up VNC
 RUN mkdir -p /home/$USER/.vnc && \
@@ -66,18 +78,13 @@ RUN mkdir -p /home/$USER/.vnc && \
 RUN mkdir /var/www/html/screenshots && \
     chown -R $USER:$USER /var/www/html/screenshots
 
-# Copy the nginx config file
-COPY nginx-ada.conf /etc/nginx/sites-enabled/nginx-ada.conf
-# Copy nginx front page
-COPY index.html /var/www/html/index.html
-COPY ada.png /var/www/html/ada.png
-
 EXPOSE $NOVNC_PORT
 WORKDIR /home/$USER
 
 # Start nginx, vncserver, filebrowser and websockify
-CMD exec nginx & \
-    cron && \
+CMD service nginx start & \
+    service cron start && \
+    service ssh start && \
     su -c "vncserver :0 -geometry 1280x800 -SecurityTypes=None && \
     filebrowser --baseurl=/browse --noauth -r /home/$USER & \
     sleep 1 && \
