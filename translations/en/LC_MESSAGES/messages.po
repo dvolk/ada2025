@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-05-09 00:56+0000\n"
+"POT-Creation-Date: 2023-05-09 03:13+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -18,41 +18,203 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.12.1\n"
 
-#: app.py:428 app.py:742
+#: app.py:430 app.py:752
 msgid "Welcome page"
 msgstr "Welcome page"
 
-#: app.py:433 app.py:754 app.py:1085
+#: app.py:435 app.py:764 app.py:1101
 msgid "Machines"
 msgstr "Machines"
 
-#: app.py:438 app.py:983
+#: app.py:440 app.py:999
 msgid "Data"
 msgstr "Data"
 
-#: app.py:443 app.py:840
+#: app.py:445 app.py:854 templates/citations.jinja2:5
 msgid "Citations"
 msgstr "Citations"
 
-#: app.py:448 app.py:820
+#: app.py:450 app.py:834
 msgid "Settings"
 msgstr "Settings"
 
-#: app.py:453 app.py:852
+#: app.py:455 app.py:866
 msgid "Help"
 msgstr "Help"
 
-#: app.py:458 app.py:846
+#: app.py:460 app.py:860
 msgid "About"
 msgstr "About"
 
-#: app.py:463 app.py:831
+#: app.py:465 app.py:845
 msgid "Admin"
 msgstr "Admin"
 
-#: app.py:718
+#: app.py:522
+msgid "Access denied"
+msgstr ""
+
+#: app.py:523
+msgid "Sorry, you don't have access to that page or resource."
+msgstr ""
+
+#: app.py:539
+msgid "Not found"
+msgstr ""
+
+#: app.py:540
+msgid "Sorry, that page or resource could not be found."
+msgstr ""
+
+#: app.py:548
+msgid "Application error"
+msgstr ""
+
+#: app.py:549
+msgid "Sorry, the application encountered a problem."
+msgstr ""
+
+#: app.py:598 templates/login.jinja2:17 templates/register.jinja2:8
+msgid "Username"
+msgstr "Username"
+
+#: app.py:601 app.py:645 templates/login.jinja2:20 templates/register.jinja2:11
+msgid "Password"
+msgstr "Password"
+
+#: app.py:618
+msgid ""
+"Your account hasn't been activated yet. If it's been more than 24 hours "
+"please contact support."
+msgstr ""
+
+#: app.py:626
+msgid "Logged in successfully."
+msgstr ""
+
+#: app.py:629 app.py:632
+msgid "Invalid username or password."
+msgstr ""
+
+#: app.py:640
+msgid "Name"
+msgstr ""
+
+#: app.py:651 templates/register.jinja2:14
+msgid "Real Name"
+msgstr ""
+
+#: app.py:655 templates/register.jinja2:20
+msgid "Language"
+msgstr ""
+
+#: app.py:658 templates/register.jinja2:24
+msgid "Timezone"
+msgstr ""
+
+#: app.py:663 templates/register.jinja2:17
+msgid "Email"
+msgstr ""
+
+#: app.py:669 templates/register.jinja2:28
+msgid "Organization"
+msgstr ""
+
+#: app.py:672 templates/register.jinja2:31
+msgid "Group"
+msgstr ""
+
+#: app.py:676 templates/register.jinja2:34
+msgid "Job Title"
+msgstr ""
+
+#: app.py:679 templates/login.jinja2:24
+msgid "Register"
+msgstr "Register"
+
+#: app.py:717
+msgid ""
+"Thank you for registering. You will be emailed when your account is "
+"activated"
+msgstr ""
+
+#: app.py:723
+msgid "Sorry, the form could not be validated."
+msgstr ""
+
+#: app.py:728
 msgid "Register account"
 msgstr "Register account"
+
+#: app.py:786 app.py:811
+msgid "Invalid values for machine rename"
+msgstr ""
+
+#: app.py:792
+msgid ""
+"New name must be between 4 and 80 characters long, and can contain "
+"characters a-Z,0-9 and -"
+msgstr ""
+
+#: app.py:801
+msgid ""
+"New name contains non-alphanumeric characters. Characters that are "
+"allowed are a-Z,0-9 and -"
+msgstr ""
+
+#: app.py:817
+msgid "The requested machine name is already taken"
+msgstr ""
+
+#: app.py:908 templates/data.jinja2:66
+msgid "Data Source"
+msgstr ""
+
+#: app.py:910 templates/data.jinja2:70
+msgid "Machine"
+msgstr ""
+
+#: app.py:911 templates/register.jinja2:37
+msgid "Submit"
+msgstr ""
+
+#: app.py:991
+msgid "Starting data transfer. Refresh page to update status."
+msgstr ""
+
+#: app.py:994
+msgid "The data transfer job submission could not be validated."
+msgstr ""
+
+#: app.py:1087
+msgid "Creating machine in the background. Refresh page to update status."
+msgstr ""
+
+#: app.py:1111
+msgid "You own that machine."
+msgstr ""
+
+#: app.py:1114
+msgid "You already have that machine."
+msgstr ""
+
+#: app.py:1119
+msgid "Shared machine has been added to your account."
+msgstr ""
+
+#: app.py:1131
+msgid "You can't revoke shares on a machine you don't own."
+msgstr ""
+
+#: app.py:1138
+msgid ""
+"Shares for machine have been removed and a new share link has been "
+"generated"
+msgstr ""
+
+#: app.py:1195
+msgid "Deleting machine"
+msgstr ""
 
 #: templates/base-bare.jinja2:57 templates/base.jinja2:55
 msgid "Data Analysis"
@@ -66,21 +228,102 @@ msgstr "Hey"
 msgid "Sign out"
 msgstr ""
 
-#: templates/login.jinja2:17
-msgid "Username"
-msgstr "Username"
+#: templates/citations.jinja2:7
+msgid "This page lists citations for Ada and the software that is deployed."
+msgstr ""
 
-#: templates/login.jinja2:20
-msgid "Password"
-msgstr "Password"
+#: templates/citations.jinja2:11
+msgid ""
+"Please cite our software if you find it useful in your research or "
+"project:"
+msgstr ""
+
+#: templates/data.jinja2:10
+msgid ""
+"This table shows the state of your data transfers. Refresh page to update"
+" status."
+msgstr ""
+
+#: templates/data.jinja2:12
+msgid "Your Data Transfers"
+msgstr ""
+
+#: templates/data.jinja2:18
+msgid "From (Data Source)"
+msgstr ""
+
+#: templates/data.jinja2:19
+msgid "To (Machine)"
+msgstr ""
+
+#: templates/data.jinja2:20
+msgid "Status"
+msgstr ""
+
+#: templates/data.jinja2:21
+msgid "Dismiss"
+msgstr ""
+
+#: templates/data.jinja2:51
+msgid "Here you can transfer data into your machine from registered data sources"
+msgstr ""
+
+#: templates/data.jinja2:53
+msgid ""
+"Select the data source and a machine you want to copy the data to and "
+"then click submit. The data will be copied into your machine."
+msgstr ""
+
+#: templates/data.jinja2:55
+msgid ""
+"Please ensure you have enough space on your chosen machine to copy the "
+"data. If your machine disk becomes completely full, the machine may stop "
+"working."
+msgstr ""
+
+#: templates/data.jinja2:57
+msgid "Data source sizes are not updated in real-time and may be outdated."
+msgstr ""
+
+#: templates/data.jinja2:62
+msgid "New Data Transfer"
+msgstr ""
 
 #: templates/login.jinja2:23
 msgid "Log In"
 msgstr "Log In"
 
-#: templates/login.jinja2:24
-msgid "Register"
-msgstr "Register"
+#: templates/machines.jinja2:5
+msgid "Create new machine"
+msgstr ""
+
+#: templates/machines.jinja2:7
+msgid "This lists all templates that are available to the group you are in: {g}"
+msgstr ""
+
+#: templates/machines.jinja2:29
+msgid "Launch instance"
+msgstr ""
+
+#: templates/machines.jinja2:58
+msgid "List of machines"
+msgstr ""
+
+#: templates/machines.jinja2:59
+msgid ""
+"This lists all machines you have access to, both your own and those "
+"shared with you by other users."
+msgstr ""
+
+#: templates/machines.jinja2:78
+msgid "Open"
+msgstr ""
+
+#: templates/register.jinja2:4
+msgid ""
+"Thank you for your interest in using Ada 2025. Please fill in the "
+"following form and you will be emailed once your account is activated."
+msgstr ""
 
 #: templates/welcome.jinja2:5
 msgid "Welcome to ADA Data Analysis 2025"
@@ -123,4 +366,50 @@ msgstr "Have a question, request or an issue to report?"
 #: templates/welcome.jinja2:24
 msgid "Let us know at:"
 msgstr "Let us know at:"
+
+#~ msgid ""
+#~ "This table shows the state of your"
+#~ " data transfers. Refresh page to "
+#~ "update status."
+#~ msgstr ""
+
+#~ msgid "From (Data Source)"
+#~ msgstr ""
+
+#~ msgid "To (Machine)"
+#~ msgstr ""
+
+#~ msgid "Status"
+#~ msgstr ""
+
+#~ msgid "Dismiss"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Here you can transfer data into "
+#~ "your machine from registered data "
+#~ "sources"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Select the data source and a "
+#~ "machine you want to copy the data"
+#~ " to and then click submit. The "
+#~ "data will be copied into your "
+#~ "machine."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Please ensure you have enough space "
+#~ "on your chosen machine to copy the"
+#~ " data. If your machine disk becomes"
+#~ " completely full, the machine may "
+#~ "stop working."
+#~ msgstr ""
+
+#~ msgid "Data source sizes are not updated in real-time and may be outdated."
+#~ msgstr ""
+
+#~ msgid "New Data Transfer"
+#~ msgstr ""
 

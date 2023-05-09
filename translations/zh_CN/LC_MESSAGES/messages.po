@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-05-09 00:56+0000\n"
+"POT-Creation-Date: 2023-05-09 03:13+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -18,41 +18,203 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.12.1\n"
 
-#: app.py:428 app.py:742
+#: app.py:430 app.py:752
 msgid "Welcome page"
 msgstr "欢迎页面"
 
-#: app.py:433 app.py:754 app.py:1085
+#: app.py:435 app.py:764 app.py:1101
 msgid "Machines"
 msgstr "虚拟机"
 
-#: app.py:438 app.py:983
+#: app.py:440 app.py:999
 msgid "Data"
 msgstr "数据"
 
-#: app.py:443 app.py:840
+#: app.py:445 app.py:854 templates/citations.jinja2:5
 msgid "Citations"
 msgstr "引用"
 
-#: app.py:448 app.py:820
+#: app.py:450 app.py:834
 msgid "Settings"
 msgstr "设置"
 
-#: app.py:453 app.py:852
+#: app.py:455 app.py:866
 msgid "Help"
 msgstr "帮助"
 
-#: app.py:458 app.py:846
+#: app.py:460 app.py:860
 msgid "About"
 msgstr "关于"
 
-#: app.py:463 app.py:831
+#: app.py:465 app.py:845
 msgid "Admin"
 msgstr "管理员"
 
-#: app.py:718
+#: app.py:522
+msgid "Access denied"
+msgstr "访问被拒绝"
+
+#: app.py:523
+msgid "Sorry, you don't have access to that page or resource."
+msgstr "抱歉，您无权访问该页面或资源。"
+
+#: app.py:539
+msgid "Not found"
+msgstr "未找到"
+
+#: app.py:540
+msgid "Sorry, that page or resource could not be found."
+msgstr "抱歉，找不到该页面或资源。"
+
+#: app.py:548
+msgid "Application error"
+msgstr "应用程序错误"
+
+#: app.py:549
+msgid "Sorry, the application encountered a problem."
+msgstr "抱歉，应用程序遇到了问题。"
+
+#: app.py:598 templates/login.jinja2:17 templates/register.jinja2:8
+msgid "Username"
+msgstr "用户名"
+
+#: app.py:601 app.py:645 templates/login.jinja2:20 templates/register.jinja2:11
+msgid "Password"
+msgstr "密码"
+
+#: app.py:618
+msgid ""
+"Your account hasn't been activated yet. If it's been more than 24 hours "
+"please contact support."
+msgstr ""
+
+#: app.py:626
+msgid "Logged in successfully."
+msgstr ""
+
+#: app.py:629 app.py:632
+msgid "Invalid username or password."
+msgstr ""
+
+#: app.py:640
+msgid "Name"
+msgstr "名称"
+
+#: app.py:651 templates/register.jinja2:14
+msgid "Real Name"
+msgstr "真实姓名"
+
+#: app.py:655 templates/register.jinja2:20
+msgid "Language"
+msgstr "语言"
+
+#: app.py:658 templates/register.jinja2:24
+msgid "Timezone"
+msgstr "时区"
+
+#: app.py:663 templates/register.jinja2:17
+msgid "Email"
+msgstr "电子邮件"
+
+#: app.py:669 templates/register.jinja2:28
+msgid "Organization"
+msgstr "组织"
+
+#: app.py:672 templates/register.jinja2:31
+msgid "Group"
+msgstr "群组"
+
+#: app.py:676 templates/register.jinja2:34
+msgid "Job Title"
+msgstr "职位"
+
+#: app.py:679 templates/login.jinja2:24
+msgid "Register"
+msgstr "注册"
+
+#: app.py:717
+msgid ""
+"Thank you for registering. You will be emailed when your account is "
+"activated"
+msgstr ""
+
+#: app.py:723
+msgid "Sorry, the form could not be validated."
+msgstr ""
+
+#: app.py:728
 msgid "Register account"
 msgstr "注册账户"
+
+#: app.py:786 app.py:811
+msgid "Invalid values for machine rename"
+msgstr ""
+
+#: app.py:792
+msgid ""
+"New name must be between 4 and 80 characters long, and can contain "
+"characters a-Z,0-9 and -"
+msgstr ""
+
+#: app.py:801
+msgid ""
+"New name contains non-alphanumeric characters. Characters that are "
+"allowed are a-Z,0-9 and -"
+msgstr ""
+
+#: app.py:817
+msgid "The requested machine name is already taken"
+msgstr ""
+
+#: app.py:908 templates/data.jinja2:66
+msgid "Data Source"
+msgstr "数据源"
+
+#: app.py:910 templates/data.jinja2:70
+msgid "Machine"
+msgstr "机器"
+
+#: app.py:911 templates/register.jinja2:37
+msgid "Submit"
+msgstr "提交"
+
+#: app.py:991
+msgid "Starting data transfer. Refresh page to update status."
+msgstr "开始数据传输。刷新页面以更新状态。"
+
+#: app.py:994
+msgid "The data transfer job submission could not be validated."
+msgstr "无法验证数据传输任务提交。"
+
+#: app.py:1087
+msgid "Creating machine in the background. Refresh page to update status."
+msgstr "在后台创建机器。刷新页面以更新状态。"
+
+#: app.py:1111
+msgid "You own that machine."
+msgstr "您拥有该机器。"
+
+#: app.py:1114
+msgid "You already have that machine."
+msgstr "您已经拥有了该机器。"
+
+#: app.py:1119
+msgid "Shared machine has been added to your account."
+msgstr "共享的机器已添加到您的帐户。"
+
+#: app.py:1131
+msgid "You can't revoke shares on a machine you don't own."
+msgstr "您不能撤销您不拥有的机器上的共享。"
+
+#: app.py:1138
+msgid ""
+"Shares for machine have been removed and a new share link has been "
+"generated"
+msgstr "已移除机器的共享，并已生成新的共享链接"
+
+#: app.py:1195
+msgid "Deleting machine"
+msgstr "删除机器"
 
 #: templates/base-bare.jinja2:57 templates/base.jinja2:55
 msgid "Data Analysis"
@@ -66,21 +228,102 @@ msgstr "嘿"
 msgid "Sign out"
 msgstr "登出"
 
-#: templates/login.jinja2:17
-msgid "Username"
-msgstr "用户名"
+#: templates/citations.jinja2:7
+msgid "This page lists citations for Ada and the software that is deployed."
+msgstr "此页面列出了 Ada 及其部署的软件的引用。"
 
-#: templates/login.jinja2:20
-msgid "Password"
-msgstr "密码"
+#: templates/citations.jinja2:11
+msgid ""
+"Please cite our software if you find it useful in your research or "
+"project:"
+msgstr "如果您在研究或项目中发现我们的软件有用，请引用我们的软件："
+
+#: templates/data.jinja2:10
+msgid ""
+"This table shows the state of your data transfers. Refresh page to update"
+" status."
+msgstr "此表显示您的数据传输状态。刷新页面以更新状态。"
+
+#: templates/data.jinja2:12
+msgid "Your Data Transfers"
+msgstr "您的数据传输"
+
+#: templates/data.jinja2:18
+msgid "From (Data Source)"
+msgstr "从（数据来源）"
+
+#: templates/data.jinja2:19
+msgid "To (Machine)"
+msgstr "至（机器）"
+
+#: templates/data.jinja2:20
+msgid "Status"
+msgstr "状态"
+
+#: templates/data.jinja2:21
+msgid "Dismiss"
+msgstr "取消"
+
+#: templates/data.jinja2:51
+msgid "Here you can transfer data into your machine from registered data sources"
+msgstr "在这里，您可以从注册的数据源将数据传输到您的机器"
+
+#: templates/data.jinja2:53
+msgid ""
+"Select the data source and a machine you want to copy the data to and "
+"then click submit. The data will be copied into your machine."
+msgstr "选择数据源和要将数据复制到的机器，然后点击提交。数据将被复制到您的机器。"
+
+#: templates/data.jinja2:55
+msgid ""
+"Please ensure you have enough space on your chosen machine to copy the "
+"data. If your machine disk becomes completely full, the machine may stop "
+"working."
+msgstr "请确保您选择的机器上有足够的空间来复制数据。如果您的机器磁盘已满，机器可能会停止工作。"
+
+#: templates/data.jinja2:57
+msgid "Data source sizes are not updated in real-time and may be outdated."
+msgstr "数据源大小不是实时更新的，可能已经过时。"
+
+#: templates/data.jinja2:62
+msgid "New Data Transfer"
+msgstr "新数据传输"
 
 #: templates/login.jinja2:23
 msgid "Log In"
 msgstr "登录"
 
-#: templates/login.jinja2:24
-msgid "Register"
-msgstr "注册"
+#: templates/machines.jinja2:5
+msgid "Create new machine"
+msgstr "创建新的机器"
+
+#: templates/machines.jinja2:7
+msgid "This lists all templates that are available to the group you are in: {g}"
+msgstr "这列出了您所在组可用的所有模板：{g}"
+
+#: templates/machines.jinja2:29
+msgid "Launch instance"
+msgstr "启动实例"
+
+#: templates/machines.jinja2:58
+msgid "List of machines"
+msgstr "机器列表"
+
+#: templates/machines.jinja2:59
+msgid ""
+"This lists all machines you have access to, both your own and those "
+"shared with you by other users."
+msgstr "这列出了您可以访问的所有机器，包括您自己的和其他用户共享给您的机器。"
+
+#: templates/machines.jinja2:78
+msgid "Open"
+msgstr "打开"
+
+#: templates/register.jinja2:4
+msgid ""
+"Thank you for your interest in using Ada 2025. Please fill in the "
+"following form and you will be emailed once your account is activated."
+msgstr "感谢您对使用 Ada 2025 的兴趣。请填写以下表格，一旦您的帐户激活，您将收到电子邮件通知。"
 
 #: templates/welcome.jinja2:5
 msgid "Welcome to ADA Data Analysis 2025"
@@ -105,9 +348,7 @@ msgstr "本服务允许您远程访问您的数据并创建机器（虚拟化的
 msgid ""
 "For help and info, find the help button on the side bar menu. These pages"
 " have specifc information for each area of the site."
-msgstr ""
-"帮助和信息"
-"请在侧边栏菜单中找到帮助按钮。这些页面包含有关网站各个区域的具体信息。"
+msgstr "帮助和信息请在侧边栏菜单中找到帮助按钮。这些页面包含有关网站各个区域的具体信息。"
 
 #: templates/welcome.jinja2:19
 msgid "Feedback and help"

@@ -2,13 +2,13 @@
 
 {% block content %}
 
-  <h2>Citations</h2>
+  <h2>{{ gettext('Citations') }}</h2>
 
-  {{ info("This page lists citations for Ada and the software that is deployed.") }}
+  {{ info(gettext("This page lists citations for Ada and the software that is deployed.")) }}
 
   <h3>Ada Data Analysis 2025</h3>
 
-  <p>Please cite our software if you find it useful in your research or project:</p>
+  <p>{{ gettext("Please cite our software if you find it useful in your research or project:") }}</p>
 
   <div class="w3-card-2 w3-padding w3-margin">
     <p>D. Volk, "Ada Data Analysis 2025: Flask web app for desktop machines in the cloud," Version 2025.04, GitHub, 2023. [Online]. Available: <a href="https://github.com/dvolk/ada2025" target="_blank">https://github.com/dvolk/ada2025</a>.</p>

@@ -32,7 +32,7 @@ from flask_babel import Babel
 from flask_babel import gettext
 
 import humanize
-
+import pytz
 import docker
 
 logging.basicConfig(level=logging.DEBUG)
@@ -99,7 +99,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(200), nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey("group.id"))
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
-    language = db.Column(db.String(5), default="", nullable=False)
+    language = db.Column(db.String(5), default="en", nullable=False)
     timezone = db.Column(db.String(50), default="Europe/London", nullable=False)
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
@@ -147,6 +147,8 @@ class ProtectedUserModelView(ProtectedModelView):
         "real_name",
         "organization",
         "job_title",
+        "language",
+        "timezone",
         "email",
         "group",
         "is_admin",
@@ -517,8 +519,8 @@ def idea(text, **kwargs):
 
 @app.errorhandler(403)
 def forbidden_handler(e):
-    t = "Access denied"
-    m = "Sorry, you don't have access to that page or resource."
+    t = gettext("Access denied")
+    m = gettext("Sorry, you don't have access to that page or resource.")
 
     return render_template("error.jinja2", message=m, title=t, code=403), 403
 
@@ -534,8 +536,8 @@ def myadmin():
 # 404 error handler
 @app.errorhandler(404)
 def notfound_handler(e):
-    t = "Not found"
-    m = "Sorry, that page or resource could not be found."
+    t = gettext("Not found")
+    m = gettext("Sorry, that page or resource could not be found.")
 
     return render_template("error.jinja2", message=m, title=t, code=404), 404
 
@@ -543,8 +545,8 @@ def notfound_handler(e):
 # 500 error handler
 @app.errorhandler(500)
 def applicationerror_handler(e):
-    t = "Application error"
-    m = "Sorry, the application encountered a problem."
+    t = gettext("Application error")
+    m = gettext("Sorry, the application encountered a problem.")
 
     return render_template("error.jinja2", message=m, title=t, code=500), 500
 
@@ -575,6 +577,7 @@ def load_user(user_id):
 
 def get_locale():
     if current_user and current_user.is_authenticated:
+        print(f"used has language preference: {current_user.language}")
         if current_user.language:
             return current_user.language
     lang = request.accept_languages.best_match(["en", "zh"])
@@ -592,10 +595,10 @@ babel = Babel(app, locale_selector=get_locale, timezone_selector=get_timezone)
 
 class LoginForm(FlaskForm):
     username = StringField(
-        "Username", validators=[DataRequired(), Length(min=4, max=32)]
+        gettext("Username"), validators=[DataRequired(), Length(min=4, max=32)]
     )
     password = PasswordField(
-        "Password", validators=[DataRequired(), Length(min=4, max=100)]
+        gettext("Password"), validators=[DataRequired(), Length(min=4, max=100)]
     )
     submit = SubmitField("Sign In")
 
@@ -612,60 +615,68 @@ def login():
             if user is not None and user.check_password(form.password.data):
                 if not user.is_enabled:
                     flash(
-                        "Your account hasn't been activated yet. If it's been more than 24 hours please contact support.",
+                        gettext(
+                            "Your account hasn't been activated yet. If it's been more than 24 hours please contact support."
+                        ),
                         "danger",
                     )
-                    return render_template("login.jinja2", form=form)
+                    return render_template("login.jinja2", title="Login", form=form)
 
                 login_user(user)
-                flash("Logged in successfully.", "success")
+                flash(gettext("Logged in successfully."), "success")
                 return redirect(url_for("index"))
             else:
-                flash("Invalid username or password.", "danger")
+                flash(gettext("Invalid username or password."), "danger")
         else:
             logging.warning(f"wtforms didn't validate form: { form.errors }")
-            flash("Invalid username or password.", "danger")
-    return render_template("login.jinja2", form=form)
+            flash(gettext("Invalid username or password."), "danger")
+    return render_template("login.jinja2", title="Login", form=form)
 
 
 class RegistrationForm(FlaskForm):
     name_min = 4
     name_max = 32
     name = StringField(
-        "Name", validators=[DataRequired(), Length(min=name_min, max=name_max)]
+        gettext("Name"), validators=[DataRequired(), Length(min=name_min, max=name_max)]
     )
     password_min = 8
     password_max = 100
     password = PasswordField(
-        "Password",
+        gettext("Password"),
         validators=[DataRequired(), Length(min=password_min, max=password_max)],
     )
     real_name_min = 4
     real_name_max = 100
     real_name = StringField(
-        "Real Name",
+        gettext("Real Name"),
         validators=[DataRequired(), Length(min=real_name_min, max=real_name_max)],
+    )
+    language = SelectField(
+        gettext("Language"), validators=[DataRequired()], choices=["en", "zh"]
+    )
+    timezone = SelectField(
+        gettext("Timezone"), validators=[DataRequired()], choices=pytz.all_timezones
     )
     email_min = 4
     email_max = 200
     email = StringField(
-        "Email",
+        gettext("Email"),
         validators=[DataRequired(), Email(), Length(min=email_min, max=email_max)],
     )
     organization_min = 4
     organization_max = 200
     organization = StringField(
-        "Organization",
+        gettext("Organization"),
         validators=[DataRequired(), Length(min=organization_min, max=organization_max)],
     )
-    group = SelectField("Group", choices=[], validators=[DataRequired()])
+    group = SelectField(gettext("Group"), choices=[], validators=[DataRequired()])
     job_title_min = 4
     job_title_max = 200
     job_title = StringField(
-        "Job Title",
+        gettext("Job Title"),
         validators=[DataRequired(), Length(min=job_title_min, max=job_title_max)],
     )
-    submit = SubmitField("Register")
+    submit = SubmitField(gettext("Register"))
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -675,20 +686,17 @@ def register():
 
     if request.method == "POST":
         if form.validate_on_submit():
-            print(f"Name: {form.name.data}")
-            print(f"Real Name: {form.real_name.data}")
-            print(f"Email: {form.email.data}")
-            print(f"Organization: {form.organization.data}")
-            print(f"Group: {form.group.data}")
-            print(f"Job Title: {form.job_title.data}")
-
             if form.group.data not in form.group.choices:
+                abort(404)
+            if form.language.data not in form.language.choices:
+                abort(404)
+            if form.timezone.data not in form.timezone.choices:
                 abort(404)
 
             group = Group.query.filter_by(name=form.group.data).first_or_404()
 
             new_user = User(
-                is_enabled=True,  # TODO change this to False when user management is finished
+                is_enabled=False,
                 is_admin=False,
                 name=form.name.data,
                 real_name=form.real_name.data,
@@ -706,11 +714,13 @@ def register():
             db.session.commit()
 
             flash(
-                "Thank you for registering. You will be emailed when your account is activated"
+                gettext(
+                    "Thank you for registering. You will be emailed when your account is activated"
+                )
             )
             return redirect(url_for("login"))
         else:
-            flash(f"Sorry, the form could not be validated.")
+            flash(gettext("Sorry, the form could not be validated."))
 
     return render_template(
         "register.jinja2",
@@ -773,20 +783,24 @@ def rename_machine():
     machine_id = request.form.get("machine_id")
     machine_new_name = request.form.get("machine_new_name")
     if not machine_new_name or not machine_id:
-        flash("Invalid values for machine rename", "danger")
+        flash(gettext("Invalid values for machine rename"), "danger")
         return redirect(url_for("machines"))
 
     if len(machine_new_name) <= 3 or len(machine_new_name) > 80:
         logging.error(f"len(machine_new_name) = {len(machine_new_name)}")
         flash(
-            "New name must be between 4 and 80 characters long, and can contain characters a-Z,0-9 and -",
+            gettext(
+                "New name must be between 4 and 80 characters long, and can contain characters a-Z,0-9 and -"
+            ),
             "danger",
         )
         return redirect(url_for("machines"))
 
     if contains_non_alphanumeric_chars(machine_new_name):
         flash(
-            "New name contains non-alphanumeric characters. Characters that are allowed are a-Z,0-9 and -",
+            gettext(
+                "New name contains non-alphanumeric characters. Characters that are allowed are a-Z,0-9 and -"
+            ),
             "danger",
         )
         return redirect(url_for("machines"))
@@ -794,13 +808,13 @@ def rename_machine():
     try:
         machine_id = int(machine_id)
     except:
-        flash("Invalid values for machine rename", "danger")
+        flash(gettext("Invalid values for machine rename"), "danger")
         return redirect(url_for("machines"))
 
     machine = Machine.query.filter_by(id=machine_id).first()
 
     if Machine.query.filter_by(name=machine_new_name).first():
-        flash("The requested machine name is already taken", "danger")
+        flash(gettext("The requested machine name is already taken"), "danger")
         return redirect(url_for("machines"))
 
     # TODO: check if the new name includes a username other than CU.name
@@ -890,9 +904,11 @@ def mk_safe_machine_name(username):
 
 
 class DataTransferForm(FlaskForm):
-    data_source = SelectField("Data Source", validators=[DataRequired()], coerce=int)
-    machine = SelectField("Machine", validators=[DataRequired()], coerce=int)
-    submit = SubmitField("Submit")
+    data_source = SelectField(
+        gettext("Data Source"), validators=[DataRequired()], coerce=int
+    )
+    machine = SelectField(gettext("Machine"), validators=[DataRequired()], coerce=int)
+    submit = SubmitField(gettext("Submit"))
 
 
 @app.route("/dismiss_datatransferjob", methods=["POST"])
@@ -972,11 +988,11 @@ def data():
             threading.Thread(target=start_data_transfer, args=(job.id,)).start()
             time.sleep(0.2)
 
-            flash("Starting data transfer. Refresh page to update status.")
-            return redirect(url_for("data"), form=form)
+            flash(gettext("Starting data transfer. Refresh page to update status."))
+            return redirect(url_for("data"))
         else:
-            flash("The data transfer job submission could not be validated.")
-            return redirect(url_for("data"), form=form)
+            flash(gettext("The data transfer job submission could not be validated."))
+            return redirect(url_for("data"))
 
     return render_template(
         "data.jinja2",
@@ -1068,7 +1084,7 @@ def new_machine():
         threading.Thread(target=libvirt_start_vm, args=(m.id, mt.id)).start()
 
     flash(
-        "Creating machine in the background. Refresh page to update status.",
+        gettext("Creating machine in the background. Refresh page to update status."),
         category="success",
     )
     return redirect(url_for("machines"))
@@ -1092,15 +1108,15 @@ def share_accept(machine_token):
     """
     machine = Machine.query.filter_by(token=machine_token).first_or_404()
     if current_user == machine.owner:
-        flash("You own that machine.")
+        flash(gettext("You own that machine."))
         return redirect(url_for("machines"))
     if current_user in machine.shared_users:
-        flash("You already have that machine.")
+        flash(gettext("You already have that machine."))
         return redirect(url_for("machines"))
 
     machine.shared_users.append(current_user)
     db.session.commit()
-    flash("Shared machine has been added to your account.")
+    flash(gettext("Shared machine has been added to your account."))
     return redirect(url_for("machines"))
 
 
@@ -1112,14 +1128,16 @@ def share_revoke(machine_id):
     """
     machine = Machine.query.filter_by(id=machine_id).first_or_404()
     if current_user != machine.owner:
-        flash("You can't revoke shares on a machine you don't own.", "danger")
+        flash(gettext("You can't revoke shares on a machine you don't own.", "danger"))
         return redirect(url_for("machines"))
 
     machine.token = gen_token(16)
     machine.shared_users = []
     db.session.commit()
     flash(
-        "Shares for machine have been removed and a new share link has been generated"
+        gettext(
+            "Shares for machine have been removed and a new share link has been generated"
+        )
     )
     return redirect(url_for("machines"))
 
@@ -1174,7 +1192,7 @@ def stop_machine():
     elif machine.machine_template.type == "libvirt":
         threading.Thread(target=libvirt_stop_vm, args=(machine.name,)).start()
 
-    flash("Deleting machine", category="success")
+    flash(gettext("Deleting machine"), category="success")
     return redirect(url_for("machines"))
 
 
