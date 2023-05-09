@@ -1503,15 +1503,6 @@ def create_initial_db():
                 description="This is a docker machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",
             )
 
-            test_machine1 = Machine(
-                name="XRAY failed test",
-                ip="",
-                state=MachineState.FAILED,
-                owner=normal_user,
-                shared_users=[admin_user],
-                machine_template=test_machine_template2,
-            )
-
             db.session.add(admin_group)
             db.session.add(admin_user)
             db.session.add(normal_user_group)
