@@ -558,7 +558,7 @@ def notfound_handler(e):
 
 # 429 error handler
 @app.errorhandler(429)
-def notfound_handler(e):
+def toomanyrequests_handler(e):
     t = gettext("Too many requests")
     m = gettext(
         "Sorry, you're making too many requests. Please wait a while and then try again."
@@ -1466,6 +1466,7 @@ def create_initial_db():
 
             admin_group = Group(name="admins")
             normal_user_group = Group(name="XRAY scientists")
+
             admin_user = User(
                 is_enabled=True,
                 name="admin",
