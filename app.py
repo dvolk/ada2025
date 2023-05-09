@@ -16,11 +16,10 @@ from flask import (
     flash,
     request,
     abort,
-    send_from_directory,
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
-from sqlalchemy import Index
+from sqlalchemy import Index, JSON
 from flask_migrate import Migrate
 from flask_login import (
     LoginManager,
@@ -34,18 +33,21 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SelectField, SubmitField
+from wtforms import StringField, PasswordField, SelectField, TextAreaField, SubmitField
 from wtforms.validators import DataRequired, Email, Length
 from flask_babel import Babel, gettext
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from markupsafe import Markup
+import waitress
 
 import argh
 import humanize
 import pytz
-import docker
 
-import waitress
+import docker
+import libvirt
+
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -138,6 +140,7 @@ class User(db.Model, UserMixin):
         "DataSource", secondary=user_data_source_association, back_populates="users"
     )
     data_transfer_jobs = db.relationship("DataTransferJob", back_populates="user")
+    problem_reports = db.relationship("ProblemReport", back_populates="user")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -268,6 +271,12 @@ class DataTransferJob(db.Model):
     user = db.relationship("User", back_populates="data_transfer_jobs")
     data_source = db.relationship("DataSource", back_populates="data_transfer_jobs")
     machine = db.relationship("Machine", back_populates="data_transfer_jobs")
+    problem_reports = db.relationship(
+        "ProblemReport", back_populates="data_transfer_job"
+    )
+
+    def __repr__(self):
+        return f"<DTJob {id}>"
 
 
 class ProtectedDataTransferJobModelView(ProtectedModelView):
@@ -308,6 +317,88 @@ class ProtectedGroupModelView(ProtectedModelView):
     column_auto_select_related = True
 
 
+class MachineProvider(db.Model):
+    """
+    A machine provider is a local connection like local docker
+    or external provider like openstack or cloud provider like aws
+    """
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    type = db.Column(db.String(100), nullable=False)
+    customer = db.Column(db.String(100), nullable=False)
+    provider_data = db.Column(JSON, nullable=False)
+    creation_date = db.Column(
+        db.DateTime, default=datetime.datetime.utcnow, nullable=False
+    )
+    machine_templates = db.relationship(
+        "MachineTemplate", back_populates="machine_provider"
+    )
+
+    def __repr__(self):
+        return f"<{self.name}>"
+
+    """
+    based on experience, cloud providers have the following parameters:
+
+    azure:
+      resource_group: test
+      instance_type: Standard_E8s_v3
+      vm_image: UbuntuLTS
+    openstack-1:
+      flavor: climb.group
+      network_uuid: 895d68df-6cff-45a1-9399-c10109b8bfbd
+      key_name: denis
+      vol_size: 120
+      vol_image: e09bc162-1e18-447c-a577-e6b8af2cbc61
+    gcp:
+      zone: europe-west2-c
+      image_family: ubuntu-1804-lts
+      image_project: ubuntu-os-cloud
+      machine_type: n1-highmem-4
+      boot_disk_size: 120GB
+    aws:
+      image_id: ami-0c30afcb7ab02233d
+      instance_type: r5.xlarge
+      key_name: awstest
+      security_group_id: sg-002bd90eab458665f
+      subnet_id: subnet-ffd5a396
+    oracle:
+      compartment_id: ocid1.compartment.oc1..aaaaaaaao4kpjckz2pjmlc...
+      availability_domain: LfHB:UK-LONDON-1-AD-1
+      image_id: ocid1.image.oc1.uk-london-1.aaaaaaaaoc2hx6m45bba2av...
+      shape: VM.Standard2.4
+      subnet_id: ocid1.subnet.oc1.uk-london-1.aaaaaaaab3zsfqtkoyxtx...
+      boot_volume_size_in_gbs: 120
+    """
+
+
+class ProtectedMachineProviderModelView(ProtectedModelView):
+    column_list = ("id", "name", "type", "customer", "creation_date", "provider_data")
+    column_searchable_list = ("name", "type", "customer")
+    column_filters = ("name", "customer")
+
+    form_columns = (
+        "name",
+        "type",
+        "customer",
+        "creation_date",
+        "provider_data",
+        "machine_templates",
+    )
+    column_auto_select_related = True
+
+    # Custom formatter for provider_data
+    def _provider_data_formatter(view, context, model, name):
+        json_data = model.provider_data
+        formatted_data = [f"{k}: {v}" for k, v in json_data.items()]
+        return Markup("<br>".join(formatted_data))
+
+    column_formatters = {
+        "provider_data": _provider_data_formatter,
+    }
+
+
 class MachineTemplate(db.Model):
     """
     A MachineTemplate is a template from which the user builds Machines
@@ -323,10 +414,16 @@ class MachineTemplate(db.Model):
     )
     memory_limit_gb = db.Column(db.Integer, nullable=True)
     cpu_limit_cores = db.Column(db.Integer, nullable=True)
-    group_id = db.Column(db.Integer, db.ForeignKey("group.id"))
-
+    group_id = db.Column(db.Integer, db.ForeignKey("group.id"), nullable=False)
     group = db.relationship("Group", back_populates="machine_templates")
+    machine_provider_id = db.Column(
+        db.Integer, db.ForeignKey("machine_provider.id"), nullable=False
+    )
+    machine_provider = db.relationship(
+        "MachineProvider", back_populates="machine_templates"
+    )
     machines = db.relationship("Machine", back_populates="machine_template")
+    extra_data = db.Column(db.JSON)
 
     def __repr__(self):
         return f"<{self.name}>"
@@ -402,6 +499,7 @@ class Machine(db.Model):
     )
     machine_template = db.relationship("MachineTemplate", back_populates="machines")
     data_transfer_jobs = db.relationship("DataTransferJob", back_populates="machine")
+    problem_reports = db.relationship("ProblemReport", back_populates="machine")
 
     def __repr__(self):
         return f"<{self.name}>"
@@ -435,13 +533,62 @@ class ProtectedMachineModelView(ProtectedModelView):
     column_auto_select_related = True
 
 
+class ProblemReport(db.Model):
+    """
+    Represents a user's problem report. It always has a user and
+    may also be associated with a machine or data transfer job.
+
+    The reports are meant to be shown to admins on the admin page
+    """
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    creation_date = db.Column(
+        db.DateTime, default=datetime.datetime.utcnow, nullable=False
+    )
+    is_hidden = db.Column(db.Boolean, nullable=False, default=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user = db.relationship("User", back_populates="problem_reports")
+    machine_id = db.Column(db.Integer, db.ForeignKey("machine.id"))
+    machine = db.relationship("Machine", back_populates="problem_reports")
+    data_transfer_job_id = db.Column(db.Integer, db.ForeignKey("data_transfer_job.id"))
+    data_transfer_job = db.relationship(
+        "DataTransferJob", back_populates="problem_reports"
+    )
+
+
+class ProtectedProblemReportModelView(ProtectedModelView):
+    column_list = (
+        "title",
+        "description",
+        "creation_date",
+        "is_hidden",
+        "user",
+        "machine",
+        "data_transfer_job",
+    )
+    column_searchable_list = ("title", "description")
+    column_filters = ("is_hidden", "user", "machine", "data_transfer_job")
+    form_columns = (
+        "title",
+        "description",
+        "is_hidden",
+        "user",
+        "machine",
+        "data_transfer_job",
+    )
+
+
 # add flask-sqlalchemy views to flask-admin
 admin.add_view(ProtectedUserModelView(User, db.session))
 admin.add_view(ProtectedDataSourceModelView(DataSource, db.session))
 admin.add_view(ProtectedDataTransferJobModelView(DataTransferJob, db.session))
 admin.add_view(ProtectedGroupModelView(Group, db.session))
+admin.add_view(ProtectedMachineProviderModelView(MachineProvider, db.session))
 admin.add_view(ProtectedMachineTemplateModelView(MachineTemplate, db.session))
 admin.add_view(ProtectedMachineModelView(Machine, db.session))
+admin.add_view(ProtectedProblemReportModelView(ProblemReport, db.session))
 
 
 # This is used in base.jinja2 to build the side bar menu
@@ -703,7 +850,7 @@ class RegistrationForm(FlaskForm):
         validators=[DataRequired(), Length(min=real_name_min, max=real_name_max)],
     )
     language = SelectField(
-        gettext("Language"), validators=[DataRequired()], choices=["en", "zh"]
+        gettext("Language"), validators=[DataRequired()], choices=["en", "zh", "sl"]
     )
     timezone = SelectField(
         gettext("Timezone"), validators=[DataRequired()], choices=pytz.all_timezones
@@ -805,6 +952,8 @@ def welcome():
     return render_template(
         "welcome.jinja2",
         title=gettext("Welcome page"),
+        ProblemReport=ProblemReport,
+        now=datetime.datetime.utcnow(),
     )
 
 
@@ -926,6 +1075,51 @@ def about():
 @login_required
 def help():
     return render_template("help.jinja2", title=gettext("Help"))
+
+
+class ProblemReportForm(FlaskForm):
+    title = StringField("Title", validators=[DataRequired()])
+    description = TextAreaField("Description", validators=[DataRequired()])
+    machine_name = StringField("machine_name", validators=[DataRequired()])
+    data_transfer_job_id = StringField(
+        "data_transfer_job_id", validators=[DataRequired()]
+    )
+    submit = SubmitField("Submit")
+
+
+@app.route("/report_problem", methods=["GET", "POST"])
+def report_problem():
+    form = ProblemReportForm()
+    if request.method == "POST":
+        if form.validate_on_submit():
+            machine_name = form.machine_name.data
+            data_transfer_job_id = form.data_transfer_job_id.data
+
+            machine = Machine.query.filter_by(name=machine_name).first()
+            data_transfer_job = DataTransferJob.query.filter_by(
+                id=data_transfer_job_id
+            ).first()
+
+            problem_report = ProblemReport(
+                title=form.title.data,
+                description=form.description.data,
+                user=current_user,
+                machine=machine,
+                data_transfer_job=data_transfer_job,
+            )
+            db.session.add(problem_report)
+            db.session.commit()
+            flash(gettext("Problem report submitted successfully."), "success")
+            return redirect(url_for("index"))
+    else:
+        form.machine_name.data = request.args.get("machine_name")
+        form.data_transfer_job_id.data = request.args.get("data_transfer_job_id")
+        form.title.data = request.args.get("title")
+        return render_template(
+            "report_problem.jinja2",
+            title=gettext("Help"),
+            form=form,
+        )
 
 
 def encode_date_time(date_time):
@@ -1144,9 +1338,9 @@ def new_machine():
     logging.warning("starting new machine thread")
 
     if mt.type == "docker":
-        threading.Thread(target=docker_start_container, args=(m.id, mt.id)).start()
+        threading.Thread(target=docker_start_container, args=(m.id,)).start()
     elif mt.type == "libvirt":
-        threading.Thread(target=libvirt_start_vm, args=(m.id, mt.id)).start()
+        threading.Thread(target=libvirt_start_vm, args=(m.id,)).start()
 
     flash(
         gettext("Creating machine in the background. Refresh page to update status."),
@@ -1210,18 +1404,6 @@ def share_revoke(machine_id):
     return redirect(url_for("machines"))
 
 
-def docker_get_ip(client, container_name, network):
-    container = client.containers.get(container_name)
-    maybe_ip = container.attrs["NetworkSettings"]["Networks"][network]["IPAddress"]
-    return maybe_ip
-
-
-def docker_wait_for_ip(client, container_name, network):
-    while not (ip := docker_get_ip(client, container_name, network)):
-        time.sleep(1)
-    return ip
-
-
 @app.route("/stop_machine", methods=["POST"])
 @limiter.limit("60 per minute")
 def stop_machine():
@@ -1259,16 +1441,15 @@ def stop_machine():
     if machine.machine_template.type == "docker":
         threading.Thread(target=docker_stop_container, args=(machine_id,)).start()
     elif machine.machine_template.type == "libvirt":
-        threading.Thread(target=libvirt_stop_vm, args=(machine.name,)).start()
+        threading.Thread(target=libvirt_stop_vm, args=(machine.id,)).start()
 
     flash(gettext("Deleting machine"), category="success")
     return redirect(url_for("machines"))
 
 
-def docker_get_container_by_ip(ip_address):
+def docker_get_container_by_ip(client, ip_address, network):
     try:
-        client = docker.from_env()
-        network = client.networks.get("adanet")
+        network = client.networks.get(network)
         containers = network.containers
 
         # Search for the container with the specified IP address
@@ -1295,13 +1476,31 @@ def docker_get_container_by_ip(ip_address):
         logging.exception("Error: Unknown error occurred")
 
 
+def docker_get_ip(client, container_name, network):
+    container = client.containers.get(container_name)
+    maybe_ip = container.attrs["NetworkSettings"]["Networks"][network]["IPAddress"]
+    return maybe_ip
+
+
+def docker_wait_for_ip(client, container_name, network):
+    while not (ip := docker_get_ip(client, container_name, network)):
+        time.sleep(1)
+    return ip
+
+
 def docker_stop_container(machine_id):
     with app.app_context():
         machine = Machine.query.filter_by(id=machine_id).first()
+        mt = machine.machine_template
+        mp = mt.machine_provider
+
+        network = mp.provider_data.get("network")
         machine_ip = machine.ip
+        docker_base_url = mp.provider_data.get("base_url")
+        client = docker.DockerClient(docker_base_url)
 
     try:
-        container = docker_get_container_by_ip(machine.ip)
+        container = docker_get_container_by_ip(client, machine.ip, network)
         if container:
             container.stop()
     except docker.errors.APIError as e:
@@ -1316,15 +1515,20 @@ def docker_stop_container(machine_id):
     logging.info(f"deleted container with machine id {machine_id}")
 
 
-def docker_start_container(m_id, mt_id):
+def docker_start_container(m_id):
     logging.warning("entered start_container thread")
     with app.app_context():
         try:
             m = Machine.query.filter_by(id=m_id).first()
-            mt = MachineTemplate.query.filter_by(id=mt_id).first()
+            mt = m.machine_template
+            mp = mt.machine_provider
+
+            network = mp.provider_data.get("network")
             cpu_cores = mt.cpu_limit_cores
             mem_limit_gb = mt.memory_limit_gb
-            client = docker.from_env()
+
+            docker_base_url = mp.provider_data.get("base_url")
+            client = docker.DockerClient(docker_base_url)
 
             cpu_period = 100000
             cpu_quota = int(cpu_period * cpu_cores)
@@ -1334,7 +1538,7 @@ def docker_start_container(m_id, mt_id):
             container_options = {
                 "name": m.name,
                 "image": mt.image,
-                "network": "adanet",
+                "network": network,
                 "cpu_period": cpu_period,
                 "cpu_quota": cpu_quota,
                 "mem_limit": mem_limit,
@@ -1347,7 +1551,7 @@ def docker_start_container(m_id, mt_id):
                 detach=True,
             )
 
-            m.ip = docker_wait_for_ip(client, m.name, "adanet")
+            m.ip = docker_wait_for_ip(client, m.name, network)
 
             m.state = MachineState.READY
             db.session.commit()
@@ -1369,76 +1573,144 @@ def docker_start_container(m_id, mt_id):
     logging.warning("all done!")
 
 
-def libvirt_get_vm_ip(vm_name):
-    command = ["virsh", "domifaddr", vm_name]
-    result = subprocess.run(command, capture_output=True)
-    output = result.stdout.decode("utf-8")
-    lines = output.split("\n")
-    for line in lines:
-        if "ipv4" in line:
-            parts = line.split()
-            return parts[3].split("/")[0]
+def libvirt_get_vm_ip(conn, vm_name):
+    try:
+        domain = conn.lookupByName(vm_name)
+    except libvirt.libvirtError:
+        print(f"Error: VM '{vm_name}' not found.")
+        return None
+
+    interfaces = domain.interfaceAddresses(
+        libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE
+    )
+
+    for _, interface in interfaces.items():
+        for address in interface["addrs"]:
+            if address["type"] == libvirt.VIR_IP_ADDR_TYPE_IPV4:
+                print(f"vm {vm_name} acquired ip: {address['addr']}")
+                return address["addr"]
+
     return None
 
 
-def libvirt_wait_for_ip(vm_name):
-    while not (ip := libvirt_get_vm_ip(vm_name)):
+def libvirt_wait_for_ip(conn, vm_name):
+    while not (ip := libvirt_get_vm_ip(conn, vm_name)):
         time.sleep(1)
     return ip
 
 
-def libvirt_wait_for_vm(vm_name):
+def libvirt_wait_for_vm(conn, vm_name):
     # Wait for the virtual machine to be in the running state
+    try:
+        domain = conn.lookupByName(vm_name)
+    except libvirt.libvirtError:
+        print(f"Error: VM '{vm_name}' not found.")
+        return
+
     while True:
-        output = subprocess.check_output(["virsh", "domstate", vm_name]).decode()
-        if "running" in output:
+        state, _ = domain.state()
+        if state == libvirt.VIR_DOMAIN_RUNNING:
             print(f"Virtual machine {vm_name} is now running")
             break
         time.sleep(1)
 
 
-def libvirt_start_vm(m_id, mt_id):
+def libvirt_start_vm(m_id):
     """
     Start a vm and wait for it to have an ip
     """
     logging.info("entered start_libvirt_vm thread")
     with app.app_context():
         m = Machine.query.filter_by(id=m_id).first()
-        mt = MachineTemplate.query.filter_by(id=mt_id).first()
+        mt = m.machine_template
+        mp = mt.machine_provider
+
+        qemu_url = mp.provider_data.get("base_url")
 
         name = m.name
         image = mt.image
         cores = mt.cpu_limit_cores
         mem = int(mt.memory_limit_gb) * 1024 * 1024
 
+        # TODO rewrite the following to use python api
         # clone vm
         subprocess.run(
-            ["virt-clone", "--original", image, "--name", name, "--auto-clone"]
+            [
+                "virt-clone",
+                "--connect",
+                qemu_url,
+                "--original",
+                image,
+                "--name",
+                name,
+                "--auto-clone",
+            ]
         )
 
         # Set the CPU and memory limits
-        subprocess.run(["virsh", "setvcpus", name, str(cores), "--config", "--maximum"])
-        subprocess.run(["virsh", "setvcpus", name, str(cores), "--config"])
-        subprocess.run(["virsh", "setmaxmem", name, str(mem), "--config"])
-        subprocess.run(["virsh", "setmem", name, str(mem), "--config"])
+        subprocess.run(
+            [
+                "virsh",
+                "--connect",
+                qemu_url,
+                "setvcpus",
+                name,
+                str(cores),
+                "--config",
+                "--maximum",
+            ]
+        )
+        subprocess.run(
+            ["virsh", "--connect", qemu_url, "setvcpus", name, str(cores), "--config"]
+        )
+        subprocess.run(
+            ["virsh", "--connect", qemu_url, "setmaxmem", name, str(mem), "--config"]
+        )
+        subprocess.run(
+            ["virsh", "--connect", qemu_url, "setmem", name, str(mem), "--config"]
+        )
 
         # start vm
-        subprocess.run(["virsh", "start", name])
+        subprocess.run(["virsh", "--connect", qemu_url, "start", name])
 
-        libvirt_wait_for_vm(name)
-        ip = libvirt_wait_for_ip(name)
+        conn = libvirt.open(qemu_url)
+        logging.info(f"waiting for vm {name} to come up")
+        libvirt_wait_for_vm(conn, name)
+        logging.info(f"vm {name} is up, waiting for ip")
+        ip = libvirt_wait_for_ip(conn, name)
+        logging.info(f"vm {name} has acquired an ip: {ip}")
 
         m.ip = ip
         m.state = MachineState.READY
         db.session.commit()
 
 
-def libvirt_stop_vm(vm_name):
-    # Stop the virtual machine
-    subprocess.run(["virsh", "destroy", vm_name])
+def libvirt_stop_vm(m_id):
+    with app.app_context():
+        m = Machine.query.filter_by(id=m_id).first()
+        mt = m.machine_template
+        mp = mt.machine_provider
+        vm_name = m.name
+        qemu_base_url = mp.provider_data.get("base_url")
 
-    # Delete the disk
-    subprocess.run(["virsh", "undefine", vm_name, "--remove-all-storage"])
+        # Create a new connection to a local libvirt session
+        conn = libvirt.open(qemu_base_url)
+
+        # Stop the virtual machine
+        domain = conn.lookupByName(vm_name)
+        domain.destroy()
+
+        # Delete the disk
+        storage_paths = []
+        for pool in conn.listAllStoragePools():
+            for vol in pool.listAllVolumes():
+                if vm_name in vol.name():
+                    storage_paths.append(vol.path())
+                    vol.delete(0)
+
+        domain.undefine()
+
+        conn.close()
 
     print(f"Stopped virtual machine {vm_name} and deleted its disk")
 
@@ -1485,6 +1757,24 @@ def create_initial_db():
             )
             normal_user.set_password("xrayscientist")
 
+            docker_machine_provider = MachineProvider(
+                name="local docker",
+                type="docker",
+                customer="unknown",
+                provider_data={
+                    "base_url": "unix:///var/run/docker.sock",
+                    "network": "adanet",
+                },
+            )
+            libvirt_machine_provider = MachineProvider(
+                name="local libvirt",
+                type="libvirt",
+                customer="unknown",
+                provider_data={
+                    "base_url": "qemu:///system",
+                },
+            )
+
             test_machine_template1 = MachineTemplate(
                 name="Muon analysis template",
                 type="libvirt",
@@ -1492,6 +1782,7 @@ def create_initial_db():
                 cpu_limit_cores=4,
                 image="debian11-5",
                 group=admin_group,
+                machine_provider=libvirt_machine_provider,
                 description="This is a libvirt machine template that's added by default when you're running in debug mode. It references the image \"debian11-5\"",
             )
             test_machine_template2 = MachineTemplate(
@@ -1501,6 +1792,7 @@ def create_initial_db():
                 cpu_limit_cores=4,
                 image="workspace",
                 group=normal_user_group,
+                machine_provider=docker_machine_provider,
                 description="This is a docker machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",
             )
 
@@ -1508,9 +1800,10 @@ def create_initial_db():
             db.session.add(admin_user)
             db.session.add(normal_user_group)
             db.session.add(normal_user)
+            db.session.add(libvirt_machine_provider)
+            db.session.add(docker_machine_provider)
             db.session.add(test_machine_template1)
             db.session.add(test_machine_template2)
-            db.session.add(test_machine1)
             db.session.commit()
 
 
@@ -1527,12 +1820,15 @@ def clean_up_db():
     with app.app_context():
         for m in Machine.query.all():
             if m.state == MachineState.PROVISIONING:
+                logging.warning(f"Setting machine {m.name} to FAILED state")
                 m.state = MachineState.FAILED
                 # TODO: make sure all machine resources are deleted
         for j in DataTransferJob.query.all():
             if j.status == DataTransferJobState.RUNNING:
+                logging.warning(f"Setting DataTransferJob {j.id} to FAILED state")
                 m.state = DataTransferJobState.FAILED
                 # Could also restart?
+        db.session.commit()
 
 
 def main(debug=False):

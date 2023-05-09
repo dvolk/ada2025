@@ -39,7 +39,7 @@
             <div class="w3-col m4 w3-right-align">
               <p>
                 Group: {{ mt.group.name }}<br/>
-                Type: {{ mt.type }}<br/>
+                Provider: {{ mt.machine_provider.name }}<br/>
                 {% if mt.memory_limit_gb %}
                   Memory (GB): {{ mt.memory_limit_gb }}<br/>
                 {% endif %}
@@ -93,7 +93,7 @@
               <a href="/share_machine/{{ machine.id }}"
                  class="w3-button w3-blue w3-round"
                  title="Open share page for machine">
-                {{ icon('share-nodes') }}
+                 {{ icon('share-nodes') }}
               </a>
               {% if machine.owner == current_user %}
                 <button
@@ -104,17 +104,17 @@
                   {{ icon('pen') }}
                 </button>
               {% endif %}
-              <a href="/report_problem/"
-                 class="w3-button w3-blue w3-round"
-                 title="Report problem">
-                {{ icon('flag') }}
+              <a href="{{ url_for('report_problem', machine_name=machine.name, title=gettext('Problem with machine ') + machine.name ) }}"
+                 class="w3-button w3-blue-gray w3-round"
+                 title={{ gettext("Report problem") }}>
+                 {{ icon('flag') }}
               </a>
               {% if machine.owner == current_user %}
                 <a href="#"
                    onclick="document.getElementById('stop-form-{{ machine.id }}').submit();"
                    class="w3-button w3-red w3-round"
-                   title="Stop and remove machine">
-                  {{ icon('trash') }}
+                   title={{ gettext("Stop and remove machine") }}>
+                   {{ icon('trash') }}
                 </a>
                 <form id="stop-form-{{ machine.id }}" action="/stop_machine" method="POST">
                   <input type="hidden" name="machine_id" value="{{ machine.id }}">

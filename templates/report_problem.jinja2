@@ -1,0 +1,41 @@
+{% extends "base.jinja2" %}
+
+{% block content %}
+
+  {{ info(gettext("We're sorry that there's a problem with the service, please fill in this form and we will look into it")) }}
+
+  <div class="w3-container w3-blue">
+    <h2>{{ gettext('Report a Problem') }}</h2>
+  </div>
+  <div class="w3-container w3-pale-blue">
+    <form method="POST" action="{{ url_for('report_problem') }}">
+      {{ form.hidden_tag() }}
+
+      <p>
+      <label>{{ gettext("Title") }}*</label>
+      {{ form.title(class="w3-input w3-border w3-light-grey") }}
+      </p>
+
+      <p>
+      <label>{{ gettext("Description") }}*</label>
+      {{ form.description(rows=10, class="w3-input w3-border w3-light-grey") }}
+      </p>
+
+      <p>
+      <label>{{ gettext("Machine (optional)") }}</label>
+      {{ form.machine_name(class="w3-input w3-border w3-light-grey") }}
+      </p>
+
+      <p>
+      <label>{{ gettext("Data transfer job (optional)") }}</label>
+      {{ form.data_transfer_job_id(class="w3-input w3-border w3-light-grey") }}
+      </p>
+
+      <p>
+        {{ form.submit(class="w3-btn w3-blue w3-round") }}
+      </p>
+
+    </form>
+  </div>
+  <br/>
+{% endblock %}

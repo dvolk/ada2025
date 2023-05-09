@@ -5,8 +5,8 @@
 
   <form method="POST" action="{{ url_for('register') }}">
     {{ form.csrf_token }}
-    <label class="w3-text-black">{{ gettext("Username") }}* (character length min: {{ form.name_min }}, max: {{ form.name_max }})</label>
-    {{ form.name(class="w3-input w3-border w3-light-grey") }}
+      <label class="w3-text-black">{{ gettext("Username") }}* (character length min: {{ form.name_min }}, max: {{ form.name_max }})</label>
+      {{ form.name(class="w3-input w3-border w3-light-grey") }}
     <br>
     <label class="w3-text-black">{{ gettext("Password") }}* (min: {{ form.password_min }}, max: {{ form.password_max }})</label>
     {{ form.password(class="w3-input w3-border w3-light-grey") }}

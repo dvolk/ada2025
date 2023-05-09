@@ -18,7 +18,7 @@
             <th>{{ gettext("From (Data Source)") }}</th>
             <th>{{ gettext("To (Machine)") }}</th>
             <th>{{ gettext("Status") }}</th>
-            <th>{{ gettext("Dismiss") }}</th>
+            <th>{{ gettext("Actions") }}</th>
           </thead>
           {% for j in current_user.data_transfer_jobs if j.status != DataTransferJobState.REMOVED %}
             <tr>
@@ -38,6 +38,11 @@
                    }
                    };
                    xhr.send('job_id={{ j.id }}');">{{ icon('check') }}
+                </a>
+                <a href="{{ url_for('report_problem', data_transfer_job_id=j.id, machine_name=j.machine.name, title=gettext('Problem with data transfer from ') + j.data_source.source_host + gettext(' to machine ') + j.machine.name ) }}"
+                   class="w3-button w3-small w3-blue-gray w3-round"
+                   title="Report problem">
+                    {{ icon('flag') }}
                 </a>
               </td>
 

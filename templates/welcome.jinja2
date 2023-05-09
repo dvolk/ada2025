@@ -2,6 +2,31 @@
 
 {% block content %}
 
+  {% if current_user.is_admin %}
+    <br/>
+    <div class="w3-container w3-red">
+      <h2>{{ gettext("Problem Reports") }}</h2>
+    </div>
+    <div class="w3-container w3-pale-red">
+      <p>
+        <table class="w3-table-all">
+          <thead>
+            <th>{{ gettext("User") }}</th>
+            <th>{{ gettext("Report title") }}</th>
+            <th>{{ gettext("Created ago") }}</th>
+          </thead>
+          {% for r in ProblemReport.query.filter_by(is_hidden=False)|reverse %}
+            <tr>
+              <td>{{ r.user.name }}</td>
+              <td>{{ r.title }}</td>
+              <td>{{ humanize.naturaldelta(now - r.creation_date) }}</td>
+            </tr>
+          {% endfor %}
+        </table>
+      </p>
+    </div>
+  {% endif %}
+
   <h2>{{ gettext("Welcome to ADA Data Analysis 2025") }}</h2>
 
   <p>{{ gettext("We hope you'll enjoy your stay with our new greatly improved service.") }}</p>
