@@ -52,15 +52,15 @@
         <h1>{{ icon('xmark') }} Close</h1>
       </button>
       <p class="w3-bar-item w3-xlarge">
-        <a href="/"><img class="ada-blue" style="border-radius: 19px" src="/static/ada.png" height=38/> Data Analysis</a>
+        <a href="/"><img class="ada-blue" style="border-radius: 19px" src="/static/ada.png" height=38/> {{ gettext('Data Analysis') }}</a>
       </p>
       <p class="w3-bar-item w3-large w3-pale-green">
-        Hey {{ current_user.name }}! {{ icon_regular("face-smile") }} {{ icon_regular('hand-spock') }}
+        {{ gettext('Hey') }}, {{ current_user.name }}! {{ icon_regular("face-smile") }} {{ icon_regular('hand-spock') }}
       </p>
 
       {% for menu_item in main_menu %}
         {% if not menu_item.get("admin_only") or (menu_item.get("admin_only") and current_user.is_admin) %}
-          {% if title == menu_item["name"] %}
+          {% if gettext(title) == menu_item["name"] %}
             {# this is the page we're on so highlight it in blue #}
             <a class="w3-bar-item w3-large w3-button ada-blue" href="{{ menu_item['href'] }}">{{ icon(menu_item['icon']) }} {{ menu_item['name'] }}</a>
           {% else %}
@@ -69,7 +69,7 @@
         {% endif %}
       {% endfor %}
       <br/>
-      <a class="w3-bar-item w3-large w3-button w3-pale-red" href="/logout">{{ icon("sign-out") }} Sign out</a>
+      <a class="w3-bar-item w3-large w3-button w3-pale-red" href="/logout">{{ icon("sign-out") }} {{ gettext('Sign out') }}</a>
     </div>
 
     <div class="w3-main" style="margin-left:250px">

@@ -1,0 +1,126 @@
+# English translations for PROJECT.
+# Copyright (C) 2023 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2023-05-09 00:56+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.12.1\n"
+
+#: app.py:428 app.py:742
+msgid "Welcome page"
+msgstr "Welcome page"
+
+#: app.py:433 app.py:754 app.py:1085
+msgid "Machines"
+msgstr "Machines"
+
+#: app.py:438 app.py:983
+msgid "Data"
+msgstr "Data"
+
+#: app.py:443 app.py:840
+msgid "Citations"
+msgstr "Citations"
+
+#: app.py:448 app.py:820
+msgid "Settings"
+msgstr "Settings"
+
+#: app.py:453 app.py:852
+msgid "Help"
+msgstr "Help"
+
+#: app.py:458 app.py:846
+msgid "About"
+msgstr "About"
+
+#: app.py:463 app.py:831
+msgid "Admin"
+msgstr "Admin"
+
+#: app.py:718
+msgid "Register account"
+msgstr "Register account"
+
+#: templates/base-bare.jinja2:57 templates/base.jinja2:55
+msgid "Data Analysis"
+msgstr "Data Analysis"
+
+#: templates/base.jinja2:58
+msgid "Hey"
+msgstr "Hey"
+
+#: templates/base.jinja2:72
+msgid "Sign out"
+msgstr ""
+
+#: templates/login.jinja2:17
+msgid "Username"
+msgstr "Username"
+
+#: templates/login.jinja2:20
+msgid "Password"
+msgstr "Password"
+
+#: templates/login.jinja2:23
+msgid "Log In"
+msgstr "Log In"
+
+#: templates/login.jinja2:24
+msgid "Register"
+msgstr "Register"
+
+#: templates/welcome.jinja2:5
+msgid "Welcome to ADA Data Analysis 2025"
+msgstr "Welcome to ADA Data Analysis 2025"
+
+#: templates/welcome.jinja2:7
+msgid "We hope you'll enjoy your stay with our new greatly improved service."
+msgstr "We hope you'll enjoy your stay with our new greatly improved service."
+
+#: templates/welcome.jinja2:9
+msgid "What is Ada?"
+msgstr "What is Ada?"
+
+#: templates/welcome.jinja2:12
+msgid ""
+"This service allows you to remotely access your data and create machines "
+"(virtualized linux desktop environments), which contain all the software,"
+" data and compute resources you will need to perform your work."
+msgstr ""
+"This service allows you to remotely access your data and create machines "
+"(virtualized linux desktop environments), which contain all the software,"
+" data and compute resources you will need to perform your work."
+
+#: templates/welcome.jinja2:16
+msgid ""
+"For help and info, find the help button on the side bar menu. These pages"
+" have specifc information for each area of the site."
+msgstr ""
+"For help and info, find the help button on the side bar menu. These pages"
+" have specifc information for each area of the site."
+
+#: templates/welcome.jinja2:19
+msgid "Feedback and help"
+msgstr "Feedback and help"
+
+#: templates/welcome.jinja2:21
+msgid "Have a question, request or an issue to report?"
+msgstr "Have a question, request or an issue to report?"
+
+#: templates/welcome.jinja2:24
+msgid "Let us know at:"
+msgstr "Let us know at:"
+

@@ -28,6 +28,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, SubmitField
 from wtforms.validators import DataRequired, Email, Length
+from flask_babel import Babel
+from flask_babel import gettext
 
 import humanize
 
@@ -97,6 +99,8 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(200), nullable=False)
     group_id = db.Column(db.Integer, db.ForeignKey("group.id"))
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    language = db.Column(db.String(5), default="", nullable=False)
+    timezone = db.Column(db.String(50), default="Europe/London", nullable=False)
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
@@ -415,50 +419,52 @@ admin.add_view(ProtectedGroupModelView(Group, db.session))
 admin.add_view(ProtectedMachineTemplateModelView(MachineTemplate, db.session))
 admin.add_view(ProtectedMachineModelView(Machine, db.session))
 
+
 # This is used in base.jinja2 to build the side bar menu
-MAIN_MENU = [
-    {
-        "icon": "house",
-        "name": "Welcome page",
-        "href": "/",
-    },
-    {
-        "icon": "cubes",
-        "name": "Machines",
-        "href": "/machines",
-    },
-    {
-        "icon": "database",
-        "name": "Data",
-        "href": "/data",
-    },
-    {
-        "icon": "book",
-        "name": "Citations",
-        "href": "/citations",
-    },
-    {
-        "icon": "gear",
-        "name": "Settings",
-        "href": "/settings",
-    },
-    {
-        "icon": "lightbulb",
-        "name": "Help",
-        "href": "/help",
-    },
-    {
-        "icon": "circle-question",
-        "name": "About",
-        "href": "/about",
-    },
-    {
-        "icon": "toolbox",
-        "name": "Admin",
-        "href": "/admin",
-        "admin_only": True,
-    },
-]
+def get_main_menu():
+    return [
+        {
+            "icon": "house",
+            "name": gettext("Welcome page"),
+            "href": "/",
+        },
+        {
+            "icon": "cubes",
+            "name": gettext("Machines"),
+            "href": "/machines",
+        },
+        {
+            "icon": "database",
+            "name": gettext("Data"),
+            "href": "/data",
+        },
+        {
+            "icon": "book",
+            "name": gettext("Citations"),
+            "href": "/citations",
+        },
+        {
+            "icon": "gear",
+            "name": gettext("Settings"),
+            "href": "/settings",
+        },
+        {
+            "icon": "lightbulb",
+            "name": gettext("Help"),
+            "href": "/help",
+        },
+        {
+            "icon": "circle-question",
+            "name": gettext("About"),
+            "href": "/about",
+        },
+        {
+            "icon": "toolbox",
+            "name": gettext("Admin"),
+            "href": "/admin",
+            "admin_only": True,
+        },
+    ]
 
 
 def icon(text):
@@ -553,7 +559,7 @@ def inject_globals():
         "external_link": external_link,
         "info": info,
         "idea": idea,
-        "main_menu": MAIN_MENU,
+        "main_menu": get_main_menu(),
         "humanize": humanize,
         "time_now": int(time.time()),
     }
@@ -567,12 +573,29 @@ def load_user(user_id):
     return User.query.filter_by(id=int(user_id)).first()
 
 
+def get_locale():
+    if current_user and current_user.is_authenticated:
+        if current_user.language:
+            return current_user.language
+    lang = request.accept_languages.best_match(["en", "zh"])
+    print(f"language best match: {lang}")
+    return lang
+
+
+def get_timezone():
+    if current_user and current_user.is_authenticated:
+        return current_user.timezone
+
+
+babel = Babel(app, locale_selector=get_locale, timezone_selector=get_timezone)
+
+
 class LoginForm(FlaskForm):
     username = StringField(
         "Username", validators=[DataRequired(), Length(min=4, max=32)]
     )
     password = PasswordField(
-        "Password", validators=[DataRequired(), Length(min=8, max=100)]
+        "Password", validators=[DataRequired(), Length(min=4, max=100)]
     )
     submit = SubmitField("Sign In")
 
@@ -600,6 +623,7 @@ def login():
             else:
                 flash("Invalid username or password.", "danger")
         else:
+            logging.warning(f"wtforms didn't validate form: { form.errors }")
             flash("Invalid username or password.", "danger")
     return render_template("login.jinja2", form=form)
 
@@ -688,7 +712,11 @@ def register():
         else:
             flash(f"Sorry, the form could not be validated.")
 
-    return render_template("register.jinja2", form=form, title="Register account")
+    return render_template(
+        "register.jinja2",
+        form=form,
+        title=gettext("Register account"),
+    )
 
 
 @app.route("/")
@@ -709,7 +737,10 @@ def logout():
 @app.route("/welcome")
 @login_required
 def welcome():
-    return render_template("welcome.jinja2", title="Welcome page")
+    return render_template(
+        "welcome.jinja2",
+        title=gettext("Welcome page"),
+    )
 
 
 @app.route("/machines")
@@ -720,7 +751,7 @@ def machines():
     """
     return render_template(
         "machines.jinja2",
-        title="Machines",
+        title=gettext("Machines"),
         MachineTemplate=MachineTemplate,
         MachineState=MachineState,
         Machine=Machine,
@@ -785,7 +816,9 @@ def rename_machine():
 @app.route("/settings")
 @login_required
 def settings():
-    return render_template("settings.jinja2", title="Settings", threading=threading)
+    return render_template(
+        "settings.jinja2", title=gettext("Settings"), threading=threading
+    )
 
 
 @app.route("/admin")
@@ -795,7 +828,7 @@ def admin():
         abort(403)
     return render_template(
         "admin.jinja2",
-        title="Admin",
+        title=gettext("Admin"),
         User=User,
         Machine=Machine,
     )
@@ -804,19 +837,19 @@ def admin():
 @app.route("/citations")
 @login_required
 def citations():
-    return render_template("citations.jinja2", title="Citations")
+    return render_template("citations.jinja2", title=gettext("Citations"))
 
 
 @app.route("/about")
 @login_required
 def about():
-    return render_template("about.jinja2", title="About")
+    return render_template("about.jinja2", title=gettext("About"))
 
 
 @app.route("/help")
 @login_required
 def help():
-    return render_template("help.jinja2", title="Help")
+    return render_template("help.jinja2", title=gettext("Help"))
 
 
 def encode_date_time(date_time):
@@ -947,7 +980,7 @@ def data():
 
     return render_template(
         "data.jinja2",
-        title="Data",
+        title=gettext("Data"),
         form=form,
         DataTransferJobState=DataTransferJobState,
         MachineState=MachineState,
@@ -1049,7 +1082,7 @@ def share_machine(machine_id):
     machine_id = int(machine_id)
     machine = Machine.query.filter_by(id=machine_id).first_or_404()
 
-    return render_template("share.jinja2", title="Machines", machine=machine)
+    return render_template("share.jinja2", title=gettext("Machines"), machine=machine)
 
 
 @app.route("/share_accept/<machine_token>")

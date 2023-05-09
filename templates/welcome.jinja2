@@ -2,23 +2,26 @@
 
 {% block content %}
 
-  <h2>Welcome to ADA Data Analysis 2025</h2>
+  <h2>{{ gettext("Welcome to ADA Data Analysis 2025") }}</h2>
 
-  <p>We hope you'll enjoy your stay with our new greatly improved service.</p>
+  <p>{{ gettext("We hope you'll enjoy your stay with our new greatly improved service.") }}</p>
 
-  <h2>What is Ada?</h2>
-<p>
-  This service allows you to remotely access your data and create machines (virtualized linux desktop environments), which contain all the software, data and compute resources you will need to perform your work.
-</p>
+  <h2>{{ gettext("What is Ada?") }}</h2>
 
-<p>
-  For help and info, find the help button on the side bar menu. These pages have specifc information for each area of the site.
-</p>
+  <p>
+    {{ gettext("This service allows you to remotely access your data and create machines (virtualized linux desktop environments), which contain all the software, data and compute resources you will need to perform your work.") }}
+  </p>
 
-<h2>Feedback and help</h2>
-<p>Have a question, request or an issue to report?</p>
-<p>
-  Let us know at: {{ email('contact@ada-science.io') }}
-</p>
+  <p>
+    {{ gettext("For help and info, find the help button on the side bar menu. These pages have specifc information for each area of the site.") }}
+  </p>
+
+  <h2>{{ gettext("Feedback and help") }}</h2>
+
+  <p>{{ gettext("Have a question, request or an issue to report?") }}</p>
+
+  <p>
+    {{ gettext("Let us know at:") }} {{ email('contact@ada-science.io') }}
+  </p>
 
 {% endblock %}

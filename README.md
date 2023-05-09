@@ -67,6 +67,7 @@ cd ada2025
 python3 -m venv env
 source env/bin/activate
 pip3 install -r requirements.txt
+pybabel compile -d translations
 ```
 
 ### Set up database
@@ -106,3 +107,12 @@ python3 app.py
 ```
 
 open http://localhost:5000
+
+## How-to
+
+### Updating translation .po files
+
+```
+pybabel -v extract  -F babel.cfg -o translations/messages.pot .
+pybabel update -N -i translations/messages.pot -d translations
+```
