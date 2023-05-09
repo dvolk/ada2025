@@ -16,20 +16,6 @@ Flask web app for desktop machines in the cloud
 </td>
 </tr>
 </table>
-<table>
-<thead>
-<th width=50%>Machine menu</th>
-<th width=50%>Share page</th>
-</thead>
-<tr>
-<td>
-<img src="https://i.postimg.cc/fzNW4fJ8/10-10-10-2.png">
-</td>
-<td>
-<img src="https://i.postimg.cc/gGx230CH/localhost-5000-share-machine-2.png ">
-</td>
-</tr>
-</table>
 
 ## Features
 
