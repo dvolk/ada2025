@@ -8,7 +8,6 @@ import string
 import secrets
 import subprocess
 
-import argh
 from flask import Flask, render_template, url_for, redirect, flash, request, abort
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
@@ -30,7 +29,10 @@ from wtforms import StringField, PasswordField, SelectField, SubmitField
 from wtforms.validators import DataRequired, Email, Length
 from flask_babel import Babel
 from flask_babel import gettext
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
+import argh
 import humanize
 import pytz
 import docker
@@ -47,6 +49,16 @@ login_manager = LoginManager(app)
 login_manager.login_view = "login"
 admin = Admin(url="/flaskyadmin")
 admin.init_app(app)
+
+limiter = Limiter(
+    # no default limit because flask-admin trips it up
+    # instead we put 60 per minute on all requests, except
+    # /login and /register, which have 60 per hour
+    get_remote_address,
+    app=app,
+    storage_uri="memory://",
+    strategy="fixed-window",
+)
 
 
 # make the flask-admin interface only accessible to admins
@@ -525,14 +537,6 @@ def forbidden_handler(e):
     return render_template("error.jinja2", message=m, title=t, code=403), 403
 
 
-@app.route("/myadmin")
-@login_required
-def myadmin():
-    if not current_user.is_admin:
-        abort(403)
-    return admin.index()
-
-
 # 404 error handler
 @app.errorhandler(404)
 def notfound_handler(e):
@@ -540,6 +544,17 @@ def notfound_handler(e):
     m = gettext("Sorry, that page or resource could not be found.")
 
     return render_template("error.jinja2", message=m, title=t, code=404), 404
+
+
+# 429 error handler
+@app.errorhandler(429)
+def notfound_handler(e):
+    t = gettext("Too many requests")
+    m = gettext(
+        "Sorry, you're making too many requests. Please wait a while and then try again."
+    )
+
+    return render_template("error.jinja2", message=m, title=t, code=429), 429
 
 
 # 500 error handler
@@ -604,10 +619,16 @@ class LoginForm(FlaskForm):
 
 
 @app.route("/login", methods=["GET", "POST"])
+@limiter.limit("60 per hour")
 def login():
     """
     Login page and login logic
     """
+    if current_user.is_authenticated:
+        logout_user()
+        flash("You've been logged out.")
+        return render_template("login.jinja2", title="Login", form=form)
+
     form = LoginForm()
     if request.method == "POST":
         if form.validate_on_submit():
@@ -680,6 +701,7 @@ class RegistrationForm(FlaskForm):
 
 
 @app.route("/register", methods=["GET", "POST"])
+@limiter.limit("60 per hour")
 def register():
     form = RegistrationForm()
     form.group.choices = [x[0] for x in Group.query.with_entities(Group.name).all()]
@@ -730,6 +752,7 @@ def register():
 
 
 @app.route("/")
+@limiter.limit("60 per minute")
 def index():
     if current_user.is_authenticated:
         return redirect(url_for("welcome"))
@@ -738,6 +761,7 @@ def index():
 
 
 @app.route("/logout")
+@limiter.limit("60 per minute")
 @login_required
 def logout():
     logout_user()
@@ -745,6 +769,7 @@ def logout():
 
 
 @app.route("/welcome")
+@limiter.limit("60 per minute")
 @login_required
 def welcome():
     return render_template(
@@ -754,6 +779,7 @@ def welcome():
 
 
 @app.route("/machines")
+@limiter.limit("60 per minute")
 @login_required
 def machines():
     """
@@ -778,6 +804,7 @@ def contains_non_alphanumeric_chars(string):
 
 
 @app.route("/rename_machine", methods=["POST"])
+@limiter.limit("60 per minute")
 @login_required
 def rename_machine():
     machine_id = request.form.get("machine_id")
@@ -828,6 +855,7 @@ def rename_machine():
 
 
 @app.route("/settings")
+@limiter.limit("60 per minute")
 @login_required
 def settings():
     return render_template(
@@ -836,6 +864,7 @@ def settings():
 
 
 @app.route("/admin")
+@limiter.limit("60 per minute")
 @login_required
 def admin():
     if not current_user.is_admin:
@@ -849,18 +878,21 @@ def admin():
 
 
 @app.route("/citations")
+@limiter.limit("60 per minute")
 @login_required
 def citations():
     return render_template("citations.jinja2", title=gettext("Citations"))
 
 
 @app.route("/about")
+@limiter.limit("60 per minute")
 @login_required
 def about():
     return render_template("about.jinja2", title=gettext("About"))
 
 
 @app.route("/help")
+@limiter.limit("60 per minute")
 @login_required
 def help():
     return render_template("help.jinja2", title=gettext("Help"))
@@ -912,6 +944,7 @@ class DataTransferForm(FlaskForm):
 
 
 @app.route("/dismiss_datatransferjob", methods=["POST"])
+@limiter.limit("60 per minute")
 def dismiss_datatransferjob():
     """
     Endpoint for hiding the data transfer job from the data page
@@ -943,6 +976,7 @@ def machine_format_dtj(machine):
 
 
 @app.route("/data", methods=["GET", "POST"])
+@limiter.limit("60 per minute")
 def data():
     if current_user.is_admin:
         # the admin can see everything
@@ -1054,6 +1088,7 @@ def start_data_transfer(job_id):
 
 
 @app.route("/new_machine", methods=["POST"])
+@limiter.limit("60 per minute")
 @login_required
 def new_machine():
     """
@@ -1091,6 +1126,7 @@ def new_machine():
 
 
 @app.route("/share_machine/<machine_id>")
+@limiter.limit("60 per minute")
 def share_machine(machine_id):
     """
     Shows the share page
@@ -1102,6 +1138,7 @@ def share_machine(machine_id):
 
 
 @app.route("/share_accept/<machine_token>")
+@limiter.limit("60 per minute")
 def share_accept(machine_token):
     """
     This is the endpoint hit by the user accepting a share
@@ -1121,6 +1158,7 @@ def share_accept(machine_token):
 
 
 @app.route("/share_revoke/<machine_id>")
+@limiter.limit("60 per minute")
 def share_revoke(machine_id):
     """
     The owner revokes all shares. We do this by removing shared_users
@@ -1155,6 +1193,7 @@ def docker_wait_for_ip(client, container_name, network):
 
 
 @app.route("/stop_machine", methods=["POST"])
+@limiter.limit("60 per minute")
 def stop_machine():
     """
     Start thread to stop machine

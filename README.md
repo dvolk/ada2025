@@ -49,6 +49,8 @@ Flask web app for desktop machines in the cloud
 - Flask-WTForms
 - Flask-Login
 - Flask-Admin
+- Flask-Babel
+- Flask-Limiter
 - nginx
 - Docker
 - libvirt
