@@ -39,6 +39,7 @@ Flask web app for desktop machines in the cloud
 - Copy data from data sources into machines
 - Open desktop in a web browser
 - Upload and download files with integrated file browser
+- Internationalization: en, zh, sl
 
 ## Tech used
 
@@ -51,12 +52,13 @@ Flask web app for desktop machines in the cloud
 - Flask-Admin
 - Flask-Babel
 - Flask-Limiter
-- nginx
+- Debian
 - Docker
 - libvirt
 - TigerVNC
 - noVNC
 - filebrowser
+- nginx
 - rsync
 
 ## Setup

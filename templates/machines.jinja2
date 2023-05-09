@@ -14,7 +14,7 @@
     {% endif %}
     {% for mt in mts %}
       <p>
-        <div class="w3-card w3-padding">
+        <div class="w3-card w3-padding w3-round">
           <div class="w3-row" style="display: flex; align-items: center;">
             <div class="w3-col m8" style="display: flex; align-items: center;">
               <h3>{{ mt.name }}</h3>
@@ -60,7 +60,7 @@
   <p>
     {% for machine in current_user.owned_machines|reverse|list + current_user.shared_machines|reverse|list if machine.state not in [MachineState.DELETED, MachineState.DELETING] %}
       <p>
-        <div class="w3-card w3-padding">
+        <div class="w3-card w3-padding w3-round">
           <div class="w3-row" style="display: flex; align-items: center;">
             <div class="w3-col m6" style="display: flex; align-items: center;">
               <h3>
@@ -128,8 +128,8 @@
               <p>
                 <a href="http://{{ machine.ip }}/Sw8OSELATBzI74XT" target="_blank">
 
-                  <div class="fallback-div" style="display: none; width: 240px; height: 140px; border: 3px dashed gray; text-align: center; line-height: 140px;">Thumbnail Not Available</div>
-                  <img class="vm-thumbnail lighten-on-hover blur-on-hover" src="http://{{ machine.ip }}/screenshots/screenshot-thumb.png" alt="Alternative text" style="display: none; max-width: 300px; max-height: 175px;">
+                  <div class="fallback-div" style="display: none; width: 240px; height: 140px; border: 3px dashed gray; text-align: center; line-height: 140px; border-radius:4px">Thumbnail Not Available</div>
+                  <img class="vm-thumbnail w3-round lighten-on-hover blur-on-hover" src="http://{{ machine.ip }}/screenshots/screenshot-thumb.png" alt="Alternative text" style="display: none; max-width: 300px; max-height: 175px;">
                 </a>
               </p>
             </div>

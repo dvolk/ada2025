@@ -1,4 +1,4 @@
-# Chinese (Simplified, China) translations for PROJECT.
+# Slovenian translations for PROJECT.
 # Copyright (C) 2023 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2023.
@@ -10,9 +10,10 @@ msgstr ""
 "POT-Creation-Date: 2023-05-09 14:29+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language: zh_CN\n"
-"Language-Team: zh_CN <LL@li.org>\n"
-"Plural-Forms: nplurals=1; plural=0;\n"
+"Language: sl\n"
+"Language-Team: sl <LL@li.org>\n"
+"Plural-Forms: nplurals=4; plural=(n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 "
+"|| n%100==4 ? 2 : 3);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -20,141 +21,141 @@ msgstr ""
 
 #: app.py:441 app.py:776
 msgid "Welcome page"
-msgstr "欢迎页面"
+msgstr "Prva stran"
 
 #: app.py:446 app.py:789 app.py:1136
 msgid "Machines"
-msgstr "虚拟机"
+msgstr "Stroji"
 
 #: app.py:451 app.py:1032
 msgid "Data"
-msgstr "数据"
+msgstr "Podatki"
 
 #: app.py:456 app.py:883 templates/citations.jinja2:5
 msgid "Citations"
-msgstr "引用"
+msgstr "Citati"
 
 #: app.py:461 app.py:861
 msgid "Settings"
-msgstr "设置"
+msgstr "Nastavitve"
 
 #: app.py:466 app.py:897
 msgid "Help"
-msgstr "帮助"
+msgstr "Pomoč"
 
 #: app.py:471 app.py:890
 msgid "About"
-msgstr "关于"
+msgstr "O nas"
 
 #: app.py:476 app.py:873
 msgid "Admin"
-msgstr "管理员"
+msgstr "Admin"
 
 #: app.py:533
 msgid "Access denied"
-msgstr "访问被拒绝"
+msgstr ""
 
 #: app.py:534
 msgid "Sorry, you don't have access to that page or resource."
-msgstr "抱歉，您无权访问该页面或资源。"
+msgstr ""
 
 #: app.py:542
 msgid "Not found"
-msgstr "未找到"
+msgstr ""
 
 #: app.py:543
 msgid "Sorry, that page or resource could not be found."
-msgstr "抱歉，找不到该页面或资源。"
+msgstr ""
 
 #: app.py:551
 msgid "Too many requests"
-msgstr "请求过多"
+msgstr ""
 
 #: app.py:552
 msgid ""
 "Sorry, you're making too many requests. Please wait a while and then try "
 "again."
-msgstr "抱歉，您的请求过多。请稍等片刻后再试。"
+msgstr ""
 
 #: app.py:562
 msgid "Application error"
-msgstr "应用程序错误"
+msgstr ""
 
 #: app.py:563
 msgid "Sorry, the application encountered a problem."
-msgstr "抱歉，应用程序遇到了问题。"
+msgstr ""
 
 #: app.py:612 templates/login.jinja2:17 templates/register.jinja2:8
 msgid "Username"
-msgstr "用户名"
+msgstr ""
 
 #: app.py:615 app.py:665 templates/login.jinja2:20 templates/register.jinja2:11
 msgid "Password"
-msgstr "密码"
+msgstr ""
 
 #: app.py:638
 msgid ""
 "Your account hasn't been activated yet. If it's been more than 24 hours "
 "please contact support."
-msgstr "您的帐户尚未激活。如果已超过 24 小时，请联系支持。"
+msgstr ""
 
 #: app.py:646
 msgid "Logged in successfully."
-msgstr "登录成功。"
+msgstr ""
 
 #: app.py:649 app.py:652
 msgid "Invalid username or password."
-msgstr "用户名或密码无效。"
+msgstr ""
 
 #: app.py:660
 msgid "Name"
-msgstr "名称"
+msgstr ""
 
 #: app.py:671 templates/register.jinja2:14
 msgid "Real Name"
-msgstr "真实姓名"
+msgstr ""
 
 #: app.py:675 templates/register.jinja2:20
 msgid "Language"
-msgstr "语言"
+msgstr ""
 
 #: app.py:678 templates/register.jinja2:24
 msgid "Timezone"
-msgstr "时区"
+msgstr ""
 
 #: app.py:683 templates/register.jinja2:17
 msgid "Email"
-msgstr "电子邮件"
+msgstr ""
 
 #: app.py:689 templates/register.jinja2:28
 msgid "Organization"
-msgstr "组织"
+msgstr ""
 
 #: app.py:692 templates/register.jinja2:31
 msgid "Group"
-msgstr "群组"
+msgstr ""
 
 #: app.py:696 templates/register.jinja2:34
 msgid "Job Title"
-msgstr "职位"
+msgstr ""
 
 #: app.py:699 templates/login.jinja2:24
 msgid "Register"
-msgstr "注册"
+msgstr ""
 
 #: app.py:738
 msgid ""
 "Thank you for registering. You will be emailed when your account is "
 "activated"
-msgstr "感谢您的注册。当您的帐户激活时，您将收到电子邮件。"
+msgstr ""
 
 #: app.py:744
 msgid "Sorry, the form could not be validated."
-msgstr "抱歉，无法验证表单。"
+msgstr ""
 
 #: app.py:749
 msgid "Register account"
-msgstr "注册账户"
+msgstr ""
 
 #: app.py:812 app.py:837
 msgid "Invalid values for machine rename"
@@ -164,211 +165,225 @@ msgstr ""
 msgid ""
 "New name must be between 4 and 80 characters long, and can contain "
 "characters a-Z,0-9 and -"
-msgstr "新名称必须为 4 到 80 个字符长，并且可以包含字符 a-Z、0-9 和 -"
+msgstr ""
 
 #: app.py:827
 msgid ""
 "New name contains non-alphanumeric characters. Characters that are "
 "allowed are a-Z,0-9 and -"
-msgstr "新名称包含非字母数字字符。允许的字符为 a-Z、0-9 和 -"
+msgstr ""
 
 #: app.py:843
 msgid "The requested machine name is already taken"
-msgstr "请求的机器名称已被占用"
+msgstr ""
 
 #: app.py:939 templates/data.jinja2:66
 msgid "Data Source"
-msgstr "数据源"
+msgstr ""
 
 #: app.py:941 templates/data.jinja2:70
 msgid "Machine"
-msgstr "机器"
+msgstr ""
 
 #: app.py:942 templates/register.jinja2:37
 msgid "Submit"
-msgstr "提交"
+msgstr ""
 
 #: app.py:1024
 msgid "Starting data transfer. Refresh page to update status."
-msgstr "开始数据传输。刷新页面以更新状态。"
+msgstr ""
 
 #: app.py:1027
 msgid "The data transfer job submission could not be validated."
-msgstr "无法验证数据传输任务提交。"
+msgstr ""
 
 #: app.py:1121
 msgid "Creating machine in the background. Refresh page to update status."
-msgstr "在后台创建机器。刷新页面以更新状态。"
+msgstr ""
 
 #: app.py:1147
 msgid "You own that machine."
-msgstr "您拥有该机器。"
+msgstr ""
 
 #: app.py:1150
 msgid "You already have that machine."
-msgstr "您已经拥有了该机器。"
+msgstr ""
 
 #: app.py:1155
 msgid "Shared machine has been added to your account."
-msgstr "共享的机器已添加到您的帐户。"
+msgstr ""
 
 #: app.py:1168
 msgid "You can't revoke shares on a machine you don't own."
-msgstr "您不能撤销您不拥有的机器上的共享。"
+msgstr ""
 
 #: app.py:1175
 msgid ""
 "Shares for machine have been removed and a new share link has been "
 "generated"
-msgstr "已移除机器的共享，并已生成新的共享链接"
+msgstr ""
 
 #: app.py:1233
 msgid "Deleting machine"
-msgstr "删除机器"
+msgstr ""
 
 #: templates/base-bare.jinja2:57 templates/base.jinja2:55
 msgid "Data Analysis"
-msgstr "数据分析"
+msgstr ""
 
 #: templates/base.jinja2:58
 msgid "Hey"
-msgstr "嘿"
+msgstr "Pozdrav"
 
 #: templates/base.jinja2:72
 msgid "Sign out"
-msgstr "登出"
+msgstr ""
 
 #: templates/citations.jinja2:7
 msgid "This page lists citations for Ada and the software that is deployed."
-msgstr "此页面列出了 Ada 及其部署的软件的引用。"
+msgstr ""
 
 #: templates/citations.jinja2:11
 msgid ""
 "Please cite our software if you find it useful in your research or "
 "project:"
-msgstr "如果您在研究或项目中发现我们的软件有用，请引用我们的软件："
+msgstr ""
 
 #: templates/data.jinja2:10
 msgid ""
 "This table shows the state of your data transfers. Refresh page to update"
 " status."
-msgstr "此表显示您的数据传输状态。刷新页面以更新状态。"
+msgstr ""
 
 #: templates/data.jinja2:12
 msgid "Your Data Transfers"
-msgstr "您的数据传输"
+msgstr ""
 
 #: templates/data.jinja2:18
 msgid "From (Data Source)"
-msgstr "从（数据来源）"
+msgstr ""
 
 #: templates/data.jinja2:19
 msgid "To (Machine)"
-msgstr "至（机器）"
+msgstr ""
 
 #: templates/data.jinja2:20
 msgid "Status"
-msgstr "状态"
+msgstr ""
 
 #: templates/data.jinja2:21
 msgid "Dismiss"
-msgstr "取消"
+msgstr ""
 
 #: templates/data.jinja2:51
 msgid "Here you can transfer data into your machine from registered data sources"
-msgstr "在这里，您可以从注册的数据源将数据传输到您的机器"
+msgstr ""
 
 #: templates/data.jinja2:53
 msgid ""
 "Select the data source and a machine you want to copy the data to and "
 "then click submit. The data will be copied into your machine."
-msgstr "选择数据源和要将数据复制到的机器，然后点击提交。数据将被复制到您的机器。"
+msgstr ""
 
 #: templates/data.jinja2:55
 msgid ""
 "Please ensure you have enough space on your chosen machine to copy the "
 "data. If your machine disk becomes completely full, the machine may stop "
 "working."
-msgstr "请确保您选择的机器上有足够的空间来复制数据。如果您的机器磁盘已满，机器可能会停止工作。"
+msgstr ""
 
 #: templates/data.jinja2:57
 msgid "Data source sizes are not updated in real-time and may be outdated."
-msgstr "数据源大小不是实时更新的，可能已经过时。"
+msgstr ""
 
 #: templates/data.jinja2:62
 msgid "New Data Transfer"
-msgstr "新数据传输"
+msgstr ""
 
 #: templates/login.jinja2:23
 msgid "Log In"
-msgstr "登录"
+msgstr ""
 
 #: templates/machines.jinja2:5
 msgid "Create new machine"
-msgstr "创建新的机器"
+msgstr ""
 
 #: templates/machines.jinja2:7
 msgid "This lists all templates that are available to the group you are in: {g}"
-msgstr "这列出了您所在组可用的所有模板：{g}"
+msgstr ""
 
 #: templates/machines.jinja2:29
 msgid "Launch instance"
-msgstr "启动实例"
+msgstr ""
 
 #: templates/machines.jinja2:58
 msgid "List of machines"
-msgstr "机器列表"
+msgstr ""
 
 #: templates/machines.jinja2:59
 msgid ""
 "This lists all machines you have access to, both your own and those "
 "shared with you by other users."
-msgstr "这列出了您可以访问的所有机器，包括您自己的和其他用户共享给您的机器。"
+msgstr ""
 
 #: templates/machines.jinja2:78
 msgid "Open"
-msgstr "打开"
+msgstr ""
 
 #: templates/register.jinja2:4
 msgid ""
 "Thank you for your interest in using Ada 2025. Please fill in the "
 "following form and you will be emailed once your account is activated."
-msgstr "感谢您对使用 Ada 2025 的兴趣。请填写以下表格，一旦您的帐户激活，您将收到电子邮件通知。"
+msgstr ""
 
 #: templates/welcome.jinja2:5
 msgid "Welcome to ADA Data Analysis 2025"
-msgstr "欢迎使用ADA数据分析2025"
+msgstr "Dobrodošli v ADA analizo podatkov 2025"
 
 #: templates/welcome.jinja2:7
 msgid "We hope you'll enjoy your stay with our new greatly improved service."
-msgstr "我们希望您能喜欢我们全新升级的服务。"
+msgstr "Upamo, da boste uživali z našo močno izboljšano storitvijo."
 
 #: templates/welcome.jinja2:9
 msgid "What is Ada?"
-msgstr "什么是Ada？"
+msgstr "Kaj je Ada?"
 
 #: templates/welcome.jinja2:12
 msgid ""
 "This service allows you to remotely access your data and create machines "
 "(virtualized linux desktop environments), which contain all the software,"
 " data and compute resources you will need to perform your work."
-msgstr "本服务允许您远程访问您的数据并创建机器（虚拟化的Linux桌面环境），其中包含您执行工作所需的所有软件、数据和计算资源。"
+msgstr ""
+"Ta storitev vam omogoča oddaljen dostop do vaših podatkov in ustvarjanje "
+"strojev (virtualna Linux namizna okolja), ki vsebujejo vso programsko "
+"opremo, podatke in vire za izračune, ki jih boste potrebovali za "
+"opravljanje svojega dela."
 
 #: templates/welcome.jinja2:16
 msgid ""
 "For help and info, find the help button on the side bar menu. These pages"
 " have specifc information for each area of the site."
-msgstr "帮助和信息请在侧边栏菜单中找到帮助按钮。这些页面包含有关网站各个区域的具体信息。"
+msgstr ""
 
 #: templates/welcome.jinja2:19
 msgid "Feedback and help"
-msgstr "反馈和帮助"
+msgstr "Povratne informacije in pomoč"
 
 #: templates/welcome.jinja2:21
 msgid "Have a question, request or an issue to report?"
-msgstr "有问题、请求或需要报告的问题吗？"
+msgstr "Imate vprašanje, zahtevo ali težavo za prijavo?"
 
 #: templates/welcome.jinja2:24
 msgid "Let us know at:"
-msgstr "请通过以下方式联系我们："
+msgstr "Sporočite nam na:"
 
+#~ msgid ""
+#~ "For help and info, find the help"
+#~ " button on the side bar menu. "
+#~ "These pages have specific information "
+#~ "for each area of the site."
+#~ msgstr ""
+#~ "Za pomoč in informacije poiščite gumb"
+#~ " za pomoč v stranskem meniju. Te "
+#~ "strani vsebujejo specifične informacije za "
+#~ "vsako področje spletnega mesta."

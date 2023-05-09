@@ -8,7 +8,16 @@ import string
 import secrets
 import subprocess
 
-from flask import Flask, render_template, url_for, redirect, flash, request, abort
+from flask import (
+    Flask,
+    render_template,
+    url_for,
+    redirect,
+    flash,
+    request,
+    abort,
+    send_from_directory,
+)
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
 from sqlalchemy import Index
@@ -27,8 +36,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, SubmitField
 from wtforms.validators import DataRequired, Email, Length
-from flask_babel import Babel
-from flask_babel import gettext
+from flask_babel import Babel, gettext
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
@@ -36,6 +44,8 @@ import argh
 import humanize
 import pytz
 import docker
+
+import waitress
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -582,6 +592,26 @@ def inject_globals():
     }
 
 
+class RequestLoggingMiddleware:
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        start_time = time.time()
+
+        def custom_start_response(status, response_headers, exc_info=None):
+            end_time = time.time()
+            duration = end_time - start_time
+            request_log = f"waitress: {request.remote_addr} {duration:.4f}s {request.method} {status} {request.path}"
+            logging.info(request_log)
+            return start_response(status, response_headers, exc_info)
+
+        return self.app(environ, custom_start_response)
+
+
+app.wsgi_app = RequestLoggingMiddleware(app.wsgi_app)
+
+
 @login_manager.user_loader
 def load_user(user_id):
     """
@@ -595,7 +625,7 @@ def get_locale():
         print(f"used has language preference: {current_user.language}")
         if current_user.language:
             return current_user.language
-    lang = request.accept_languages.best_match(["en", "zh"])
+    lang = request.accept_languages.best_match(["en", "zh", "sl"])
     print(f"language best match: {lang}")
     return lang
 
@@ -1517,7 +1547,10 @@ def main(debug=False):
     create_initial_db()
     clean_up_db()
 
-    app.run(debug=debug)
+    if debug:
+        app.run(debug=True)
+    else:
+        waitress.serve(app, host="0.0.0.0", port=5000)
 
 
 if __name__ == "__main__":
