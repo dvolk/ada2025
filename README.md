@@ -23,8 +23,7 @@ Flask web app for desktop machines in the cloud
 - Run machines as:
   - docker containers
   - libvirt virtual machines
-  - openstack virtual machines
-  all in one unified interface
+  - openstack virtual machines, all in one unified interface
 - Share machines with other users
 - Copy data from data sources into machines
 - Open desktop in a web browser
