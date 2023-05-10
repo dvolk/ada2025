@@ -1,3 +1,4 @@
+# python lib imports
 import logging
 import datetime
 import enum
@@ -7,7 +8,11 @@ import json
 import string
 import secrets
 import subprocess
+import functools
+import inspect
+import uuid
 
+# flask and related imports
 from flask import (
     Flask,
     render_template,
@@ -19,7 +24,7 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
-from sqlalchemy import Index, JSON
+from sqlalchemy import Index, JSON, desc
 from flask_migrate import Migrate
 from flask_login import (
     LoginManager,
@@ -41,13 +46,17 @@ from flask_limiter.util import get_remote_address
 from markupsafe import Markup
 import waitress
 
+# virtualization interfaces
+import docker
+import libvirt
+import openstack
+import cinderclient
+import novaclient
+
+# other 3rd party imports
 import argh
 import humanize
 import pytz
-
-import docker
-import libvirt
-
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -83,6 +92,46 @@ class ProtectedModelView(ModelView):
 
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for("welcome"))
+
+
+thread_id_map = {}
+thread_id_counter = 0
+thread_id_lock = threading.Lock()
+
+
+def get_small_thread_id():
+    global thread_id_counter, thread_id_map, thread_id_lock
+    thread_id = threading.get_ident()
+    with thread_id_lock:
+        if thread_id not in thread_id_map:
+            thread_id_map[thread_id] = thread_id_counter
+            thread_id_counter += 1
+    return thread_id_map[thread_id]
+
+
+def log_function_call(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        function_signature = inspect.signature(func)
+        bound_arguments = function_signature.bind(*args, **kwargs)
+        bound_arguments.apply_defaults()
+
+        call_uuid = uuid.uuid4().hex[:8]  # Generate a short unique ID
+        small_thread_id = get_small_thread_id()  # Get a small, unique thread ID
+        logging.info(
+            f"[{call_uuid}-{small_thread_id}] Entering function '{func.__name__}' with bound arguments {bound_arguments.arguments}"
+        )
+
+        result = func(*args, **kwargs)
+
+        elapsed_time = time.perf_counter() - start_time
+        logging.info(
+            f"[{call_uuid}-{small_thread_id}] Exiting function '{func.__name__}' after {elapsed_time:.6f} seconds"
+        )
+        return result
+
+    return wrapper
 
 
 # Association table for many-to-many relationship between User and Machine (shared_users)
@@ -219,7 +268,7 @@ class DataSource(db.Model):
     )
 
     def __repr__(self):
-        return f"{self.source_host}:{self.source_dir}"
+        return f"<{self.source_host}:{self.source_dir}>"
 
 
 class ProtectedDataSourceModelView(ProtectedModelView):
@@ -251,7 +300,7 @@ class DataTransferJobState(enum.Enum):
     RUNNING = "R"
     DONE = "D"
     FAILED = "F"
-    REMOVED = "R"
+    HIDDEN = "H"
 
 
 class DataTransferJob(db.Model):
@@ -267,6 +316,7 @@ class DataTransferJob(db.Model):
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
+    finish_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
     user = db.relationship("User", back_populates="data_transfer_jobs")
     data_source = db.relationship("DataSource", back_populates="data_transfer_jobs")
@@ -280,10 +330,18 @@ class DataTransferJob(db.Model):
 
 
 class ProtectedDataTransferJobModelView(ProtectedModelView):
-    column_list = ("id", "status", "user", "data_source", "machine", "creation_date")
+    column_list = (
+        "id",
+        "status",
+        "user",
+        "data_source",
+        "machine",
+        "creation_date",
+        "finish_date",
+    )
     form_columns = ("status", "user", "data_source", "machine")
     column_searchable_list = ("status",)
-    column_sortable_list = ("id", "status", "creation_date")
+    column_sortable_list = ("id", "status", "creation_date", "finish_date")
     column_filters = ("status", "user", "data_source", "machine")
     column_auto_select_related = True
 
@@ -769,7 +827,6 @@ def load_user(user_id):
 
 def get_locale():
     if current_user and current_user.is_authenticated:
-        print(f"used has language preference: {current_user.language}")
         if current_user.language:
             return current_user.language
     lang = request.accept_languages.best_match(["en", "zh", "sl"])
@@ -1172,14 +1229,14 @@ class DataTransferForm(FlaskForm):
 def dismiss_datatransferjob():
     """
     Endpoint for hiding the data transfer job from the data page
-    by setting its state to REMOVED
+    by setting its state to HIDDEN
     """
     job_id = request.form.get("job_id")
     if not job_id:
         abort(404)
 
     job = DataTransferJob.query.filter_by(id=job_id).first_or_404()
-    job.status = DataTransferJobState.REMOVED
+    job.status = DataTransferJobState.HIDDEN
     db.session.commit()
     return "OK"
 
@@ -1244,23 +1301,28 @@ def data():
             db.session.flush()
             db.session.commit()
             threading.Thread(target=start_data_transfer, args=(job.id,)).start()
-            time.sleep(0.2)
 
             flash(gettext("Starting data transfer. Refresh page to update status."))
             return redirect(url_for("data"))
         else:
             flash(gettext("The data transfer job submission could not be validated."))
             return redirect(url_for("data"))
+    else:
+        sorted_jobs = (
+            DataTransferJob.query.filter(DataTransferJob.user_id == current_user.id)
+            .filter(DataTransferJob.status != DataTransferJobState.HIDDEN)
+            .order_by(desc(DataTransferJob.id))
+            .all()
+        )
+        return render_template(
+            "data.jinja2",
+            title=gettext("Data"),
+            form=form,
+            sorted_jobs=sorted_jobs,
+        )
 
-    return render_template(
-        "data.jinja2",
-        title=gettext("Data"),
-        form=form,
-        DataTransferJobState=DataTransferJobState,
-        MachineState=MachineState,
-    )
 
-
+@log_function_call
 def do_rsync(source_host, source_dir, dest_host, dest_dir):
     try:
         # Construct the rsync command
@@ -1288,6 +1350,7 @@ def do_rsync(source_host, source_dir, dest_host, dest_dir):
         return False
 
 
+@log_function_call
 def start_data_transfer(job_id):
     """
     Thread function that takes a job and runs the data transfer
@@ -1304,49 +1367,12 @@ def start_data_transfer(job_id):
             "",
         )
 
+        job.finish_time = datetime.datetime.utcnow()
         if result:
             job.status = DataTransferJobState.DONE
         else:
             job.status = DataTransferJobState.FAILED
         db.session.commit()
-
-
-@app.route("/new_machine", methods=["POST"])
-@limiter.limit("60 per minute")
-@login_required
-def new_machine():
-    """
-    Launches thread to create the container/vm
-    """
-    machine_template_name = request.form.get("machine_template_name", "")
-
-    machine_name = mk_safe_machine_name(current_user.name)
-
-    mt = MachineTemplate.query.filter_by(name=machine_template_name).first_or_404()
-
-    m = Machine(
-        name=machine_name,
-        ip="",
-        state=MachineState.PROVISIONING,
-        owner=current_user,
-        shared_users=[],
-        machine_template=mt,
-    )
-    db.session.add(m)
-    db.session.commit()
-
-    logging.warning("starting new machine thread")
-
-    if mt.type == "docker":
-        threading.Thread(target=docker_start_container, args=(m.id,)).start()
-    elif mt.type == "libvirt":
-        threading.Thread(target=libvirt_start_vm, args=(m.id,)).start()
-
-    flash(
-        gettext("Creating machine in the background. Refresh page to update status."),
-        category="success",
-    )
-    return redirect(url_for("machines"))
 
 
 @app.route("/share_machine/<machine_id>")
@@ -1404,6 +1430,46 @@ def share_revoke(machine_id):
     return redirect(url_for("machines"))
 
 
+@app.route("/new_machine", methods=["POST"])
+@limiter.limit("60 per minute")
+@login_required
+def new_machine():
+    """
+    Launches thread to create the container/vm
+    """
+    machine_template_name = request.form.get("machine_template_name", "")
+
+    machine_name = mk_safe_machine_name(current_user.name)
+
+    mt = MachineTemplate.query.filter_by(name=machine_template_name).first_or_404()
+
+    m = Machine(
+        name=machine_name,
+        ip="",
+        state=MachineState.PROVISIONING,
+        owner=current_user,
+        shared_users=[],
+        machine_template=mt,
+    )
+    db.session.add(m)
+    db.session.commit()
+
+    logging.warning("starting new machine thread")
+
+    if mt.type == "docker":
+        threading.Thread(target=docker_start_container, args=(m.id,)).start()
+    elif mt.type == "libvirt":
+        threading.Thread(target=libvirt_start_vm, args=(m.id,)).start()
+    elif mt.type == "openstack":
+        threading.Thread(target=openstack_start_vm, args=(m.id,)).start()
+
+    flash(
+        gettext("Creating machine in the background. Refresh page to update status."),
+        category="success",
+    )
+    return redirect(url_for("machines"))
+
+
 @app.route("/stop_machine", methods=["POST"])
 @limiter.limit("60 per minute")
 def stop_machine():
@@ -1442,11 +1508,213 @@ def stop_machine():
         threading.Thread(target=docker_stop_container, args=(machine_id,)).start()
     elif machine.machine_template.type == "libvirt":
         threading.Thread(target=libvirt_stop_vm, args=(machine.id,)).start()
+    elif machine.machine_template.type == "openstack":
+        threading.Thread(target=openstack_stop_vm, args=(machine.id,)).start()
 
     flash(gettext("Deleting machine"), category="success")
     return redirect(url_for("machines"))
 
 
+@log_function_call
+def openstack_conn_from_mp(mp):
+    auth_url = mp.provider_parameters.get("auth_url")
+    user_domain_id = mp.provider_parameters.get("user_domain_id")
+    project_domain_id = mp.provider_parameters.get("project_domain_id")
+    username = mp.provider_parameters.get("username")
+    password = mp.provider_parameters.get("password")
+    project_id = mp.provider_parameters.get("project_id")
+
+    conn = openstack.connection.Connection(
+        auth_url=auth_url,
+        user_domain_id=user_domain_id,
+        project_domain_id=project_domain_id,
+        username=username,
+        password=password,
+        project_id=project_id,
+    )
+
+
+@log_function_call
+def openstack_wait_for_vm_ip(conn, server_id, network_name, timeout=300):
+    start_time = time.time()
+    server = None
+
+    while time.time() - start_time < timeout:
+        server = conn.compute.get_server(server_id)
+        addresses = server.addresses.get(network_name, [])
+
+        for address in addresses:
+            if address.get("OS-EXT-IPS:type") == "fixed":
+                return address.get("addr")
+
+        time.sleep(5)
+
+    raise TimeoutError(
+        f"Server '{server_id}' did not get an IP address within {timeout} seconds."
+    )
+
+
+# Function to create a new VM from a volume snapshot
+@log_function_call
+def openstack_start_vm(m_id):
+    with app.app_context():
+        try:
+            m = Machine.query.filter_by(id=m_id)
+            mt = m.machine_template
+            mp = mt.machine_provider
+
+            flavor_name = mt.extra_parameters.get("flavor_name")
+            network_uuid = mt.extra_parameters.get("network_uuid")
+            key_name = mt.extra_parameters.get("key_name")
+            vol_size = mt.extra_parameters.get("vol_size")
+            vol_snapshot = mt.image
+
+            conn = openstack_conn_from_mp(mp)
+
+            # Find the flavor by name
+            flavor = conn.compute.find_flavor(flavor_name)
+            if not flavor:
+                print(f"Flavor '{flavor_name}' not found.")
+                return
+
+            # Find the network by UUID
+            network = conn.network.get_network(network_uuid)
+            if not network:
+                print(f"Network with UUID '{network_uuid}' not found.")
+                return
+
+            # Create a bootable volume from the specified snapshot
+            cinder = cinderclient.client.Client("3", session=conn.session)
+            snapshot = conn.block_storage.get_snapshot(vol_snapshot)
+            if not snapshot:
+                print(f"Snapshot '{vol_snapshot}' not found.")
+                return
+
+            volume = cinder.volumes.create(
+                size=vol_size,
+                snapshot_id=snapshot.id,
+                display_name="vm_boot_volume",
+                bootable=True,
+            )
+
+            # Wait for the volume to become available
+            openstack.resource.wait_for_status(
+                conn.block_storage.get_volume,
+                volume.id,
+                status="available",
+                wait=300,
+            )
+
+            # Create the server (VM)
+            server = conn.compute.create_server(
+                name="new_vm",
+                flavor_id=flavor.id,
+                networks=[{"uuid": network.id}],
+                key_name=key_name,
+                block_device_mapping_v2=[
+                    {
+                        "boot_index": "0",
+                        "uuid": volume.id,
+                        "source_type": "volume",
+                        "destination_type": "volume",
+                        "delete_on_termination": True,
+                    }
+                ],
+            )
+
+            # Wait for the server to become active
+            openstack.resource.wait_for_status(
+                conn.compute.get_server,
+                server.id,
+                status="ACTIVE",
+                wait=300,
+            )
+
+            print(f"Server '{server.name}' created with ID: {server.id}")
+
+            # wait for ip
+            m.ip = openstack_wait_for_vm_ip(conn, server.id, network.id)
+
+            m.state = MachineState.READY
+            db.session.commit()
+
+        except:
+            logging.exception("Couldn't start openstack vm: ")
+            m.state = "FAILED"
+            db.session.commit()
+
+
+@log_function_call
+def openstack_get_vm_by_ip(conn, target_ip):
+    servers = conn.compute.servers()
+
+    for server in servers:
+        addresses = server.addresses
+        for network, network_addresses in addresses.items():
+            for address in network_addresses:
+                ip = address.get("addr")
+                if ip == target_ip:
+                    return server
+
+    return None
+
+
+@log_function_call
+def openstack_stop_vm_by_ip(conn, target_ip):
+    server = openstack_get_server_by_ip(conn, target_ip)
+
+    if not server:
+        print(f"No server found with IP '{target_ip}'.")
+        return
+
+    # Stop the server if it's active
+    if server.status == "ACTIVE":
+        conn.compute.stop_server(server)
+        print(
+            f"Stopping server '{server.name}' with ID: {server.id} and IP: {target_ip}"
+        )
+
+    # Wait for the server to stop
+    openstack.resource.wait_for_status(
+        conn.compute.get_server,
+        server.id,
+        status="SHUTOFF",
+        wait=300,
+    )
+
+    # Delete associated volumes
+    cinder = cinderclient.Client("3", session=conn.session)
+    volume_attachments = conn.compute.get_server_volumes(server.id)
+
+    for attachment in volume_attachments:
+        volume = cinder.volumes.get(attachment.volume_id)
+        cinder.volumes.delete(volume)
+        print(f"Deleting volume '{volume.display_name}' with ID: {volume.id}")
+
+    # Delete the server
+    conn.compute.delete_server(server)
+    print(f"Deleting server '{server.name}' with ID: {server.id} and IP: {target_ip}")
+
+
+@log_function_call
+def openstack_stop_vm(m_id):
+    with app.app_context():
+        try:
+            m = Machine.query.filter_by(id=m_id)
+            mt = m.machine_template
+            mp = mt.machine_provider
+
+            ip = m.ip
+
+            conn = openstack_conn_from_mp(mp)
+            openstack_stop_vm_by_ip(conn, ip)
+            m.state = MachineState.DELETED
+        except:
+            logging.exception("Couldn't stop openstack vm: ")
+            m.state = MachineState.FAILED
+
+
+@log_function_call
 def docker_get_container_by_ip(client, ip_address, network):
     try:
         network = client.networks.get(network)
@@ -1476,18 +1744,21 @@ def docker_get_container_by_ip(client, ip_address, network):
         logging.exception("Error: Unknown error occurred")
 
 
+@log_function_call
 def docker_get_ip(client, container_name, network):
     container = client.containers.get(container_name)
     maybe_ip = container.attrs["NetworkSettings"]["Networks"][network]["IPAddress"]
     return maybe_ip
 
 
+@log_function_call
 def docker_wait_for_ip(client, container_name, network):
     while not (ip := docker_get_ip(client, container_name, network)):
         time.sleep(1)
     return ip
 
 
+@log_function_call
 def docker_stop_container(machine_id):
     with app.app_context():
         machine = Machine.query.filter_by(id=machine_id).first()
@@ -1515,8 +1786,9 @@ def docker_stop_container(machine_id):
     logging.info(f"deleted container with machine id {machine_id}")
 
 
+@log_function_call
 def docker_start_container(m_id):
-    logging.warning("entered start_container thread")
+    logging.warning("entered docker_start_container thread")
     with app.app_context():
         try:
             m = Machine.query.filter_by(id=m_id).first()
@@ -1573,6 +1845,7 @@ def docker_start_container(m_id):
     logging.warning("all done!")
 
 
+@log_function_call
 def libvirt_get_vm_ip(conn, vm_name):
     try:
         domain = conn.lookupByName(vm_name)
@@ -1593,12 +1866,15 @@ def libvirt_get_vm_ip(conn, vm_name):
     return None
 
 
+@log_function_call
 def libvirt_wait_for_ip(conn, vm_name):
+    logging.info("waiting for libvirt_wait_for_ip")
     while not (ip := libvirt_get_vm_ip(conn, vm_name)):
         time.sleep(1)
     return ip
 
 
+@log_function_call
 def libvirt_wait_for_vm(conn, vm_name):
     # Wait for the virtual machine to be in the running state
     try:
@@ -1615,102 +1891,128 @@ def libvirt_wait_for_vm(conn, vm_name):
         time.sleep(1)
 
 
+@log_function_call
 def libvirt_start_vm(m_id):
     """
     Start a vm and wait for it to have an ip
     """
     logging.info("entered start_libvirt_vm thread")
     with app.app_context():
-        m = Machine.query.filter_by(id=m_id).first()
-        mt = m.machine_template
-        mp = mt.machine_provider
+        try:
+            m = Machine.query.filter_by(id=m_id).first()
+            mt = m.machine_template
+            mp = mt.machine_provider
 
-        qemu_url = mp.provider_data.get("base_url")
+            qemu_url = mp.provider_data.get("base_url")
 
-        name = m.name
-        image = mt.image
-        cores = mt.cpu_limit_cores
-        mem = int(mt.memory_limit_gb) * 1024 * 1024
+            name = m.name
+            image = mt.image
+            cores = mt.cpu_limit_cores
+            mem = int(mt.memory_limit_gb) * 1024 * 1024
 
-        # TODO rewrite the following to use python api
-        # clone vm
-        subprocess.run(
-            [
-                "virt-clone",
-                "--connect",
-                qemu_url,
-                "--original",
-                image,
-                "--name",
-                name,
-                "--auto-clone",
-            ]
-        )
+            # TODO rewrite the following to use python api
+            # clone vm
+            subprocess.run(
+                [
+                    "virt-clone",
+                    "--connect",
+                    qemu_url,
+                    "--original",
+                    image,
+                    "--name",
+                    name,
+                    "--auto-clone",
+                ]
+            )
 
-        # Set the CPU and memory limits
-        subprocess.run(
-            [
-                "virsh",
-                "--connect",
-                qemu_url,
-                "setvcpus",
-                name,
-                str(cores),
-                "--config",
-                "--maximum",
-            ]
-        )
-        subprocess.run(
-            ["virsh", "--connect", qemu_url, "setvcpus", name, str(cores), "--config"]
-        )
-        subprocess.run(
-            ["virsh", "--connect", qemu_url, "setmaxmem", name, str(mem), "--config"]
-        )
-        subprocess.run(
-            ["virsh", "--connect", qemu_url, "setmem", name, str(mem), "--config"]
-        )
+            # Set the CPU and memory limits
+            subprocess.run(
+                [
+                    "virsh",
+                    "--connect",
+                    qemu_url,
+                    "setvcpus",
+                    name,
+                    str(cores),
+                    "--config",
+                    "--maximum",
+                ]
+            )
+            subprocess.run(
+                [
+                    "virsh",
+                    "--connect",
+                    qemu_url,
+                    "setvcpus",
+                    name,
+                    str(cores),
+                    "--config",
+                ]
+            )
+            subprocess.run(
+                [
+                    "virsh",
+                    "--connect",
+                    qemu_url,
+                    "setmaxmem",
+                    name,
+                    str(mem),
+                    "--config",
+                ]
+            )
+            subprocess.run(
+                ["virsh", "--connect", qemu_url, "setmem", name, str(mem), "--config"]
+            )
 
-        # start vm
-        subprocess.run(["virsh", "--connect", qemu_url, "start", name])
+            # start vm
+            subprocess.run(["virsh", "--connect", qemu_url, "start", name])
 
-        conn = libvirt.open(qemu_url)
-        logging.info(f"waiting for vm {name} to come up")
-        libvirt_wait_for_vm(conn, name)
-        logging.info(f"vm {name} is up, waiting for ip")
-        ip = libvirt_wait_for_ip(conn, name)
-        logging.info(f"vm {name} has acquired an ip: {ip}")
+            conn = libvirt.open(qemu_url)
+            logging.info(f"waiting for vm {name} to come up")
+            libvirt_wait_for_vm(conn, name)
+            logging.info(f"vm {name} is up, waiting for ip")
+            ip = libvirt_wait_for_ip(conn, name)
+            logging.info(f"vm {name} has acquired an ip: {ip}")
 
-        m.ip = ip
-        m.state = MachineState.READY
-        db.session.commit()
+            m.ip = ip
+            m.state = MachineState.READY
+            db.session.commit()
+        except:
+            logging.exception("Error creating libvirt vm: ")
+            m.state = MachineState.FAILED
+            db.session.commit()
 
 
+@log_function_call
 def libvirt_stop_vm(m_id):
     with app.app_context():
-        m = Machine.query.filter_by(id=m_id).first()
-        mt = m.machine_template
-        mp = mt.machine_provider
-        vm_name = m.name
-        qemu_base_url = mp.provider_data.get("base_url")
+        try:
+            m = Machine.query.filter_by(id=m_id).first()
+            mt = m.machine_template
+            mp = mt.machine_provider
+            vm_name = m.name
+            qemu_base_url = mp.provider_data.get("base_url")
 
-        # Create a new connection to a local libvirt session
-        conn = libvirt.open(qemu_base_url)
+            # Create a new connection to a local libvirt session
+            conn = libvirt.open(qemu_base_url)
 
-        # Stop the virtual machine
-        domain = conn.lookupByName(vm_name)
-        domain.destroy()
+            # Stop the virtual machine
+            domain = conn.lookupByName(vm_name)
+            domain.destroy()
 
-        # Delete the disk
-        storage_paths = []
-        for pool in conn.listAllStoragePools():
-            for vol in pool.listAllVolumes():
-                if vm_name in vol.name():
-                    storage_paths.append(vol.path())
-                    vol.delete(0)
+            # Delete the disk
+            storage_paths = []
+            for pool in conn.listAllStoragePools():
+                for vol in pool.listAllVolumes():
+                    if vm_name in vol.name():
+                        storage_paths.append(vol.path())
+                        vol.delete(0)
 
-        domain.undefine()
+            domain.undefine()
 
-        conn.close()
+            conn.close()
+        except:
+            logging.exception("Error stopping libvirt vm:")
 
     print(f"Stopped virtual machine {vm_name} and deleted its disk")
 
@@ -1774,6 +2076,19 @@ def create_initial_db():
                     "base_url": "qemu:///system",
                 },
             )
+            stfc_os_machine_provider = MachineProvider(
+                name="STFC OpenStack",
+                type="openstack",
+                customer="unknown",
+                provider_data={
+                    "auth_url": "",
+                    "user_domain_id": "",
+                    "project_domain_id": "",
+                    "username": "",
+                    "password": "",
+                    "project_id": "",
+                },
+            )
 
             test_machine_template1 = MachineTemplate(
                 name="Muon analysis template",
@@ -1794,6 +2109,22 @@ def create_initial_db():
                 group=normal_user_group,
                 machine_provider=docker_machine_provider,
                 description="This is a docker machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",
+            )
+            test_machine_template2 = MachineTemplate(
+                name="STFC test template",
+                type="openstack",
+                memory_limit_gb=32,
+                cpu_limit_cores=8,
+                image="workspace",
+                group=normal_user_group,
+                machine_provider=stfc_os_machine_provider,
+                description="This is a STFC openstack template that's added by default when you're running in debug mode.",
+                extra_parameters={
+                    "flavor_name": "",
+                    "network_uuid": "",
+                    "key_name": "",
+                    "vol_size": "",
+                },
             )
 
             db.session.add(admin_group)
@@ -1826,7 +2157,7 @@ def clean_up_db():
         for j in DataTransferJob.query.all():
             if j.status == DataTransferJobState.RUNNING:
                 logging.warning(f"Setting DataTransferJob {j.id} to FAILED state")
-                m.state = DataTransferJobState.FAILED
+                j.state = DataTransferJobState.FAILED
                 # Could also restart?
         db.session.commit()
 

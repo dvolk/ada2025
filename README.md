@@ -20,7 +20,11 @@ Flask web app for desktop machines in the cloud
 ## Features
 
 - Create machines from machine templates
-- Run machines as docker containers and libvirt virtual machines
+- Run machines as:
+  - docker containers
+  - libvirt virtual machines
+  - openstack virtual machines
+  all in one unified interface
 - Share machines with other users
 - Copy data from data sources into machines
 - Open desktop in a web browser
@@ -41,6 +45,7 @@ Flask web app for desktop machines in the cloud
 - Debian
 - Docker
 - libvirt
+- python-openstack
 - TigerVNC
 - noVNC
 - filebrowser
