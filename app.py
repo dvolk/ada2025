@@ -12,6 +12,7 @@ import functools
 import inspect
 import uuid
 import socket
+import os
 
 # flask and related imports
 from flask import (
@@ -36,6 +37,7 @@ from flask_login import (
     current_user,
 )
 from flask_admin import Admin
+from flask_admin.actions import action
 from flask_admin.contrib.sqla import ModelView
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
@@ -62,13 +64,18 @@ logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "your_secret_key"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
+    "ADA2025_SQLALCHEMY_URL", "sqlite:///app.db"
+)
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
-admin = Admin(url="/flaskyadmin")
+admin = Admin(
+    url="/flaskyadmin",
+    template_mode="bootstrap4",
+)
 admin.init_app(app)
 
 limiter = Limiter(
@@ -82,6 +89,29 @@ limiter = Limiter(
 )
 
 
+# for nicer formatting of json data in flask-admin forms
+class JsonTextAreaField(TextAreaField):
+    def process_formdata(self, valuelist):
+        if valuelist:
+            value = valuelist[0]
+            if value:
+                try:
+                    self.data = json.loads(value)
+                except ValueError:
+                    self.data = None
+                    raise ValueError(self.gettext("Invalid JSON data."))
+            else:
+                self.data = None
+        else:
+            self.data = None
+
+    def _value(self):
+        if self.data is not None:
+            return json.dumps(self.data, indent=4)
+        else:
+            return ""
+
+
 # make the flask-admin interface only accessible to admins
 class ProtectedModelView(ModelView):
     def is_accessible(self):
@@ -92,6 +122,33 @@ class ProtectedModelView(ModelView):
 
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for("welcome"))
+
+    @action(
+        "clone", "Clone", "Are you sure you want to create a copy of the selected rows?"
+    )
+    def action_clone(self, ids):
+        try:
+            for id in ids:
+                record = self.get_one(id)
+                if record is not None:
+                    clone = self._create_clone(record)
+                    self.session.add(clone)
+            self.session.commit()
+            flash(f"Successfully created a copy of {len(ids)} records.")
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                raise
+            flash("Failed to clone record. %(error)s", "error", error=str(ex))
+
+    def _create_clone(self, record):
+        clone = self.model()
+        for field in self._get_field_names():
+            if field != "id":
+                setattr(clone, field, getattr(record, field))
+        return clone
+
+    def _get_field_names(self):
+        return self.model.__table__.columns.keys()
 
 
 socket.setdefaulttimeout(5)
@@ -121,6 +178,7 @@ def get_small_thread_id():
     return thread_id_map[thread_id]
 
 
+# decorator for functions that logs some stuff
 def log_function_call(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -470,6 +528,11 @@ class ProtectedMachineProviderModelView(ProtectedModelView):
         "provider_data": _provider_data_formatter,
     }
 
+    def scaffold_form(self):
+        form_class = super(ProtectedMachineProviderModelView, self).scaffold_form()
+        form_class.provider_data = JsonTextAreaField("Provider Data")
+        return form_class
+
 
 class MachineTemplate(db.Model):
     """
@@ -548,6 +611,11 @@ class ProtectedMachineTemplateModelView(ProtectedModelView):
     column_formatters = {
         "extra_data": _extra_data_formatter,
     }
+
+    def scaffold_form(self):
+        form_class = super(ProtectedMachineTemplateModelView, self).scaffold_form()
+        form_class.extra_data = JsonTextAreaField("Extra Data")
+        return form_class
 
 
 class MachineState(enum.Enum):
@@ -1460,7 +1528,9 @@ def share_revoke(machine_id):
 
 
 @app.route("/new_machine", methods=["POST"])
-@limiter.limit("60 per minute")
+@limiter.limit(
+    "100 per day, 10 per minute, 1/2 seconds", key_func=lambda: current_user.name
+)
 @login_required
 def new_machine():
     """
@@ -1832,9 +1902,11 @@ def openstack_stop_vm(m_id):
                 logging.exception("Problem deleting openstack vm: ")
 
             m.state = MachineState.DELETED
+            db.session.commit()
         except:
             logging.exception("Couldn't stop openstack vm: ")
             m.state = MachineState.FAILED
+            db.session.commit()
 
 
 @log_function_call
@@ -1893,17 +1965,15 @@ def docker_stop_container(machine_id):
         docker_base_url = mp.provider_data.get("base_url")
         client = docker.DockerClient(docker_base_url)
 
-    try:
-        container = docker_get_container_by_ip(client, machine.ip, network)
-        if container:
-            container.stop()
-    except docker.errors.APIError as e:
-        logging.exception("Error: stopping and removing container")
-    except Exception as e:
-        logging.exception("Error: Unknown error occurred")
+        try:
+            container = docker_get_container_by_ip(client, machine.ip, network)
+            if container:
+                container.stop()
+        except docker.errors.APIError as e:
+            logging.exception("Error: stopping and removing container")
+        except Exception as e:
+            logging.exception("Error: Unknown error occurred")
 
-    with app.app_context():
-        machine = Machine.query.filter_by(id=machine_id).first()
         machine.state = MachineState.DELETED
         db.session.commit()
     logging.info(f"deleted container with machine id {machine_id}")
@@ -2109,8 +2179,8 @@ def libvirt_start_vm(m_id):
 @log_function_call
 def libvirt_stop_vm(m_id):
     with app.app_context():
+        m = Machine.query.filter_by(id=m_id).first()
         try:
-            m = Machine.query.filter_by(id=m_id).first()
             mt = m.machine_template
             mp = mt.machine_provider
             vm_name = m.name
@@ -2132,10 +2202,11 @@ def libvirt_stop_vm(m_id):
                         vol.delete(0)
 
             domain.undefine()
-
             conn.close()
         except:
             logging.exception("Error stopping libvirt vm:")
+        m.state = MachineState.DELETED
+        db.session.commit()
 
     print(f"Stopped virtual machine {vm_name} and deleted its disk")
 
@@ -2214,16 +2285,16 @@ def create_initial_db():
                 },
             )
 
-            # test_machine_template1 = MachineTemplate(
-            #    name="Muon analysis template",
-            #    type="libvirt",
-            #    memory_limit_gb=16,
-            #    cpu_limit_cores=4,
-            #    image="debian11-5",
-            #    group=admin_group,
-            #    machine_provider=libvirt_machine_provider,
-            #    description="This is a libvirt machine template that's added by default when you're running in debug mode. It references the image \"debian11-5\"",
-            # )
+            test_machine_template1 = MachineTemplate(
+                name="Muon analysis template",
+                type="libvirt",
+                memory_limit_gb=16,
+                cpu_limit_cores=4,
+                image="debian11-5",
+                group=admin_group,
+                machine_provider=libvirt_machine_provider,
+                description="This is a libvirt machine template that's added by default when you're running in debug mode. It references the image \"debian11-5\"",
+            )
             test_machine_template2 = MachineTemplate(
                 name="XRAY analysis template",
                 type="docker",
@@ -2264,6 +2335,7 @@ def create_initial_db():
             db.session.add(docker_machine_provider)
             db.session.add(test_machine_template3)
             db.session.add(test_machine_template2)
+            db.session.add(test_machine_template1)
             db.session.commit()
 
 
