@@ -297,10 +297,10 @@ Index("source_host_source_dir_idx", DataSource.source_host, DataSource.source_di
 
 
 class DataTransferJobState(enum.Enum):
-    RUNNING = "R"
-    DONE = "D"
-    FAILED = "F"
-    HIDDEN = "H"
+    RUNNING = "RUNNING"
+    DONE = "DONE"
+    FAILED = "FAILED"
+    HIDDEN = "HIDDEN"
 
 
 class DataTransferJob(db.Model):
@@ -309,7 +309,7 @@ class DataTransferJob(db.Model):
     """
 
     id = db.Column(db.Integer, primary_key=True)
-    status = db.Column(db.Enum(DataTransferJobState), nullable=False, index=True)
+    state = db.Column(db.Enum(DataTransferJobState), nullable=False, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     data_source_id = db.Column(db.Integer, db.ForeignKey("data_source.id"))
     machine_id = db.Column(db.Integer, db.ForeignKey("machine.id"))
@@ -332,17 +332,17 @@ class DataTransferJob(db.Model):
 class ProtectedDataTransferJobModelView(ProtectedModelView):
     column_list = (
         "id",
-        "status",
+        "state",
         "user",
         "data_source",
         "machine",
         "creation_date",
         "finish_date",
     )
-    form_columns = ("status", "user", "data_source", "machine")
-    column_searchable_list = ("status",)
-    column_sortable_list = ("id", "status", "creation_date", "finish_date")
-    column_filters = ("status", "user", "data_source", "machine")
+    form_columns = ("state", "user", "data_source", "machine")
+    column_searchable_list = ("state",)
+    column_sortable_list = ("id", "state", "creation_date", "finish_date")
+    column_filters = ("state", "user", "data_source", "machine")
     column_auto_select_related = True
 
 
@@ -432,7 +432,7 @@ class MachineProvider(db.Model):
 
 
 class ProtectedMachineProviderModelView(ProtectedModelView):
-    column_list = ("id", "name", "type", "customer", "creation_date", "provider_data")
+    column_list = ("id", "name", "type", "customer", "provider_data")
     column_searchable_list = ("name", "type", "customer")
     column_filters = ("name", "customer")
 
@@ -449,6 +449,8 @@ class ProtectedMachineProviderModelView(ProtectedModelView):
     # Custom formatter for provider_data
     def _provider_data_formatter(view, context, model, name):
         json_data = model.provider_data
+        if not json_data:
+            return ""
         formatted_data = [f"{k}: {v}" for k, v in json_data.items()]
         return Markup("<br>".join(formatted_data))
 
@@ -493,22 +495,22 @@ class ProtectedMachineTemplateModelView(ProtectedModelView):
         "name",
         "type",
         "image",
-        "description",
-        "creation_date",
         "memory_limit_gb",
         "cpu_limit_cores",
         "group",
         "machines",
+        "extra_data",
     )
     form_columns = (
         "name",
         "type",
         "image",
         "description",
-        "memory_limit_gb",
         "cpu_limit_cores",
+        "memory_limit_gb",
         "group",
         "machines",
+        "extra_data",
     )
     column_searchable_list = ("name", "type", "image")
     column_sortable_list = (
@@ -523,13 +525,25 @@ class ProtectedMachineTemplateModelView(ProtectedModelView):
     column_filters = ("type", "group")
     column_auto_select_related = True
 
+    # Custom formatter for extra_data
+    def _extra_data_formatter(view, context, model, name):
+        json_data = model.extra_data
+        if not json_data:
+            return ""
+        formatted_data = [f"{k}: {v}" for k, v in json_data.items()]
+        return Markup("<br>".join(formatted_data))
+
+    column_formatters = {
+        "extra_data": _extra_data_formatter,
+    }
+
 
 class MachineState(enum.Enum):
-    PROVISIONING = "P"
-    READY = "R"
-    FAILED = "F"
-    DELETING = "D"
-    DELETED = "DD"
+    PROVISIONING = "PROVISIONING"
+    READY = "READY"
+    FAILED = "FAILED"
+    DELETING = "DELETING"
+    DELETED = "DELETED"
 
 
 class Machine(db.Model):
@@ -1236,7 +1250,7 @@ def dismiss_datatransferjob():
         abort(404)
 
     job = DataTransferJob.query.filter_by(id=job_id).first_or_404()
-    job.status = DataTransferJobState.HIDDEN
+    job.state = DataTransferJobState.HIDDEN
     db.session.commit()
     return "OK"
 
@@ -1292,7 +1306,7 @@ def data():
             # security checks ok
 
             job = DataTransferJob(
-                status=DataTransferJobState.RUNNING,
+                state=DataTransferJobState.RUNNING,
                 user=current_user,
                 data_source=data_source,
                 machine=machine,
@@ -1310,7 +1324,7 @@ def data():
     else:
         sorted_jobs = (
             DataTransferJob.query.filter(DataTransferJob.user_id == current_user.id)
-            .filter(DataTransferJob.status != DataTransferJobState.HIDDEN)
+            .filter(DataTransferJob.state != DataTransferJobState.HIDDEN)
             .order_by(desc(DataTransferJob.id))
             .all()
         )
@@ -1369,9 +1383,9 @@ def start_data_transfer(job_id):
 
         job.finish_time = datetime.datetime.utcnow()
         if result:
-            job.status = DataTransferJobState.DONE
+            job.state = DataTransferJobState.DONE
         else:
-            job.status = DataTransferJobState.FAILED
+            job.state = DataTransferJobState.FAILED
         db.session.commit()
 
 
@@ -1497,7 +1511,6 @@ def stop_machine():
         logging.warning(
             f"machine {machine_id} is not in correct state for deletion: {machine.state}"
         )
-        abort(500)
 
     # good to go
     logging.info(f"deleting container with machine id {machine_id}")
@@ -1517,12 +1530,12 @@ def stop_machine():
 
 @log_function_call
 def openstack_conn_from_mp(mp):
-    auth_url = mp.provider_parameters.get("auth_url")
-    user_domain_id = mp.provider_parameters.get("user_domain_id")
-    project_domain_id = mp.provider_parameters.get("project_domain_id")
-    username = mp.provider_parameters.get("username")
-    password = mp.provider_parameters.get("password")
-    project_id = mp.provider_parameters.get("project_id")
+    auth_url = mp.provider_data.get("auth_url")
+    user_domain_id = mp.provider_data.get("user_domain_id")
+    project_domain_id = mp.provider_data.get("project_domain_id")
+    username = mp.provider_data.get("username")
+    password = mp.provider_data.get("password")
+    project_id = mp.provider_data.get("project_id")
 
     conn = openstack.connection.Connection(
         auth_url=auth_url,
@@ -1559,14 +1572,14 @@ def openstack_wait_for_vm_ip(conn, server_id, network_name, timeout=300):
 def openstack_start_vm(m_id):
     with app.app_context():
         try:
-            m = Machine.query.filter_by(id=m_id)
+            m = Machine.query.filter_by(id=m_id).first()
             mt = m.machine_template
             mp = mt.machine_provider
 
-            flavor_name = mt.extra_parameters.get("flavor_name")
-            network_uuid = mt.extra_parameters.get("network_uuid")
-            key_name = mt.extra_parameters.get("key_name")
-            vol_size = mt.extra_parameters.get("vol_size")
+            flavor_name = mt.extra_data.get("flavor_name")
+            network_uuid = mt.extra_data.get("network_uuid")
+            key_name = mt.extra_data.get("key_name")
+            vol_size = mt.extra_data.get("vol_size")
             vol_snapshot = mt.image
 
             conn = openstack_conn_from_mp(mp)
@@ -1640,7 +1653,7 @@ def openstack_start_vm(m_id):
 
         except:
             logging.exception("Couldn't start openstack vm: ")
-            m.state = "FAILED"
+            m.state = MachineState.FAILED
             db.session.commit()
 
 
@@ -2045,6 +2058,7 @@ def create_initial_db():
                 is_enabled=True,
                 name="admin",
                 group=admin_group,
+                language="zh",
                 is_admin=True,
                 email="denis.volk@stfc.ac.uk",
                 data_sources=[demo_source1, demo_source2],
@@ -2110,7 +2124,7 @@ def create_initial_db():
                 machine_provider=docker_machine_provider,
                 description="This is a docker machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",
             )
-            test_machine_template2 = MachineTemplate(
+            test_machine_template3 = MachineTemplate(
                 name="STFC test template",
                 type="openstack",
                 memory_limit_gb=32,
@@ -2119,7 +2133,7 @@ def create_initial_db():
                 group=normal_user_group,
                 machine_provider=stfc_os_machine_provider,
                 description="This is a STFC openstack template that's added by default when you're running in debug mode.",
-                extra_parameters={
+                extra_data={
                     "flavor_name": "",
                     "network_uuid": "",
                     "key_name": "",
@@ -2135,6 +2149,7 @@ def create_initial_db():
             db.session.add(docker_machine_provider)
             db.session.add(test_machine_template1)
             db.session.add(test_machine_template2)
+            db.session.add(test_machine_template3)
             db.session.commit()
 
 
@@ -2155,7 +2170,7 @@ def clean_up_db():
                 m.state = MachineState.FAILED
                 # TODO: make sure all machine resources are deleted
         for j in DataTransferJob.query.all():
-            if j.status == DataTransferJobState.RUNNING:
+            if j.state == DataTransferJobState.RUNNING:
                 logging.warning(f"Setting DataTransferJob {j.id} to FAILED state")
                 j.state = DataTransferJobState.FAILED
                 # Could also restart?
