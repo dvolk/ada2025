@@ -7,7 +7,7 @@ WORKDIR /app
 # Install libvirt requirements
 RUN apt update && \
     apt -y install --no-install-recommends \
-        build-essential libvirt-clients virtinst libvirt-dev
+        build-essential libvirt-clients virtinst libvirt-dev python3-openstackclient
 
 # Copy the requirements file into the container
 COPY requirements.txt .
