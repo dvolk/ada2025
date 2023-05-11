@@ -1,0 +1,28 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - catboard_db_vol:/var/lib/postgresql/data
+  app:
+    image: ada2025_app:latest
+    ports:
+      - 5000:5000
+    restart: always
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+      - type: bind
+        source: /var/run/libvirt/libvirt-sock
+        target: /var/run/libvirt/libvirt-sock
+    environment:
+      - ADA2025_SQLALCHEMY_URI=postgresql://postgres:postgres@db:5432/postgres
+volumes:
+  catboard_db_vol:
