@@ -17,7 +17,7 @@
         <div class="w3-card w3-padding w3-round">
           <div class="w3-row" style="display: flex; align-items: center;">
             <div class="w3-col m8" style="display: flex; align-items: center;">
-              <h3>{{ mt.name }}</h3>
+              <h3>{{ icon('file-lines') }} {{ mt.name }}</h3>
             </div>
             <div class="w3-col m4 w3-right-align">
               <form method="POST" action="/new_machine">
@@ -26,7 +26,7 @@
                   title="Launch an instance of this machine template"
                   type="submit"
                   class="w3-button w3-green w3-round">
-                  {{ icon("plus") }} {{ gettext('Launch instance') }}
+                  {{ icon("plus-circle") }} {{ gettext('Launch instance') }}
                 </button>
               </form>
             </div>

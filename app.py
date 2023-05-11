@@ -986,7 +986,7 @@ def login():
 
 
 class RegistrationForm(FlaskForm):
-    name_min = 4
+    name_min = 2
     name_max = 32
     name = StringField(
         gettext("Name"), validators=[DataRequired(), Length(min=name_min, max=name_max)]
@@ -997,7 +997,7 @@ class RegistrationForm(FlaskForm):
         gettext("Password"),
         validators=[DataRequired(), Length(min=password_min, max=password_max)],
     )
-    real_name_min = 4
+    real_name_min = 2
     real_name_max = 100
     real_name = StringField(
         gettext("Real Name"),
@@ -1015,14 +1015,14 @@ class RegistrationForm(FlaskForm):
         gettext("Email"),
         validators=[DataRequired(), Email(), Length(min=email_min, max=email_max)],
     )
-    organization_min = 4
+    organization_min = 2
     organization_max = 200
     organization = StringField(
         gettext("Organization"),
         validators=[DataRequired(), Length(min=organization_min, max=organization_max)],
     )
     group = SelectField(gettext("Group"), choices=[], validators=[DataRequired()])
-    job_title_min = 4
+    job_title_min = 2
     job_title_max = 200
     job_title = StringField(
         gettext("Job Title"),
@@ -1233,11 +1233,9 @@ def help():
 
 class ProblemReportForm(FlaskForm):
     title = StringField("Title", validators=[DataRequired()])
-    description = TextAreaField("Description", validators=[DataRequired()])
+    description = TextAreaField("Description", validators=[])
     machine_name = StringField("machine_name", validators=[DataRequired()])
-    data_transfer_job_id = StringField(
-        "data_transfer_job_id", validators=[DataRequired()]
-    )
+    data_transfer_job_id = StringField("data_transfer_job_id", validators=[])
     submit = SubmitField("Submit")
 
 
@@ -2255,7 +2253,7 @@ def create_initial_db():
             normal_user.set_password("xrayscientist")
 
             docker_machine_provider = MachineProvider(
-                name="local docker",
+                name="Local docker",
                 type="docker",
                 customer="unknown",
                 provider_data={
@@ -2264,7 +2262,7 @@ def create_initial_db():
                 },
             )
             libvirt_machine_provider = MachineProvider(
-                name="local libvirt",
+                name="Local libvirt",
                 type="libvirt",
                 customer="unknown",
                 provider_data={
