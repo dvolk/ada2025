@@ -59,6 +59,11 @@
   {{ info(gettext("This lists all machines you have access to, both your own and those shared with you by other users.")) }}
   <p>
     {% for machine in current_user.owned_machines|reverse|list + current_user.shared_machines|reverse|list if machine.state not in [MachineState.DELETED, MachineState.DELETING] %}
+      {% if machine.hostname and machine.machine_template.extra_data.get("has_https", False) %}
+        {% set machine_url = "https://" + machine.hostname %}
+      {% else %}
+        {% set machine_url = "http://" + machine.ip %}
+      {% endif %}
       <p>
         <div class="w3-card w3-padding w3-round">
           <div class="w3-row" style="display: flex; align-items: center;">
@@ -73,7 +78,7 @@
                 <a
                   target="_blank"
                   title="Open machine page"
-                  href="http://{{ machine.ip }}/Sw8OSELATBzI74XT"
+                  href="{{ machine_url }}/Sw8OSELATBzI74XT"
                   class="w3-button w3-blue w3-round">
                   {{ icon("external-link") }} {{ gettext('Open') }}
                 </a>
@@ -126,10 +131,10 @@
           <div class="w3-row">
             <div class="w3-col m8">
               <p>
-                <a href="http://{{ machine.ip }}/Sw8OSELATBzI74XT" target="_blank">
+                <a href="{{ machine_url }}/Sw8OSELATBzI74XT" target="_blank">
 
                   <div class="fallback-div" style="display: none; width: 240px; height: 140px; border: 3px dashed gray; text-align: center; line-height: 140px; border-radius:4px">Thumbnail Not Available</div>
-                  <img class="vm-thumbnail w3-round lighten-on-hover blur-on-hover" src="http://{{ machine.ip }}/screenshots/screenshot-thumb.png" alt="Alternative text" style="display: none; max-width: 300px; max-height: 175px;">
+                  <img class="vm-thumbnail w3-round lighten-on-hover blur-on-hover" src="{{ machine_url }}/screenshots/screenshot-thumb.png" alt="Alternative text" style="display: none; max-width: 300px; max-height: 175px;">
                 </a>
               </p>
             </div>
@@ -146,7 +151,7 @@
                   {% endif %}
                 {% endif %}
                 {% if machine.ip %}
-                  Hostname: {{ machine.ip }}<br/>
+                  IP: {{ machine.ip }}<br/>
                 {% endif %}
                 Created: {{ humanize.naturaldelta(now - machine.creation_date) }} ago
               </p>

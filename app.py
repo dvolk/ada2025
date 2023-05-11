@@ -11,6 +11,7 @@ import subprocess
 import functools
 import inspect
 import uuid
+import socket
 
 # flask and related imports
 from flask import (
@@ -50,8 +51,7 @@ import waitress
 import docker
 import libvirt
 import openstack
-import cinderclient
-import novaclient
+from cinderclient import client as cinderclient
 
 # other 3rd party imports
 import argh
@@ -92,6 +92,18 @@ class ProtectedModelView(ModelView):
 
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for("welcome"))
+
+
+socket.setdefaulttimeout(5)
+
+
+def get_hostname(ip):
+    try:
+        hostname, _, _ = socket.gethostbyaddr(ip)
+        return hostname
+    except Exception:
+        logging.Exception(f"Couldn't get hostname of {ip}")
+        return ""
 
 
 thread_id_map = {}
@@ -555,6 +567,7 @@ class Machine(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     ip = db.Column(db.String(45), nullable=False)
+    hostname = db.Column(db.String(200), default="")
     token = db.Column(db.String(16), nullable=False, default=lambda: gen_token(16))
     state = db.Column(db.Enum(MachineState), nullable=False, index=True)
     creation_date = db.Column(
@@ -582,6 +595,7 @@ class ProtectedMachineModelView(ProtectedModelView):
         "id",
         "name",
         "ip",
+        "hostname",
         "token",
         "state",
         "creation_date",
@@ -592,6 +606,7 @@ class ProtectedMachineModelView(ProtectedModelView):
     form_columns = (
         "name",
         "ip",
+        "hostname",
         "token",
         "state",
         "owner",
@@ -1531,26 +1546,31 @@ def stop_machine():
 @log_function_call
 def openstack_conn_from_mp(mp):
     auth_url = mp.provider_data.get("auth_url")
-    user_domain_id = mp.provider_data.get("user_domain_id")
-    project_domain_id = mp.provider_data.get("project_domain_id")
+    user_domain_name = mp.provider_data.get("user_domain_name")
+    project_domain_name = mp.provider_data.get("project_domain_name")
     username = mp.provider_data.get("username")
     password = mp.provider_data.get("password")
-    project_id = mp.provider_data.get("project_id")
+    project_name = mp.provider_data.get("project_name")
 
     conn = openstack.connection.Connection(
         auth_url=auth_url,
-        user_domain_id=user_domain_id,
-        project_domain_id=project_domain_id,
         username=username,
         password=password,
-        project_id=project_id,
+        project_name=project_name,
+        project_domain_name=project_domain_name,
+        user_domain_name=user_domain_name,
     )
+    return conn
 
 
 @log_function_call
-def openstack_wait_for_vm_ip(conn, server_id, network_name, timeout=300):
+def openstack_wait_for_vm_ip(conn, server_id, network_uuid, timeout=300):
     start_time = time.time()
     server = None
+
+    # Get the network name using the network UUID
+    network = conn.network.get_network(network_uuid)
+    network_name = network.name
 
     while time.time() - start_time < timeout:
         server = conn.compute.get_server(server_id)
@@ -1567,7 +1587,98 @@ def openstack_wait_for_vm_ip(conn, server_id, network_name, timeout=300):
     )
 
 
-# Function to create a new VM from a volume snapshot
+def openstack_wait_for_volume(
+    auth_url,
+    username,
+    password,
+    project_name,
+    user_domain_name,
+    project_domain_name,
+    volume_id,
+    timeout=1200,
+):
+    # Set environment variables for OpenStack CLI
+    env = {
+        "OS_AUTH_URL": auth_url,
+        "OS_USERNAME": username,
+        "OS_PASSWORD": password,
+        "OS_PROJECT_NAME": project_name,
+        "OS_USER_DOMAIN_NAME": user_domain_name,
+        "OS_PROJECT_DOMAIN_NAME": project_domain_name,
+    }
+
+    start_time = time.time()
+
+    while True:
+        # Get volume details in JSON format
+        volume_details_output = subprocess.check_output(
+            ["openstack", "volume", "show", volume_id, "-f", "json"], env=env
+        )
+        volume_details = json.loads(volume_details_output)
+
+        # Check volume status
+        if volume_details["status"] == "available":
+            print(f"Volume {volume_id} is available.")
+            return volume_details
+
+        # Check if timeout has been reached
+        if time.time() - start_time > timeout:
+            print(
+                f"Timeout reached while waiting for volume {volume_id} to become available."
+            )
+            return None
+
+        print(f"Volume {volume_id} is not available yet. Retrying in 5 seconds...")
+        time.sleep(5)
+
+
+def openstack_wait_for_vm_state(
+    auth_url,
+    username,
+    password,
+    project_name,
+    user_domain_name,
+    project_domain_name,
+    server_id,
+    state,
+    timeout=300,
+):
+    # Set environment variables for OpenStack CLI
+    env = {
+        "OS_AUTH_URL": auth_url,
+        "OS_USERNAME": username,
+        "OS_PASSWORD": password,
+        "OS_PROJECT_NAME": project_name,
+        "OS_USER_DOMAIN_NAME": user_domain_name,
+        "OS_PROJECT_DOMAIN_NAME": project_domain_name,
+    }
+
+    start_time = time.time()
+
+    while True:
+        # Get server details in JSON format
+        server_details_output = subprocess.check_output(
+            ["openstack", "server", "show", server_id, "-f", "json"], env=env
+        )
+        server_details = json.loads(server_details_output)
+
+        # Check server status
+        if server_details["status"] == state:
+            print(f"Server {server_id} is {state}.")
+            return server_details
+
+        # Check if timeout has been reached
+        if time.time() - start_time > timeout:
+            print(
+                f"Timeout reached while waiting for server {server_id} to become {state}."
+            )
+            return None
+
+        print(f"Server {server_id} is not {state} yet. Retrying in 5 seconds...")
+        time.sleep(5)
+
+
+# Function to create a new VM from an image
 @log_function_call
 def openstack_start_vm(m_id):
     with app.app_context():
@@ -1576,19 +1687,14 @@ def openstack_start_vm(m_id):
             mt = m.machine_template
             mp = mt.machine_provider
 
+            vm_name = m.name
             flavor_name = mt.extra_data.get("flavor_name")
             network_uuid = mt.extra_data.get("network_uuid")
-            key_name = mt.extra_data.get("key_name")
             vol_size = mt.extra_data.get("vol_size")
-            vol_snapshot = mt.image
+            security_groups = mt.extra_data.get("security_groups", [])
+            vol_image = mt.image
 
             conn = openstack_conn_from_mp(mp)
-
-            # Find the flavor by name
-            flavor = conn.compute.find_flavor(flavor_name)
-            if not flavor:
-                print(f"Flavor '{flavor_name}' not found.")
-                return
 
             # Find the network by UUID
             network = conn.network.get_network(network_uuid)
@@ -1596,34 +1702,51 @@ def openstack_start_vm(m_id):
                 print(f"Network with UUID '{network_uuid}' not found.")
                 return
 
-            # Create a bootable volume from the specified snapshot
-            cinder = cinderclient.client.Client("3", session=conn.session)
-            snapshot = conn.block_storage.get_snapshot(vol_snapshot)
-            if not snapshot:
-                print(f"Snapshot '{vol_snapshot}' not found.")
+            # Find the flavor by name
+            flavor = conn.compute.find_flavor(flavor_name)
+            if not flavor:
+                print(f"Flavor '{flavor_name}' not found.")
+                return
+
+            # Create a bootable volume from the specified image
+            cinder = cinderclient.Client("3", session=conn.session)
+            image = conn.compute.find_image(vol_image)
+            if not image:
+                print(f"Image '{vol_image}' not found.")
                 return
 
             volume = cinder.volumes.create(
                 size=vol_size,
-                snapshot_id=snapshot.id,
-                display_name="vm_boot_volume",
-                bootable=True,
+                imageRef=image.id,
+                name=f"{vm_name}_boot",
             )
 
-            # Wait for the volume to become available
-            openstack.resource.wait_for_status(
-                conn.block_storage.get_volume,
+            print(conn.session)
+            print(type(conn.session))
+
+            auth_url = mp.provider_data.get("auth_url")
+            user_domain_name = mp.provider_data.get("user_domain_name")
+            project_domain_name = mp.provider_data.get("project_domain_name")
+            username = mp.provider_data.get("username")
+            password = mp.provider_data.get("password")
+            project_name = mp.provider_data.get("project_name")
+
+            openstack_wait_for_volume(
+                auth_url,
+                username,
+                password,
+                project_name,
+                user_domain_name,
+                project_domain_name,
                 volume.id,
-                status="available",
-                wait=300,
             )
 
             # Create the server (VM)
             server = conn.compute.create_server(
-                name="new_vm",
+                name=vm_name,
                 flavor_id=flavor.id,
-                networks=[{"uuid": network.id}],
-                key_name=key_name,
+                networks=[{"uuid": network_uuid}],
+                security_groups=security_groups,
                 block_device_mapping_v2=[
                     {
                         "boot_index": "0",
@@ -1635,20 +1758,25 @@ def openstack_start_vm(m_id):
                 ],
             )
 
-            # Wait for the server to become active
-            openstack.resource.wait_for_status(
-                conn.compute.get_server,
+            openstack_wait_for_vm_state(
+                auth_url,
+                username,
+                password,
+                project_name,
+                user_domain_name,
+                project_domain_name,
                 server.id,
-                status="ACTIVE",
-                wait=300,
+                state="ACTIVE",
+                timeout=300,
             )
 
             print(f"Server '{server.name}' created with ID: {server.id}")
 
             # wait for ip
             m.ip = openstack_wait_for_vm_ip(conn, server.id, network.id)
-
+            m.hostname = get_hostname(m.ip)
             m.state = MachineState.READY
+
             db.session.commit()
 
         except:
@@ -1673,54 +1801,36 @@ def openstack_get_vm_by_ip(conn, target_ip):
 
 
 @log_function_call
-def openstack_stop_vm_by_ip(conn, target_ip):
-    server = openstack_get_server_by_ip(conn, target_ip)
-
-    if not server:
-        print(f"No server found with IP '{target_ip}'.")
-        return
-
-    # Stop the server if it's active
-    if server.status == "ACTIVE":
-        conn.compute.stop_server(server)
-        print(
-            f"Stopping server '{server.name}' with ID: {server.id} and IP: {target_ip}"
-        )
-
-    # Wait for the server to stop
-    openstack.resource.wait_for_status(
-        conn.compute.get_server,
-        server.id,
-        status="SHUTOFF",
-        wait=300,
-    )
-
-    # Delete associated volumes
-    cinder = cinderclient.Client("3", session=conn.session)
-    volume_attachments = conn.compute.get_server_volumes(server.id)
-
-    for attachment in volume_attachments:
-        volume = cinder.volumes.get(attachment.volume_id)
-        cinder.volumes.delete(volume)
-        print(f"Deleting volume '{volume.display_name}' with ID: {volume.id}")
-
-    # Delete the server
-    conn.compute.delete_server(server)
-    print(f"Deleting server '{server.name}' with ID: {server.id} and IP: {target_ip}")
-
-
-@log_function_call
 def openstack_stop_vm(m_id):
     with app.app_context():
         try:
-            m = Machine.query.filter_by(id=m_id)
+            m = Machine.query.filter_by(id=m_id).first()
             mt = m.machine_template
             mp = mt.machine_provider
 
-            ip = m.ip
+            auth_url = mp.provider_data.get("auth_url")
+            user_domain_name = mp.provider_data.get("user_domain_name")
+            project_domain_name = mp.provider_data.get("project_domain_name")
+            username = mp.provider_data.get("username")
+            password = mp.provider_data.get("password")
+            project_name = mp.provider_data.get("project_name")
 
-            conn = openstack_conn_from_mp(mp)
-            openstack_stop_vm_by_ip(conn, ip)
+            env = {
+                "OS_AUTH_URL": auth_url,
+                "OS_USERNAME": username,
+                "OS_PASSWORD": password,
+                "OS_PROJECT_NAME": project_name,
+                "OS_USER_DOMAIN_NAME": user_domain_name,
+                "OS_PROJECT_DOMAIN_NAME": project_domain_name,
+            }
+
+            try:
+                subprocess.check_output(
+                    ["openstack", "server", "delete", m.name], env=env
+                )
+            except Exception:
+                logging.exception("Problem deleting openstack vm: ")
+
             m.state = MachineState.DELETED
         except:
             logging.exception("Couldn't stop openstack vm: ")
@@ -2095,25 +2205,25 @@ def create_initial_db():
                 type="openstack",
                 customer="unknown",
                 provider_data={
-                    "auth_url": "",
-                    "user_domain_id": "",
-                    "project_domain_id": "",
-                    "username": "",
+                    "auth_url": "https://openstack.stfc.ac.uk:5000/v3",
+                    "user_domain_name": "stfc",
+                    "project_domain_name": "Default",
+                    "username": "gek25866",
                     "password": "",
-                    "project_id": "",
+                    "project_name": "IDAaaS-Dev",
                 },
             )
 
-            test_machine_template1 = MachineTemplate(
-                name="Muon analysis template",
-                type="libvirt",
-                memory_limit_gb=16,
-                cpu_limit_cores=4,
-                image="debian11-5",
-                group=admin_group,
-                machine_provider=libvirt_machine_provider,
-                description="This is a libvirt machine template that's added by default when you're running in debug mode. It references the image \"debian11-5\"",
-            )
+            # test_machine_template1 = MachineTemplate(
+            #    name="Muon analysis template",
+            #    type="libvirt",
+            #    memory_limit_gb=16,
+            #    cpu_limit_cores=4,
+            #    image="debian11-5",
+            #    group=admin_group,
+            #    machine_provider=libvirt_machine_provider,
+            #    description="This is a libvirt machine template that's added by default when you're running in debug mode. It references the image \"debian11-5\"",
+            # )
             test_machine_template2 = MachineTemplate(
                 name="XRAY analysis template",
                 type="docker",
@@ -2129,15 +2239,20 @@ def create_initial_db():
                 type="openstack",
                 memory_limit_gb=32,
                 cpu_limit_cores=8,
-                image="workspace",
+                image="denis_dev_20230511",
                 group=normal_user_group,
                 machine_provider=stfc_os_machine_provider,
                 description="This is a STFC openstack template that's added by default when you're running in debug mode.",
                 extra_data={
-                    "flavor_name": "",
-                    "network_uuid": "",
-                    "key_name": "",
-                    "vol_size": "",
+                    "flavor_name": "c2.large",
+                    "network_uuid": "5be315b7-7ebd-4254-97fe-18c1df501538",
+                    "vol_size": "200",
+                    "has_https": True,
+                    "security_groups": [
+                        {"name": "HTTP"},
+                        {"name": "HTTPS"},
+                        {"name": "SSH"},
+                    ],
                 },
             )
 
@@ -2147,9 +2262,8 @@ def create_initial_db():
             db.session.add(normal_user)
             db.session.add(libvirt_machine_provider)
             db.session.add(docker_machine_provider)
-            db.session.add(test_machine_template1)
-            db.session.add(test_machine_template2)
             db.session.add(test_machine_template3)
+            db.session.add(test_machine_template2)
             db.session.commit()
 
 

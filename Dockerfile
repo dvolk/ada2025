@@ -18,6 +18,9 @@ RUN pip install --trusted-host pypi.python.org -r requirements.txt
 # Copy the rest of the application's source code into the container
 COPY . .
 
+# Compile translations
+RUN pybabel compile -d translations
+
 # Expose the port the app runs on
 EXPOSE 5000
 
