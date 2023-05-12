@@ -13,6 +13,7 @@ import inspect
 import uuid
 import socket
 import os
+import shlex
 
 # flask and related imports
 from flask import (
@@ -26,7 +27,7 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
-from sqlalchemy import Index, JSON, desc
+from sqlalchemy import Index, JSON, desc, and_
 from flask_migrate import Migrate
 from flask_login import (
     LoginManager,
@@ -63,6 +64,21 @@ import humanize
 import pytz
 
 logging.basicConfig(level=logging.DEBUG)
+
+try:
+    cmd = "git describe --tags --always --dirty"
+    version = subprocess.check_output(shlex.split(cmd)).decode().strip()
+except:
+    logging.exception("Couldn't get git version: ")
+    version = ""
+
+try:
+    cmd = "hostname"
+    hostname = subprocess.check_output(shlex.split(cmd)).decode().strip()
+except Exception:
+    logging.exception("Couldn't get hostname: ")
+    hostname = ""
+
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "your_secret_key"
@@ -901,6 +917,8 @@ def inject_globals():
         "main_menu": get_main_menu(),
         "humanize": humanize,
         "time_now": int(time.time()),
+        "version": version,
+        "hostname": hostname,
     }
 
 
@@ -1535,7 +1553,12 @@ def machine_format_dtj(machine):
     Source = aliased(DataSource)
     jobs = (
         DataTransferJob.query.join(Source, DataTransferJob.data_source)
-        .filter(DataTransferJob.machine == machine)
+        .filter(
+            and_(
+                DataTransferJob.machine == machine,
+                DataTransferJob.state == DataTransferJobState.DONE,
+            )
+        )
         .with_entities(Source.source_host, Source.source_dir)
         .distinct()
     )
