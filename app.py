@@ -1416,6 +1416,7 @@ class ProblemReportForm(FlaskForm):
 
 
 @app.route("/report_problem", methods=["GET", "POST"])
+@login_required
 def report_problem():
     form = ProblemReportForm()
     if request.method == "POST":
@@ -1497,6 +1498,7 @@ class DataTransferForm(FlaskForm):
 
 @app.route("/dismiss_datatransferjob", methods=["POST"])
 @limiter.limit("60 per minute")
+@login_required
 def dismiss_datatransferjob():
     """
     Endpoint for hiding the data transfer job from the data page
@@ -1529,6 +1531,7 @@ def machine_format_dtj(machine):
 
 @app.route("/data", methods=["GET", "POST"])
 @limiter.limit("60 per minute")
+@login_required
 def data():
     if current_user.is_admin:
         # the admin can see everything
@@ -1648,6 +1651,7 @@ def start_data_transfer(job_id):
 
 @app.route("/share_machine/<machine_id>")
 @limiter.limit("60 per minute")
+@login_required
 def share_machine(machine_id):
     """
     Shows the share page
@@ -1660,6 +1664,7 @@ def share_machine(machine_id):
 
 @app.route("/share_accept/<machine_token>")
 @limiter.limit("60 per minute")
+@login_required
 def share_accept(machine_token):
     """
     This is the endpoint hit by the user accepting a share
@@ -1680,6 +1685,7 @@ def share_accept(machine_token):
 
 @app.route("/share_revoke/<machine_id>")
 @limiter.limit("60 per minute")
+@login_required
 def share_revoke(machine_id):
     """
     The owner revokes all shares. We do this by removing shared_users
@@ -1745,6 +1751,7 @@ def new_machine():
 
 @app.route("/stop_machine", methods=["POST"])
 @limiter.limit("60 per minute")
+@login_required
 def stop_machine():
     """
     Start thread to stop machine
