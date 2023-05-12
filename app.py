@@ -990,6 +990,7 @@ def gen_unique_username(email, max_attempts=1000):
     username = ""
     attempt = 0
     email_prefix = email.split("@")[0]
+    # TODO remove bad characters from prefix, allow a-Z, 0-9, and .
     while True:
         if not email:
             username = gen_token(16)
