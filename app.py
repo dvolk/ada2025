@@ -1042,8 +1042,10 @@ def google_authorize():
         db.session.commit()
 
     # Log the user in
-    login_user(user)
-    return redirect("/")
+    flash(
+        "Your account has been added but it has to be activated by staff. This usually happens within 24 hours. Once it's activated you can use Google Login to log in."
+    )
+    return redirect("/login")
 
 
 @app.route("/login", methods=["GET", "POST"])
