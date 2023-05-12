@@ -49,6 +49,7 @@ from flask_limiter.util import get_remote_address
 from markupsafe import Markup
 import waitress
 from authlib.integrations.flask_client import OAuth
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # virtualization interfaces
 import docker
@@ -68,9 +69,6 @@ app.config["SECRET_KEY"] = "your_secret_key"
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "ADA2025_SQLALCHEMY_URL", "sqlite:///app.db"
 )
-
-if os.environ.get("FLASK_SERVER_NAME"):
-    app.config["SERVER_NAME"] = os.environ.get("FLASK_SERVER_NAME")
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -923,7 +921,9 @@ class RequestLoggingMiddleware:
         return self.app(environ, custom_start_response)
 
 
-app.wsgi_app = RequestLoggingMiddleware(app.wsgi_app)
+app.wsgi_app = ProxyFix(
+    RequestLoggingMiddleware(app.wsgi_app), x_for=1, x_proto=1, x_host=1
+)
 
 
 @login_manager.user_loader
