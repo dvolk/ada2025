@@ -955,12 +955,12 @@ def login():
     """
     Login page and login logic
     """
+    form = LoginForm()
     if current_user.is_authenticated:
         logout_user()
         flash("You've been logged out.")
         return render_template("login.jinja2", title="Login", form=form)
 
-    form = LoginForm()
     if request.method == "POST":
         if form.validate_on_submit():
             user = User.query.filter_by(name=form.username.data).first()
