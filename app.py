@@ -981,6 +981,10 @@ if os.environ.get("GOOGLE_OAUTH2_CLIENT_ID"):
 @app.route("/google_login")
 @limiter.limit("60 per hour")
 def google_login():
+    # send the users to google to log in. once they're logged
+    # in, they're sent back to google_authorize, where we
+    # make an account for them from the data that google
+    # provided
     google = oauth.create_client("google")
     redirect_uri = url_for("google_authorize", _external=True)
     return google.authorize_redirect(redirect_uri)
@@ -1013,6 +1017,9 @@ def gen_unique_username(email, max_attempts=1000):
 @app.route("/google_authorize")
 @limiter.limit("60 per hour")
 def google_authorize():
+    # google has authenticated the user and sent them back
+    # here, make an account if they don't have one and log
+    # them in
     try:
         google = oauth.create_client("google")
         google.authorize_access_token()
@@ -1052,14 +1059,20 @@ def google_authorize():
         else:
             # Show activation message
             flash(
-                "Great! We've created your account, but it's not quite ready yet. Our staff needs to activate it, which typically happens within 24 hours. As soon as it's activated, you'll be able to log in using Google. We appreciate your patience!"
+                gettext(
+                    "Your account has been created, but it has to be activated by staff, which typically happens within 24 hours. As soon as it's activated, you'll be able to log in using Google. We appreciate your patience."
+                )
             )
             return redirect(url_for("login"))
 
     except Exception as e:
         # Log the error and show an error message
         app.logger.error(e)
-        flash("An error occurred while processing your Google login. Please try again.")
+        flash(
+            gettext(
+                "An error occurred while processing your Google login. Please try again."
+            )
+        )
         return redirect(url_for("login"))
 
 
@@ -1080,7 +1093,7 @@ def login():
     # log out users who go to the login page
     if current_user.is_authenticated:
         logout_user()
-        flash("You've been logged out.")
+        flash(gettext("You've been logged out."))
         return render_template(
             "login.jinja2",
             title="Login",
@@ -2396,7 +2409,7 @@ def create_initial_db():
     # add an admin user and test machinetemplate and machine
     with app.app_context():
         if not User.query.filter_by(username="denis").first():
-            logging.warning("Creating default data. First user is admin/admin.")
+            logging.warning("Creating default data.")
             demo_source1 = DataSource(
                 source_host="localhost",
                 source_dir="/tmp/demo1",
@@ -2418,17 +2431,17 @@ def create_initial_db():
 
             admin_user = User(
                 is_enabled=True,
-                username="denis",
-                given_name="Denis",
-                family_name="Volk",
+                username="admin",
+                given_name="Admin",
+                family_name="Admin",
                 group=admin_group,
                 language="zh",
                 is_admin=True,
-                email="denis.volk@stfc.ac.uk",
+                email="admin@ada.stfc.ac.uk",
                 data_sources=[demo_source1, demo_source2],
             )
             admin_password = gen_token(16)
-            logging.info(f"username: denis password: {admin_password}")
+            logging.info(f"Created user: username: admin password: {admin_password}")
             admin_user.set_password(admin_password)
             normal_user = User(
                 is_enabled=True,
@@ -2443,7 +2456,9 @@ def create_initial_db():
             )
             normal_user_password = gen_token(16)
             normal_user.set_password(normal_user_password)
-            logging.info(f"username: xrayscientist password: {normal_user_password}")
+            logging.info(
+                f"Created user: username: xrayscientist password: {normal_user_password}"
+            )
 
             docker_machine_provider = MachineProvider(
                 name="Local docker",
