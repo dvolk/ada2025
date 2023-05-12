@@ -69,6 +69,9 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "ADA2025_SQLALCHEMY_URL", "sqlite:///app.db"
 )
 
+if os.environ.get("FLASK_SERVER_NAME"):
+    app.config["SERVER_NAME"] = os.environ.get("FLASK_SERVER_NAME")
+
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager(app)
