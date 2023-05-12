@@ -142,12 +142,12 @@
               <p>
                 Template: {{ machine.machine_template.name }}<br/>
                 {% if machine.owner.id != current_user.id %}
-                  Shared with you by: {{ machine.owner.name }}<br/>
+                  Shared with you by: {{ machine.owner.username }}<br/>
                 {% else %}
-                  Owner: {{ machine.owner.name }}<br/>
+                  Owner: {{ machine.owner.username }}<br/>
 
                   {% if machine.shared_users %}
-                    Shared with other users: {{ machine.shared_users|join(", ", attribute="name") }}<br/>
+                    Shared with other users: {{ machine.shared_users|join(", ", attribute="username") }}<br/>
                   {% endif %}
                 {% endif %}
                 {% if machine.ip %}

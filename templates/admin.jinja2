@@ -20,9 +20,9 @@
             </thead>
             {% for u in User.query.all() %}
             <tr>
-                <td>{{ u.name }}</td>
+                <td>{{ u.username }}</td>
                 <td>
-                    Real name: {{ u.real_name }}<br/>
+                    Real name: {{ u.given_name }} {{ u.family_name }}<br/>
                     Email: {{ u.email }}<br/>
                     Organization: {{ u.organization }}<br/>
                     Group: {{ u.group.name }}<br/>
@@ -60,8 +60,8 @@
                     IP: {{ m.ip }}<br/>
                     State: {{ m.state.name }}<br/>
                     Creation_date: {{ m.creation_date }}<br/>
-                    Owner username: {{ m.owner.name }}<br/>
-                    Shared with: {{ m.shared_users|join(", ", attribute=name) }}
+                    Owner username: {{ m.owner.username }}<br/>
+                    Shared with: {{ m.shared_users|join(", ", attribute=username) }}
                     <br/>
                 </td>
                 <td>

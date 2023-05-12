@@ -17,7 +17,7 @@
           </thead>
           {% for r in ProblemReport.query.filter_by(is_hidden=False)|reverse %}
             <tr>
-              <td>{{ r.user.name }}</td>
+              <td>{{ r.user.username }}</td>
               <td>{{ r.title }}</td>
               <td>{{ humanize.naturaldelta(now - r.creation_date) }}</td>
             </tr>

@@ -22,5 +22,10 @@
     <br>
     <button class="w3-btn w3-round ada-blue" type="submit">{{ gettext("Log In") }}</button>
     <a class="w3-btn w3-round ada-blue" href="/register">{{ gettext("Register") }}</a>
+    {% if show_google_button %}
+    <a class="w3-btn w3-round w3-green" href="/google_login">
+        <i class="fa-brands fa-fw fa-google"></i> {{ gettext("Google Login") }}
+    </a>
+    {% endif %}
   </form>
 {% endblock %}

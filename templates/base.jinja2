@@ -55,7 +55,7 @@
         <a href="/"><img class="ada-blue" style="border-radius: 19px" src="/static/ada.png" height=38/> {{ gettext('Data Analysis') }}</a>
       </p>
       <p class="w3-bar-item w3-large w3-pale-green">
-        {{ gettext('Hey') }}, {{ current_user.name }}! {{ icon_regular("face-smile") }} {{ icon_regular('hand-spock') }}
+        {{ gettext('Hey') }}, {{ current_user.given_name }}! {{ icon_regular("face-smile") }} {{ icon_regular('hand-spock') }}
       </p>
 
       {% for menu_item in main_menu %}

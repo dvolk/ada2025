@@ -48,6 +48,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from markupsafe import Markup
 import waitress
+from authlib.integrations.flask_client import OAuth
 
 # virtualization interfaces
 import docker
@@ -234,20 +235,26 @@ class User(db.Model, UserMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     is_enabled = db.Column(db.Boolean, nullable=False, default=False)
-    name = db.Column(db.String(100), nullable=False)
-    password_hash = db.Column(db.String(200), nullable=False)
-    real_name = db.Column(db.String(100), default="")
-    organization = db.Column(db.String(200), default="")
-    job_title = db.Column(db.String(200), default="")
-    email = db.Column(db.String(200), nullable=False)
-    group_id = db.Column(db.Integer, db.ForeignKey("group.id"))
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200))
+    given_name = db.Column(db.String(100))
+    family_name = db.Column(db.String(100))
+    organization = db.Column(db.String(200))
+    job_title = db.Column(db.String(200))
+    email = db.Column(db.String(200), nullable=False)
     language = db.Column(db.String(5), default="en", nullable=False)
     timezone = db.Column(db.String(50), default="Europe/London", nullable=False)
+
+    # oauth2 stuff
+    provider = db.Column(db.String(64))  # e.g. 'google', 'local'
+    provider_id = db.Column(db.String(64))  # e.g. Google's unique ID for the user
+
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
 
+    group_id = db.Column(db.Integer, db.ForeignKey("group.id"))
     group = db.relationship("Group", back_populates="users")
     owned_machines = db.relationship(
         "Machine", back_populates="owner", foreign_keys="Machine.owner_id"
@@ -268,15 +275,16 @@ class User(db.Model, UserMixin):
         return check_password_hash(self.password_hash, password)
 
     def __repr__(self):
-        return f"<{self.name}>"
+        return f"<{self.username}>"
 
 
 class ProtectedUserModelView(ProtectedModelView):
     column_list = (
         "id",
         "is_enabled",
-        "name",
-        "real_name",
+        "username",
+        "given_name",
+        "family_name",
         "organization",
         "job_title",
         "email",
@@ -286,9 +294,10 @@ class ProtectedUserModelView(ProtectedModelView):
     )
     form_columns = (
         "is_enabled",
-        "name",
+        "username",
         "password",
-        "real_name",
+        "given_name",
+        "family_name",
         "organization",
         "job_title",
         "language",
@@ -302,8 +311,8 @@ class ProtectedUserModelView(ProtectedModelView):
         "data_sources",
         "data_transfer_jobs",
     )
-    column_searchable_list = ("name", "email")
-    column_sortable_list = ("id", "name", "email", "creation_date")
+    column_searchable_list = ("username", "email")
+    column_sortable_list = ("id", "username", "email", "creation_date")
     column_filters = ("is_enabled", "is_admin", "group")
     column_auto_select_related = True
     form_extra_fields = {"password": PasswordField("Password")}
@@ -424,7 +433,7 @@ class Group(db.Model):
     """
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100), unique=True, nullable=False)
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
@@ -941,12 +950,97 @@ babel = Babel(app, locale_selector=get_locale, timezone_selector=get_timezone)
 
 class LoginForm(FlaskForm):
     username = StringField(
-        gettext("Username"), validators=[DataRequired(), Length(min=4, max=32)]
+        gettext("Username"), validators=[DataRequired(), Length(min=2, max=32)]
     )
     password = PasswordField(
-        gettext("Password"), validators=[DataRequired(), Length(min=4, max=100)]
+        gettext("Password"), validators=[DataRequired(), Length(min=8, max=100)]
     )
     submit = SubmitField("Sign In")
+
+
+oauth = OAuth(app)
+
+if os.environ.get("GOOGLE_OAUTH2_CLIENT_ID"):
+    google = oauth.register(
+        name="google",
+        client_id=os.environ.get("GOOGLE_OAUTH2_CLIENT_ID"),
+        client_secret=os.environ.get("GOOGLE_OAUTH2_CLIENT_SECRET"),
+        access_token_url="https://accounts.google.com/o/oauth2/token",
+        access_token_params=None,
+        authorize_url="https://accounts.google.com/o/oauth2/auth",
+        authorize_params=None,
+        api_base_url="https://www.googleapis.com/oauth2/v1/",
+        userinfo_endpoint="https://openidconnect.googleapis.com/v1/userinfo",
+        client_kwargs={"scope": "email profile"},
+    )
+
+
+@app.route("/google_login")
+@limiter.limit("60 per hour")
+def google_login():
+    google = oauth.create_client("google")
+    redirect_uri = url_for("google_authorize", _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+
+def gen_unique_username(email, max_attempts=1000):
+    username = ""
+    attempt = 0
+    email_prefix = email.split("@")[0]
+    while True:
+        if not email:
+            username = gen_token(16)
+        elif not username:
+            username = email_prefix
+        else:
+            username = email_prefix + "_" + gen_token(4)
+
+        if not User.query.filter_by(username=username).first():
+            return username
+
+        if attempt > max_attempts // 2:
+            username = gen_token(24)
+        if attempt > max_attempts:
+            abort(500)
+
+        attempt = attempt + 1
+
+
+@app.route("/google_authorize")
+@limiter.limit("60 per hour")
+def google_authorize():
+    google = oauth.create_client("google")
+    google.authorize_access_token()
+    resp = google.get("userinfo")
+    user_info = resp.json()
+
+    user = User.query.filter_by(email=user_info.get("email")).first()
+    if not user:
+        email = user_info.get("email", "")
+        username = gen_unique_username(email)
+        given_name = user_info.get("given_name", "")
+        family_name = user_info.get("family_name", "")
+
+        provider = "google"
+        provider_id = user_info.get("id", "")
+
+        # Create a new user and add them to the database
+        user = User(
+            username=username,
+            given_name=given_name,
+            family_name=family_name,
+            email=email,
+            provider=provider,
+            provider_id=provider_id,
+            language="en",
+            timezone="Europe/London",
+        )
+        db.session.add(user)
+        db.session.commit()
+
+    # Log the user in
+    login_user(user)
+    return redirect("/")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -955,25 +1049,77 @@ def login():
     """
     Login page and login logic
     """
+
+    # show the google login button or not
+    show_google_button = False
+    if os.environ.get("GOOGLE_OAUTH2_CLIENT_ID"):
+        show_google_button = True
+
     form = LoginForm()
+
+    # log out users who go to the login page
     if current_user.is_authenticated:
         logout_user()
         flash("You've been logged out.")
-        return render_template("login.jinja2", title="Login", form=form)
+        return render_template(
+            "login.jinja2",
+            title="Login",
+            form=form,
+            show_google_button=show_google_button,
+        )
 
+    # POST path
     if request.method == "POST":
         if form.validate_on_submit():
-            user = User.query.filter_by(name=form.username.data).first()
-            if user is not None and user.check_password(form.password.data):
+            user = User.query.filter_by(username=form.username.data).first()
+
+            # oauth2 returning users
+            if user and user.provider_id:
+                if user.provider == "google":
+                    # google users
+                    return redirect(url_for("google_login"))
+                else:
+                    flash(gettext("Invalid provider"), "danger")
+                    return render_template(
+                        "login.jinja2",
+                        title="Login",
+                        form=form,
+                        show_google_button=show_google_button,
+                    )
+
+            # oauth2 users trying to log in locally but don't have a password
+            if user and user.provider != "local" and not user.password_hash:
+                flash(
+                    gettext(
+                        "You can't use a local login. Please contact support for help.",
+                        "danger",
+                    )
+                )
+                return render_template(
+                    "login.jinja2",
+                    title="Login",
+                    form=form,
+                    show_google_button=show_google_button,
+                )
+
+            # local users
+            if user and user.check_password(form.password.data):
+                # pw ok ut account not activated
                 if not user.is_enabled:
                     flash(
                         gettext(
-                            "Your account hasn't been activated yet. If it's been more than 24 hours please contact support."
+                            "Account not activated. If it's been more than 24 hours please contact support."
                         ),
                         "danger",
                     )
-                    return render_template("login.jinja2", title="Login", form=form)
+                    return render_template(
+                        "login.jinja2",
+                        title="Login",
+                        form=form,
+                        show_google_button=show_google_button,
+                    )
 
+                # log user in
                 login_user(user)
                 flash(gettext("Logged in successfully."), "success")
                 return redirect(url_for("index"))
@@ -981,15 +1127,24 @@ def login():
                 flash(gettext("Invalid username or password."), "danger")
         else:
             logging.warning(f"wtforms didn't validate form: { form.errors }")
+            # technically it's not invalid but don't give that away
             flash(gettext("Invalid username or password."), "danger")
-    return render_template("login.jinja2", title="Login", form=form)
+
+    # GET path
+    return render_template(
+        "login.jinja2",
+        title="Login",
+        form=form,
+        show_google_button=show_google_button,
+    )
 
 
 class RegistrationForm(FlaskForm):
-    name_min = 2
-    name_max = 32
-    name = StringField(
-        gettext("Name"), validators=[DataRequired(), Length(min=name_min, max=name_max)]
+    username_min = 2
+    username_max = 32
+    username = StringField(
+        gettext("Username"),
+        validators=[DataRequired(), Length(min=username_min, max=username_max)],
     )
     password_min = 8
     password_max = 100
@@ -997,11 +1152,17 @@ class RegistrationForm(FlaskForm):
         gettext("Password"),
         validators=[DataRequired(), Length(min=password_min, max=password_max)],
     )
-    real_name_min = 2
-    real_name_max = 100
-    real_name = StringField(
-        gettext("Real Name"),
-        validators=[DataRequired(), Length(min=real_name_min, max=real_name_max)],
+    given_name_min = 2
+    given_name_max = 100
+    given_name = StringField(
+        gettext("Given Name"),
+        validators=[DataRequired(), Length(min=given_name_min, max=given_name_max)],
+    )
+    family_name_min = 2
+    family_name_max = 100
+    family_name = StringField(
+        gettext("Family Name"),
+        validators=[DataRequired(), Length(min=family_name_min, max=family_name_max)],
     )
     language = SelectField(
         gettext("Language"), validators=[DataRequired()], choices=["en", "zh", "sl"]
@@ -1021,7 +1182,6 @@ class RegistrationForm(FlaskForm):
         gettext("Organization"),
         validators=[DataRequired(), Length(min=organization_min, max=organization_max)],
     )
-    group = SelectField(gettext("Group"), choices=[], validators=[DataRequired()])
     job_title_min = 2
     job_title_max = 200
     job_title = StringField(
@@ -1035,27 +1195,24 @@ class RegistrationForm(FlaskForm):
 @limiter.limit("60 per hour")
 def register():
     form = RegistrationForm()
-    form.group.choices = [x[0] for x in Group.query.with_entities(Group.name).all()]
 
     if request.method == "POST":
         if form.validate_on_submit():
-            if form.group.data not in form.group.choices:
-                abort(404)
             if form.language.data not in form.language.choices:
                 abort(404)
             if form.timezone.data not in form.timezone.choices:
                 abort(404)
 
-            group = Group.query.filter_by(name=form.group.data).first_or_404()
-
             new_user = User(
-                is_enabled=False,
-                is_admin=False,
-                name=form.name.data,
-                real_name=form.real_name.data,
+                username=form.username.data,
+                given_name=form.given_name.data,
+                family_name=form.family_name.data,
                 email=form.email.data,
+                provider="local",
+                provider_id="",
+                language=form.language.data,
+                timezone=form.timezone.data,
                 organization=form.organization.data,
-                group=group,
                 job_title=form.job_title.data,
             )
             new_user.set_password(form.password.data)
@@ -1527,7 +1684,7 @@ def share_revoke(machine_id):
 
 @app.route("/new_machine", methods=["POST"])
 @limiter.limit(
-    "100 per day, 10 per minute, 1/2 seconds", key_func=lambda: current_user.name
+    "100 per day, 10 per minute, 1/2 seconds", key_func=lambda: current_user.username
 )
 @login_required
 def new_machine():
@@ -1536,7 +1693,7 @@ def new_machine():
     """
     machine_template_name = request.form.get("machine_template_name", "")
 
-    machine_name = mk_safe_machine_name(current_user.name)
+    machine_name = mk_safe_machine_name(current_user.username)
 
     mt = MachineTemplate.query.filter_by(name=machine_template_name).first_or_404()
 
@@ -2212,7 +2369,7 @@ def libvirt_stop_vm(m_id):
 def create_initial_db():
     # add an admin user and test machinetemplate and machine
     with app.app_context():
-        if not User.query.filter_by(name="admin").first():
+        if not User.query.filter_by(username="denis").first():
             logging.warning("Creating default data. First user is admin/admin.")
             demo_source1 = DataSource(
                 source_host="localhost",
@@ -2235,22 +2392,32 @@ def create_initial_db():
 
             admin_user = User(
                 is_enabled=True,
-                name="admin",
+                username="denis",
+                given_name="Denis",
+                family_name="Volk",
                 group=admin_group,
                 language="zh",
                 is_admin=True,
                 email="denis.volk@stfc.ac.uk",
                 data_sources=[demo_source1, demo_source2],
             )
-            admin_user.set_password("admin")
+            admin_password = gen_token(16)
+            print(f"username: denis password: {admin_password}")
+            admin_user.set_password(admin_password)
             normal_user = User(
                 is_enabled=True,
-                name="xrayscientist",
+                username="xrayscientist",
+                given_name="John",
+                family_name="Smith",
                 group=normal_user_group,
+                language="zh",
+                is_admin=False,
                 email="xrays.smith@llnl.gov",
                 data_sources=[demo_source2, demo_source3],
             )
-            normal_user.set_password("xrayscientist")
+            normal_user_password = gen_token(16)
+            normal_user.set_password(normal_user_password)
+            print(f"username: xrayscientist password: {normal_user_password}")
 
             docker_machine_provider = MachineProvider(
                 name="Local docker",
