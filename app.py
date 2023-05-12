@@ -243,7 +243,7 @@ class User(db.Model, UserMixin):
     family_name = db.Column(db.String(100))
     organization = db.Column(db.String(200))
     job_title = db.Column(db.String(200))
-    email = db.Column(db.String(200), nullable=False)
+    email = db.Column(db.String(200), unique=True, nullable=False)
     language = db.Column(db.String(5), default="en", nullable=False)
     timezone = db.Column(db.String(50), default="Europe/London", nullable=False)
 
@@ -1012,40 +1012,54 @@ def gen_unique_username(email, max_attempts=1000):
 @app.route("/google_authorize")
 @limiter.limit("60 per hour")
 def google_authorize():
-    google = oauth.create_client("google")
-    google.authorize_access_token()
-    resp = google.get("userinfo")
-    user_info = resp.json()
+    try:
+        google = oauth.create_client("google")
+        google.authorize_access_token()
+        resp = google.get("userinfo")
+        if resp.status_code != 200:
+            raise Exception("Failed to get user info")
+        user_info = resp.json()
 
-    user = User.query.filter_by(email=user_info.get("email")).first()
-    if not user:
-        email = user_info.get("email", "")
-        username = gen_unique_username(email)
-        given_name = user_info.get("given_name", "")
-        family_name = user_info.get("family_name", "")
+        user = User.query.filter_by(email=user_info.get("email")).first()
 
-        provider = "google"
-        provider_id = user_info.get("id", "")
+        # Update or create the user
+        if user:
+            # Update user info if needed
+            user.given_name = user_info.get("given_name", user.given_name)
+            user.family_name = user_info.get("family_name", user.family_name)
+            user.provider_id = user_info.get("id", user.provider_id)
+        else:
+            # Create a new user
+            user = User(
+                username=gen_unique_username(user_info.get("email", "")),
+                given_name=user_info.get("given_name", ""),
+                family_name=user_info.get("family_name", ""),
+                email=user_info.get("email", ""),
+                provider="google",
+                provider_id=user_info.get("id", ""),
+                language="en",  # TODO: google gives locale, handle it here
+                timezone="Europe/London",
+            )
+            db.session.add(user)
 
-        # Create a new user and add them to the database
-        user = User(
-            username=username,
-            given_name=given_name,
-            family_name=family_name,
-            email=email,
-            provider=provider,
-            provider_id=provider_id,
-            language="en",
-            timezone="Europe/London",
-        )
-        db.session.add(user)
         db.session.commit()
 
-    # Log the user in
-    flash(
-        "Your account has been added but it has to be activated by staff. This usually happens within 24 hours. Once it's activated you can use Google Login to log in."
-    )
-    return redirect("/login")
+        if user and user.is_enabled and user.group:
+            # Log the user in
+            login_user(user)
+            return redirect(url_for("index"))
+        else:
+            # Show activation message
+            flash(
+                "Great! We've created your account, but it's not quite ready yet. Our staff needs to activate it, which typically happens within 24 hours. As soon as it's activated, you'll be able to log in using Google. We appreciate your patience!"
+            )
+            return redirect(url_for("login"))
+
+    except Exception as e:
+        # Log the error and show an error message
+        app.logger.error(e)
+        flash("An error occurred while processing your Google login. Please try again.")
+        return redirect(url_for("login"))
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -1096,7 +1110,7 @@ def login():
             if user and user.provider != "local" and not user.password_hash:
                 flash(
                     gettext(
-                        "You can't use a local login. Please contact support for help.",
+                        "Sorry, you can't use a local login. Try using the login method you signed in (eg. Google) with the first time, or contact support for help.",
                         "danger",
                     )
                 )
