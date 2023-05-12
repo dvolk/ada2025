@@ -939,7 +939,7 @@ def get_locale():
         if current_user.language:
             return current_user.language
     lang = request.accept_languages.best_match(["en", "zh", "sl"])
-    print(f"language best match: {lang}")
+    logging.info(f"language best match: {lang}")
     return lang
 
 
@@ -1846,17 +1846,19 @@ def openstack_wait_for_volume(
 
         # Check volume status
         if volume_details["status"] == "available":
-            print(f"Volume {volume_id} is available.")
+            logging.info(f"Volume {volume_id} is available.")
             return volume_details
 
         # Check if timeout has been reached
         if time.time() - start_time > timeout:
-            print(
+            logging.info(
                 f"Timeout reached while waiting for volume {volume_id} to become available."
             )
             return None
 
-        print(f"Volume {volume_id} is not available yet. Retrying in 5 seconds...")
+        logging.info(
+            f"Volume {volume_id} is not available yet. Retrying in 5 seconds..."
+        )
         time.sleep(5)
 
 
@@ -1892,17 +1894,17 @@ def openstack_wait_for_vm_state(
 
         # Check server status
         if server_details["status"] == state:
-            print(f"Server {server_id} is {state}.")
+            logging.info(f"Server {server_id} is {state}.")
             return server_details
 
         # Check if timeout has been reached
         if time.time() - start_time > timeout:
-            print(
+            logging.info(
                 f"Timeout reached while waiting for server {server_id} to become {state}."
             )
             return None
 
-        print(f"Server {server_id} is not {state} yet. Retrying in 5 seconds...")
+        logging.info(f"Server {server_id} is not {state} yet. Retrying in 5 seconds...")
         time.sleep(5)
 
 
@@ -1927,20 +1929,20 @@ def openstack_start_vm(m_id):
             # Find the network by UUID
             network = conn.network.get_network(network_uuid)
             if not network:
-                print(f"Network with UUID '{network_uuid}' not found.")
+                logging.error(f"Network with UUID '{network_uuid}' not found.")
                 return
 
             # Find the flavor by name
             flavor = conn.compute.find_flavor(flavor_name)
             if not flavor:
-                print(f"Flavor '{flavor_name}' not found.")
+                logging.error(f"Flavor '{flavor_name}' not found.")
                 return
 
             # Create a bootable volume from the specified image
             cinder = cinderclient.Client("3", session=conn.session)
             image = conn.compute.find_image(vol_image)
             if not image:
-                print(f"Image '{vol_image}' not found.")
+                logging.error(f"Image '{vol_image}' not found.")
                 return
 
             volume = cinder.volumes.create(
@@ -1948,9 +1950,6 @@ def openstack_start_vm(m_id):
                 imageRef=image.id,
                 name=f"{vm_name}_boot",
             )
-
-            print(conn.session)
-            print(type(conn.session))
 
             auth_url = mp.provider_data.get("auth_url")
             user_domain_name = mp.provider_data.get("user_domain_name")
@@ -1998,7 +1997,7 @@ def openstack_start_vm(m_id):
                 timeout=300,
             )
 
-            print(f"Server '{server.name}' created with ID: {server.id}")
+            logging.info(f"Server '{server.name}' created with ID: {server.id}")
 
             # wait for ip
             m.ip = openstack_wait_for_vm_ip(conn, server.id, network.id)
@@ -2166,7 +2165,7 @@ def docker_start_container(m_id):
                 "cpu_quota": cpu_quota,
                 "mem_limit": mem_limit,
             }
-            print(json.dumps(container_options, indent=4))
+            logging.info(json.dumps(container_options, indent=4))
 
             # Start the container
             container = client.containers.run(
@@ -2201,7 +2200,7 @@ def libvirt_get_vm_ip(conn, vm_name):
     try:
         domain = conn.lookupByName(vm_name)
     except libvirt.libvirtError:
-        print(f"Error: VM '{vm_name}' not found.")
+        logging.error(f"Error: VM '{vm_name}' not found.")
         return None
 
     interfaces = domain.interfaceAddresses(
@@ -2211,7 +2210,7 @@ def libvirt_get_vm_ip(conn, vm_name):
     for _, interface in interfaces.items():
         for address in interface["addrs"]:
             if address["type"] == libvirt.VIR_IP_ADDR_TYPE_IPV4:
-                print(f"vm {vm_name} acquired ip: {address['addr']}")
+                logging.info(f"vm {vm_name} acquired ip: {address['addr']}")
                 return address["addr"]
 
     return None
@@ -2231,13 +2230,13 @@ def libvirt_wait_for_vm(conn, vm_name):
     try:
         domain = conn.lookupByName(vm_name)
     except libvirt.libvirtError:
-        print(f"Error: VM '{vm_name}' not found.")
+        logging.error(f"Error: VM '{vm_name}' not found.")
         return
 
     while True:
         state, _ = domain.state()
         if state == libvirt.VIR_DOMAIN_RUNNING:
-            print(f"Virtual machine {vm_name} is now running")
+            logging.info(f"Virtual machine {vm_name} is now running")
             break
         time.sleep(1)
 
@@ -2366,7 +2365,7 @@ def libvirt_stop_vm(m_id):
         m.state = MachineState.DELETED
         db.session.commit()
 
-    print(f"Stopped virtual machine {vm_name} and deleted its disk")
+    logging.info(f"Stopped virtual machine {vm_name} and deleted its disk")
 
 
 def create_initial_db():
@@ -2405,7 +2404,7 @@ def create_initial_db():
                 data_sources=[demo_source1, demo_source2],
             )
             admin_password = gen_token(16)
-            print(f"username: denis password: {admin_password}")
+            logging.info(f"username: denis password: {admin_password}")
             admin_user.set_password(admin_password)
             normal_user = User(
                 is_enabled=True,
@@ -2420,7 +2419,7 @@ def create_initial_db():
             )
             normal_user_password = gen_token(16)
             normal_user.set_password(normal_user_password)
-            print(f"username: xrayscientist password: {normal_user_password}")
+            logging.info(f"username: xrayscientist password: {normal_user_password}")
 
             docker_machine_provider = MachineProvider(
                 name="Local docker",
