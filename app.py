@@ -422,7 +422,7 @@ class DataTransferJob(db.Model):
     )
 
     def __repr__(self):
-        return f"<DTJob {id}>"
+        return f"<DTJob {self.id}>"
 
 
 class ProtectedDataTransferJobModelView(ProtectedModelView):
