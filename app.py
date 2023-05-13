@@ -1448,6 +1448,7 @@ class ProblemReportForm(FlaskForm):
 
 
 @app.route("/report_problem", methods=["GET", "POST"])
+@limiter.limit("60 per minute")
 @login_required
 def report_problem():
     form = ProblemReportForm()
@@ -1700,7 +1701,7 @@ def share_machine(machine_id):
 
 
 @app.route("/share_accept/<machine_token>")
-@limiter.limit("60 per minute")
+@limiter.limit("60 per hour")
 @login_required
 def share_accept(machine_token):
     """
@@ -1721,7 +1722,7 @@ def share_accept(machine_token):
 
 
 @app.route("/share_revoke/<machine_id>")
-@limiter.limit("60 per minute")
+@limiter.limit("60 per hour")
 @login_required
 def share_revoke(machine_id):
     """
@@ -1816,7 +1817,7 @@ def stop_machine():
         )
 
     # good to go
-    logging.info(f"deleting container with machine id {machine_id}")
+    logging.info(f"deleting machine with machine id {machine_id}")
     machine.state = MachineState.DELETING
     db.session.commit()
 
