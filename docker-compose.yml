@@ -32,10 +32,10 @@ services:
         source: /root/.ssh
         target: /root/.ssh
     environment:
-      - ADA2025_SQLALCHEMY_URI=postgresql://postgres:postgres@db:5432/postgres
+      - ADA2025_SQLALCHEMY_URL=postgresql://postgres:postgres@db:5432/postgres
       - GOOGLE_OAUTH2_CLIENT_ID=${GOOGLE_OAUTH2_CLIENT_ID}
       - GOOGLE_OAUTH2_CLIENT_SECRET=${GOOGLE_OAUTH2_CLIENT_SECRET}
-      - RECAPTCHA_LOGIN=1
+      - LOGIN_RECAPTCHA=${LOGIN_RECAPTCHA}
       - RECAPTCHA_SITE_KEY=${RECAPTCHA_SITE_KEY}
       - RECAPTCHA_SECRET_KEY=${RECAPTCHA_SECRET_KEY}
 

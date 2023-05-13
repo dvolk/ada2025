@@ -90,6 +90,7 @@ app.config["SECRET_KEY"] = "your_secret_key"
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "ADA2025_SQLALCHEMY_URL", "sqlite:///app.db"
 )
+logging.info(f"Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -117,7 +118,7 @@ recaptcha = ReCaptcha(
     is_enabled=True if os.environ.get("RECAPTCHA_SITE_KEY") else False,
 )
 recaptcha.init_app(app)
-LOGIN_RECAPTCHA = os.environ.get("LOGIN_RECAPTCHA")
+LOGIN_RECAPTCHA = os.environ.get("LOGIN_RECAPTCHA", False)
 
 
 # for nicer formatting of json data in flask-admin forms

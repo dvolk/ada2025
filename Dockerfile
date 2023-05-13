@@ -4,10 +4,13 @@ FROM python:3.11
 # Set the working directory
 WORKDIR /app
 
-# Install libvirt requirements
+# Install various requirements
 RUN apt update && \
     apt -y install --no-install-recommends \
-        build-essential libvirt-clients virtinst libvirt-dev python3-openstackclient
+    build-essential \
+    libvirt-clients virtinst libvirt-dev \ # libvirt support
+    python3-openstackclient \ # openstack support
+    libpq-dev # sqlalchemy postgres support
 
 # Copy the requirements file into the container
 COPY requirements.txt .

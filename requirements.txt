@@ -39,3 +39,4 @@ python_cinderclient==9.3.0
 Authlib==1.2.0
 Flask-ReCaptcha==0.4.2
 argcomplete==3.0.8
+psycopg2==2.9.6
