@@ -177,7 +177,7 @@ def get_hostname(ip):
         hostname, _, _ = socket.gethostbyaddr(ip)
         return hostname
     except Exception:
-        logging.Exception(f"Couldn't get hostname of {ip}")
+        logging.exception(f"Couldn't get hostname of {ip}")
         return ""
 
 

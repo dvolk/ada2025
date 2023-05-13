@@ -29,6 +29,7 @@ Flask web app for desktop machines in the cloud
 - Open desktop in a web browser
 - Upload and download files with integrated file browser
 - Internationalization: en, zh, sl
+- Login with a local account or Google account
 
 ## Tech used
 
