@@ -27,7 +27,7 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
-from sqlalchemy import Index, JSON, desc, and_
+from sqlalchemy import Index, JSON, desc, and_, or_, union
 from flask_migrate import Migrate
 from flask_login import (
     LoginManager,
@@ -501,7 +501,7 @@ class MachineProvider(db.Model):
     name = db.Column(db.String(100), nullable=False)
     type = db.Column(db.String(100), nullable=False)
     customer = db.Column(db.String(100), nullable=False)
-    provider_data = db.Column(JSON, nullable=False)
+    provider_data = db.Column(JSON, default={}, nullable=False)
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
@@ -605,7 +605,7 @@ class MachineTemplate(db.Model):
         "MachineProvider", back_populates="machine_templates"
     )
     machines = db.relationship("Machine", back_populates="machine_template")
-    extra_data = db.Column(db.JSON)
+    extra_data = db.Column(db.JSON, default={})
 
     def __repr__(self):
         return f"<{self.name}>"
@@ -1392,6 +1392,25 @@ def welcome():
     )
 
 
+def count_machines(mt):
+    # counts how many running machines there are for the given template
+    running_states = [
+        MachineState.PROVISIONING,
+        MachineState.READY,
+        MachineState.DELETING,
+    ]
+    return (
+        db.session.query(Machine)
+        .filter(
+            and_(
+                Machine.machine_template == mt,
+                Machine.state.in_(running_states),
+            )
+        )
+        .count()
+    )
+
+
 @app.route("/machines")
 @limiter.limit("60 per minute")
 @login_required
@@ -1399,9 +1418,39 @@ def machines():
     """
     The machine page displays and controls the user's machines
     """
+
+    # Query for user's owned machines
+    owned_machines_query = db.session.query(Machine).filter(
+        and_(
+            Machine.owner == current_user,
+            ~Machine.state.in_([MachineState.DELETED, MachineState.DELETING]),
+        )
+    )
+
+    # Query for machines shared with the user
+    shared_machines_query = (
+        db.session.query(Machine)
+        .join(shared_user_machine)
+        .filter(
+            and_(
+                shared_user_machine.c.user_id == current_user.id,
+                ~Machine.state.in_([MachineState.DELETED, MachineState.DELETING]),
+            )
+        )
+    )
+
+    # Combine the two queries with a UNION operation and order the result
+    user_machines = (
+        owned_machines_query.union(shared_machines_query)
+        .order_by(Machine.id.desc())
+        .all()
+    )
+
     return render_template(
         "machines.jinja2",
         title=gettext("Machines"),
+        count_machines=count_machines,
+        user_machines=user_machines,
         MachineTemplate=MachineTemplate,
         MachineState=MachineState,
         Machine=Machine,
@@ -1833,9 +1882,14 @@ def new_machine():
     """
     machine_template_name = request.form.get("machine_template_name", "")
 
-    machine_name = mk_safe_machine_name(current_user.username)
-
     mt = MachineTemplate.query.filter_by(name=machine_template_name).first_or_404()
+
+    if quota := mt.extra_data.get("quota"):
+        if count_machines(mt) >= quota:
+            flash("Quota for template exceeded", "danger")
+            return redirect(url_for("machines"))
+
+    machine_name = mk_safe_machine_name(current_user.username)
 
     m = Machine(
         name=machine_name,
@@ -2589,6 +2643,8 @@ def create_initial_db():
                 type="openstack",
                 customer="unknown",
                 provider_data={
+                    # TODO add provider core, mem, hdd limits
+                    # and enforcement in /new_machine
                     "auth_url": "https://openstack.stfc.ac.uk:5000/v3",
                     "user_domain_name": "stfc",
                     "project_domain_name": "Default",
@@ -2603,11 +2659,16 @@ def create_initial_db():
                 type="libvirt",
                 memory_limit_gb=16,
                 cpu_limit_cores=4,
+                # TODO add hdd size
                 image="debian11-5",
                 os_username="ubuntu",
                 group=admin_group,
                 machine_provider=libvirt_machine_provider,
                 description="This is a libvirt machine template that's added by default when you're running in debug mode. It references the image \"debian11-5\"",
+                extra_data={
+                    # TODO maybe make this a column
+                    "quota": 3,
+                },
             )
             test_machine_template2 = MachineTemplate(
                 name="XRAY analysis template",
@@ -2619,6 +2680,9 @@ def create_initial_db():
                 group=normal_user_group,
                 machine_provider=docker_machine_provider,
                 description="This is a docker machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",
+                extra_data={
+                    "quota": 2,
+                },
             )
             test_machine_template3 = MachineTemplate(
                 name="STFC test template",
@@ -2640,6 +2704,7 @@ def create_initial_db():
                         {"name": "HTTPS"},
                         {"name": "SSH"},
                     ],
+                    "quota": 32,
                 },
             )
 

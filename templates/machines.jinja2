@@ -13,6 +13,9 @@
       {% set mts = current_user.group.machine_templates %}
     {% endif %}
     {% for mt in mts %}
+      {% set count = count_machines(mt) %}
+      {% set quota = mt.extra_data.get("quota") %}
+      {% set quota_reached = quota - count <= 0 %}
       <p>
         <div class="w3-card w3-padding w3-round">
           <div class="w3-row" style="display: flex; align-items: center;">
@@ -25,6 +28,9 @@
                 <button
                   title="Launch an instance of this machine template"
                   type="submit"
+                  {% if quota_reached %}
+                    disabled
+                  {% endif %}
                   class="w3-button w3-green w3-round">
                   {{ icon("plus-circle") }} {{ gettext('Launch instance') }}
                 </button>
@@ -34,17 +40,21 @@
           <div class="w3-row">
             <div class="w3-col m8">
               <p>{{ mt.description }}</p>
-              <p>Created: {{ humanize.naturaldelta(now - mt.creation_date) }} ago</p>
+              <p>Created: {{ humanize.naturaldelta(now - mt.creation_date) }}</p>
             </div>
             <div class="w3-col m4 w3-right-align">
               <p>
                 Group: {{ mt.group.name }}<br/>
                 Provider: {{ mt.machine_provider.name }}<br/>
+                {% if mt.cpu_limit_cores %}
+                  CPU (cores): {{ mt.cpu_limit_cores }}<br/>
+                {% endif %}
                 {% if mt.memory_limit_gb %}
                   Memory (GB): {{ mt.memory_limit_gb }}<br/>
                 {% endif %}
-                {% if mt.memory_limit_gb %}
-                  CPU (cores): {{ mt.cpu_limit_cores }}<br/>
+                Instances running: {{ count }}
+                {% if quota %}
+                  / {{ quota }}
                 {% endif %}
               </p>
             </div>
