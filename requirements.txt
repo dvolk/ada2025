@@ -37,3 +37,5 @@ openstacksdk==1.1.0
 python_novaclient==18.3.0
 python_cinderclient==9.3.0
 Authlib==1.2.0
+Flask-ReCaptcha==0.4.2
+argcomplete==3.0.8

@@ -2,16 +2,22 @@ version: "3.9"
 services:
   db:
     image: postgres:14.1-alpine
+    networks:
+      - adanet
+    ports:
+      - 5432:5432
     restart: always
+    volumes:
+      - catboard_db_vol:/var/lib/postgresql/data
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-    ports:
-      - 5432:5432
-    volumes:
-      - catboard_db_vol:/var/lib/postgresql/data
   app:
+    depends_on:
+      - db
     image: ada2025_app:latest
+    networks:
+      - adanet
     ports:
       - 5000:5000
     restart: always
@@ -22,7 +28,19 @@ services:
       - type: bind
         source: /var/run/libvirt/libvirt-sock
         target: /var/run/libvirt/libvirt-sock
+      - type: bind
+        source: /root/.ssh
+        target: /root/.ssh
     environment:
       - ADA2025_SQLALCHEMY_URI=postgresql://postgres:postgres@db:5432/postgres
+      - GOOGLE_OAUTH2_CLIENT_ID=${GOOGLE_OAUTH2_CLIENT_ID}
+      - GOOGLE_OAUTH2_CLIENT_SECRET=${GOOGLE_OAUTH2_CLIENT_SECRET}
+      - RECAPTCHA_LOGIN=1
+      - RECAPTCHA_SITE_KEY=${RECAPTCHA_SITE_KEY}
+      - RECAPTCHA_SECRET_KEY=${RECAPTCHA_SECRET_KEY}
+
 volumes:
   catboard_db_vol:
+networks:
+  adanet:
+    external: true

@@ -20,6 +20,10 @@
     <label class="w3-text-black">{{ gettext("Password") }}</label>
     <input class="w3-input w3-border w3-rounded w3-light-grey" type="password" name="password" required>
     <br>
+    {% if LOGIN_RECAPTCHA %}
+    {{ recaptcha }}
+    <br>
+    {% endif %}
     <button class="w3-btn w3-round ada-blue" type="submit">{{ gettext("Log In") }}</button>
     <a class="w3-btn w3-round ada-blue" href="/register">{{ gettext("Register") }}</a>
     {% if show_google_button %}

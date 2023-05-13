@@ -53,6 +53,8 @@
     <label class="w3-text-black">{{ gettext("Job Title") }}* (min: {{ form.job_title_min }}, max: {{ form.job_title_max }})</label>
     {{ form.job_title(class="w3-input w3-border w3-light-grey") }}
     <br>
+    {{ recaptcha }}
+    <br/>
     <button class="w3-btn ada-blue w3-round" type="submit">{{ gettext("Submit") }}</button>
   </form>
 

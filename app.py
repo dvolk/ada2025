@@ -51,6 +51,11 @@ from markupsafe import Markup
 import waitress
 from authlib.integrations.flask_client import OAuth
 from werkzeug.middleware.proxy_fix import ProxyFix
+import jinja2
+
+# flask recaptcha uses jinja2.Markup, which doesn't exist any more, so we monkey-patch to use markupsafe.Markup
+jinja2.Markup = Markup
+from flask_recaptcha import ReCaptcha
 
 # virtualization interfaces
 import docker
@@ -105,6 +110,14 @@ limiter = Limiter(
     storage_uri="memory://",
     strategy="fixed-window",
 )
+
+recaptcha = ReCaptcha(
+    site_key=os.environ.get("RECAPTCHA_SITE_KEY"),
+    secret_key=os.environ.get("RECAPTCHA_SECRET_KEY"),
+    is_enabled=True if os.environ.get("RECAPTCHA_SITE_KEY") else False,
+)
+recaptcha.init_app(app)
+LOGIN_RECAPTCHA = os.environ.get("LOGIN_RECAPTCHA")
 
 
 # for nicer formatting of json data in flask-admin forms
@@ -259,7 +272,7 @@ class User(db.Model, UserMixin):
     family_name = db.Column(db.String(100))
     organization = db.Column(db.String(200))
     job_title = db.Column(db.String(200))
-    email = db.Column(db.String(200), unique=True, nullable=False)
+    email = db.Column(db.String(200), nullable=False)
     language = db.Column(db.String(5), default="en", nullable=False)
     timezone = db.Column(db.String(50), default="Europe/London", nullable=False)
 
@@ -349,9 +362,11 @@ class DataSource(db.Model):
     """
 
     id = db.Column(db.Integer, primary_key=True)
+    source_username = db.Column(db.String, nullable=False, default="root")
     source_host = db.Column(db.String, nullable=False)
+    source_port = db.Column(db.Integer, nullable=False, default=22)
     source_dir = db.Column(db.String, nullable=False)
-    data_size = db.Column(db.Integer, nullable=False)
+    data_size = db.Column(db.Integer, nullable=False)  # in MB
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
@@ -370,14 +385,18 @@ class DataSource(db.Model):
 class ProtectedDataSourceModelView(ProtectedModelView):
     column_list = (
         "id",
+        "source_username",
         "source_host",
+        "source_port",
         "source_dir",
         "data_size",
         "creation_date",
         "users",
     )
     form_columns = (
+        "source_username",
         "source_host",
+        "source_port",
         "source_dir",
         "data_size",
         "users",
@@ -569,6 +588,7 @@ class MachineTemplate(db.Model):
     name = db.Column(db.String(100), nullable=False)
     type = db.Column(db.String(100), nullable=False)
     image = db.Column(db.String(200), nullable=False)
+    os_username = db.Column(db.String(100), nullable=False)  # operating system username
     description = db.Column(db.String(200), nullable=True)
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
@@ -919,6 +939,7 @@ def inject_globals():
         "time_now": int(time.time()),
         "version": version,
         "hostname": hostname,
+        "LOGIN_RECAPTCHA": LOGIN_RECAPTCHA,
     }
 
 
@@ -1126,6 +1147,14 @@ def login():
 
     # POST path
     if request.method == "POST":
+        if LOGIN_RECAPTCHA:
+            if not recaptcha.verify():
+                flash("Could not verify captcha. Try again.", "danger")
+                return render_template(
+                    "register.jinja2",
+                    form=form,
+                    title=gettext("Register account"),
+                )
         if form.validate_on_submit():
             user = User.query.filter_by(username=form.username.data).first()
 
@@ -1262,6 +1291,14 @@ def register():
     form = RegistrationForm()
 
     if request.method == "POST":
+        if not recaptcha.verify():
+            flash("Could not verify captcha. Try again.", "danger")
+            return render_template(
+                "register.jinja2",
+                form=form,
+                title=gettext("Register account"),
+            )
+
         if form.validate_on_submit():
             error_msg = ""
             if form.language.data not in form.language.choices:
@@ -1668,7 +1705,7 @@ def data():
 
 
 @log_function_call
-def do_rsync(source_host, source_dir, dest_host, dest_dir):
+def do_rsync(source_host, source_port, source_dir, dest_host, dest_dir):
     try:
         # Construct the rsync command
         rsync_cmd = (
@@ -1679,7 +1716,7 @@ def do_rsync(source_host, source_dir, dest_host, dest_dir):
 
         # Construct the ssh command to run the rsync command on the source_host
         ssh_cmd = (
-            f"ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "
+            f"ssh -p {source_port} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "
             f'{source_host} "{rsync_cmd}"'
         )
         logging.info(ssh_cmd)
@@ -1706,10 +1743,11 @@ def start_data_transfer(job_id):
             logging.error(f"job {job_id} not found!")
 
         result = do_rsync(
-            "dv@" + job.data_source.source_host,
-            job.data_source.source_dir,
-            "ubuntu@" + job.machine.ip,
-            "",
+            source_host=f"{job.data_source.source_username}@{job.data_source.source_host}",
+            source_port=job.data_source.source_port,
+            source_dir=job.data_source.source_dir,
+            dest_host=f"{job.machine.machine_template.os_username}@{job.machine.ip}",
+            dest_dir="",
         )
 
         job.finish_time = datetime.datetime.utcnow()
@@ -2468,17 +2506,23 @@ def create_initial_db():
         if not User.query.filter_by(username="admin").first():
             logging.warning("Creating default data.")
             demo_source1 = DataSource(
+                source_username="root",
                 source_host="localhost",
+                source_port="22",
                 source_dir="/tmp/demo1",
                 data_size="123",
             )
             demo_source2 = DataSource(
+                source_username="root",
                 source_host="localhost",
+                source_port="22",
                 source_dir="/tmp/demo2",
                 data_size="321",
             )
             demo_source3 = DataSource(
+                source_username="root",
                 source_host="localhost",
+                source_port="22",
                 source_dir="/tmp/demo3",
                 data_size="432",
             )
@@ -2554,6 +2598,7 @@ def create_initial_db():
                 memory_limit_gb=16,
                 cpu_limit_cores=4,
                 image="debian11-5",
+                os_username="ubuntu",
                 group=admin_group,
                 machine_provider=libvirt_machine_provider,
                 description="This is a libvirt machine template that's added by default when you're running in debug mode. It references the image \"debian11-5\"",
@@ -2564,6 +2609,7 @@ def create_initial_db():
                 memory_limit_gb=16,
                 cpu_limit_cores=4,
                 image="workspace",
+                os_username="ubuntu",
                 group=normal_user_group,
                 machine_provider=docker_machine_provider,
                 description="This is a docker machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",
@@ -2574,6 +2620,7 @@ def create_initial_db():
                 memory_limit_gb=32,
                 cpu_limit_cores=8,
                 image="denis_dev_20230511",
+                os_username="ubuntu",
                 group=normal_user_group,
                 machine_provider=stfc_os_machine_provider,
                 description="This is a STFC openstack template that's added by default when you're running in debug mode.",

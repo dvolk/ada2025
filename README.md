@@ -29,7 +29,7 @@ Flask web app for desktop machines in the cloud
 - Open desktop in a web browser
 - Upload and download files with integrated file browser
 - Internationalization: en, zh, sl
-- Login with a local account or Google account
+- Login with a local account or Google, with optional reCaptcha
 
 ## Tech used
 
@@ -42,6 +42,8 @@ Flask web app for desktop machines in the cloud
 - Flask-Admin
 - Flask-Babel
 - Flask-Limiter
+- Flask-ReCaptcha
+- Authlib
 - Debian
 - Docker
 - libvirt
@@ -52,7 +54,7 @@ Flask web app for desktop machines in the cloud
 - nginx
 - rsync
 
-## Setup
+## Installation and running
 
 ### Web app setup
 
@@ -94,6 +96,19 @@ docker build . -f Dockerfile -t workspace
 2. Copy the files in machines/debian11_vm to the virtual machine
 3. ssh into the virtual machine and run setup.bash
 4. Shut down the virtual machine
+
+### Optional config
+
+You can set the following optional environment variables:
+
+```
+ADA2025_SQLALCHEMY_URL=(set to database url if you don't want sqlite)
+LOGIN_RECAPTCHA=(set to 1 if you want recaptcha on login screen)
+RECAPTCHA_SITE_KEY=
+RECAPTCHA_SECRET_KEY=
+GOOGLE_OAUTH2_CLIENT_ID=
+GOOGLE_OAUTH2_CLIENT_SECRET=
+```
 
 ### Run web app
 
