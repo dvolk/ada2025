@@ -1011,10 +1011,15 @@ def google_login():
 def gen_unique_username(email, max_attempts=1000):
     username = ""
     attempt = 0
-    email_prefix = email.split("@")[0]
-    # TODO remove bad characters from prefix, allow a-Z, 0-9, and .
+    try:
+        email_prefix = email.split("@")[0]
+    except:
+        email_prefix = ""
+    # emails can have lots of characters, but we only want [a-Z,0-9,.]
+    email_prefix = [ch for ch in email_prefix if ch.isalnum() or ch == "."]
+
     while True:
-        if not email:
+        if not email_prefix:
             username = gen_token(16)
         elif not username:
             username = email_prefix
