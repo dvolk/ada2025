@@ -155,10 +155,11 @@
                 {% endif %}
                 Created: {{ humanize.naturaldelta(now - machine.creation_date) }} ago
               </p>
-              {% if machine.data_transfer_jobs %}
+              {% set finished_jobs = machine_format_dtj(machine) %}
+              {% if finished_jobs %}
                 <p>Data:<br/>
-                  {% for job_fmt in machine_format_dtj(machine) %}
-                    {{ job_fmt }}<br/>
+                  {% for job in finished_jobs %}
+                    {{ job }}<br/>
                   {% endfor %}
                 </p>
               {% endif %}

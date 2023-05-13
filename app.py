@@ -148,7 +148,7 @@ class JsonTextAreaField(TextAreaField):
 class ProtectedModelView(ModelView):
     def is_accessible(self):
         if not (current_user.is_authenticated and current_user.is_admin):
-            abort(403)
+            return redirect(url_for("login"))
         else:
             return True
 
@@ -1115,7 +1115,8 @@ def google_authorize():
         app.logger.error(e)
         flash(
             gettext(
-                "An error occurred while processing your Google login. Please try again."
+                "An error occurred while processing your Google login. Please try again.",
+                "danger",
             )
         )
         return redirect(url_for("login"))
@@ -1150,11 +1151,12 @@ def login():
     if request.method == "POST":
         if LOGIN_RECAPTCHA:
             if not recaptcha.verify():
-                flash("Could not verify captcha. Try again.", "danger")
+                flash(gettext("Could not verify captcha. Try again."), "danger")
                 return render_template(
-                    "register.jinja2",
+                    "login.jinja2",
+                    title="Login",
                     form=form,
-                    title=gettext("Register account"),
+                    show_google_button=show_google_button,
                 )
         if form.validate_on_submit():
             user = User.query.filter_by(username=form.username.data).first()
@@ -1320,7 +1322,7 @@ def register():
                 )
             if error_msg:
                 print(f"Registration error: {error_msg}")
-                flash(error_msg)
+                flash(error_msg, "danger")
                 return render_template(
                     "register.jinja2",
                     form=form,
@@ -1480,7 +1482,7 @@ def settings():
 @login_required
 def admin():
     if not current_user.is_admin:
-        abort(403)
+        return redirect(url_for("login"))
     return render_template(
         "admin.jinja2",
         title=gettext("Admin"),
@@ -1688,7 +1690,10 @@ def data():
             flash(gettext("Starting data transfer. Refresh page to update status."))
             return redirect(url_for("data"))
         else:
-            flash(gettext("The data transfer job submission could not be validated."))
+            flash(
+                gettext("The data transfer job submission could not be validated."),
+                "danger",
+            )
             return redirect(url_for("data"))
     else:
         sorted_jobs = (
