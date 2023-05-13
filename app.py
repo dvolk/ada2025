@@ -43,7 +43,7 @@ from flask_admin.contrib.sqla import ModelView
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, TextAreaField, SubmitField
-from wtforms.validators import DataRequired, Email, Length
+from wtforms.validators import DataRequired, Email, Length, Regexp
 from flask_babel import Babel, gettext
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -1016,7 +1016,7 @@ def gen_unique_username(email, max_attempts=1000):
     except:
         email_prefix = ""
     # emails can have lots of characters, but we only want [a-Z,0-9,.]
-    email_prefix = [ch for ch in email_prefix if ch.isalnum() or ch == "."]
+    email_prefix = "".join([ch for ch in email_prefix if ch.isalnum() or ch == "."])
 
     while True:
         if not email_prefix:
@@ -1024,7 +1024,7 @@ def gen_unique_username(email, max_attempts=1000):
         elif not username:
             username = email_prefix
         else:
-            username = email_prefix + "_" + gen_token(4)
+            username = email_prefix + "." + gen_token(4)
 
         if not User.query.filter_by(username=username).first():
             return username
@@ -1200,7 +1200,16 @@ class RegistrationForm(FlaskForm):
     username_max = 32
     username = StringField(
         gettext("Username"),
-        validators=[DataRequired(), Length(min=username_min, max=username_max)],
+        validators=[
+            DataRequired(),
+            Length(min=username_min, max=username_max),
+            Regexp(
+                r"^[A-Za-z0-9\.]*$",
+                message=gettext(
+                    "Sorry, username can only contain letters, numbers, and dots."
+                ),
+            ),
+        ],
     )
     password_min = 8
     password_max = 100
@@ -1254,10 +1263,31 @@ def register():
 
     if request.method == "POST":
         if form.validate_on_submit():
+            error_msg = ""
             if form.language.data not in form.language.choices:
-                abort(404)
+                error_msg = gettext("Bad language specified")
             if form.timezone.data not in form.timezone.choices:
-                abort(404)
+                error_msg = gettext("Bad timezone specified")
+            if contains_non_alphanumeric_chars(form.username.data):
+                error_msg = gettext(
+                    "Sorry, that username is invalid. The username can contain letters, numbers and ."
+                )
+            if User.query.filter_by(username=form.username.data).first():
+                error_msg = gettext(
+                    "Sorry, that username or email is taken. Please choose another."
+                )
+            if User.query.filter_by(email=form.email.data).first():
+                error_msg = gettext(
+                    "Sorry, that username or email is taken. Please choose another."
+                )
+            if error_msg:
+                print(f"Registration error: {error_msg}")
+                flash(error_msg)
+                return render_template(
+                    "register.jinja2",
+                    form=form,
+                    title=gettext("Register account"),
+                )
 
             new_user = User(
                 username=form.username.data,
@@ -1285,8 +1315,6 @@ def register():
                 )
             )
             return redirect(url_for("login"))
-        else:
-            flash(gettext("Sorry, the form could not be validated."))
 
     return render_template(
         "register.jinja2",
@@ -2437,7 +2465,7 @@ def libvirt_stop_vm(m_id):
 def create_initial_db():
     # add an admin user and test machinetemplate and machine
     with app.app_context():
-        if not User.query.filter_by(username="denis").first():
+        if not User.query.filter_by(username="admin").first():
             logging.warning("Creating default data.")
             demo_source1 = DataSource(
                 source_host="localhost",

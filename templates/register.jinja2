@@ -1,6 +1,25 @@
 {% extends 'base-bare.jinja2' %}
 
 {% block content %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        {% if category == "danger" %}
+          <p class="w3-red w3-padding-large w3-round">{{ message }}</li>
+        {% else %}
+          <p class="w3-green w3-padding-large w3-round">{{ message }}</li>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  {% if form.username.errors %}
+      {% for error in form.username.errors %}
+        <p class="w3-red w3-padding-large w3-round">{{ error }}</li>
+      {% endfor %}
+  {% endif %}
+
+
+</form>
   <p>{{ gettext("Thank you for your interest in using Ada 2025. Please fill in the following form and you will be emailed once your account is activated.") }}</p>
 
   <form method="POST" action="{{ url_for('register') }}">
