@@ -13,6 +13,9 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
   app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
     depends_on:
       - db
     image: ada2025_app:latest
