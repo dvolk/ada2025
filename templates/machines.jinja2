@@ -47,8 +47,9 @@
                 Group: {{ mt.group.name }}<br/>
                 Provider: {{ mt.machine_provider.name }}<br/>
                 {% if mt.cpu_limit_cores %}
-                  CPU (cores): {{ mt.cpu_limit_cores }}<br/>
+                  CPU (cores): {{ mt.cpu_limit_cores }}
                 {% endif %}
+                {% if mt.cpu_limit_cores and mt.memory_limit_gb %}&nbsp; {% endif %}
                 {% if mt.memory_limit_gb %}
                   Memory (GB): {{ mt.memory_limit_gb }}<br/>
                 {% endif %}

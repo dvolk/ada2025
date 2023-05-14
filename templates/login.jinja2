@@ -15,10 +15,10 @@
   <form method="POST" action="{{ url_for('login') }}">
     {{ form.csrf_token }}
     <label class="w3-text-black">{{ gettext("Username") }}</label>
-    <input class="w3-input w3-border w3-rounded w3-light-grey" type="text" name="username" required>
+    <input class="w3-input w3-border w3-round w3-light-grey" type="text" name="username" required>
     <br>
     <label class="w3-text-black">{{ gettext("Password") }}</label>
-    <input class="w3-input w3-border w3-rounded w3-light-grey" type="password" name="password" required>
+    <input class="w3-input w3-border w3-round w3-light-grey" type="password" name="password" required>
     <br>
     {% if LOGIN_RECAPTCHA %}
       {{ recaptcha }}

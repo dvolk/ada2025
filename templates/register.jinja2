@@ -25,33 +25,33 @@
   <form method="POST" action="{{ url_for('register') }}">
     {{ form.csrf_token }}
       <label class="w3-text-black">{{ gettext("Username") }}* (character length min: {{ form.username_min }}, max: {{ form.username_max }})</label>
-      {{ form.username(class="w3-input w3-border w3-light-grey") }}
+      {{ form.username(class="w3-input w3-round w3-border w3-light-grey") }}
     <br>
     <label class="w3-text-black">{{ gettext("Password") }}* (min: {{ form.password_min }}, max: {{ form.password_max }})</label>
-    {{ form.password(class="w3-input w3-border w3-light-grey") }}
+    {{ form.password(class="w3-input w3-round w3-border w3-light-grey") }}
     <br>
     <label class="w3-text-black">{{ gettext("Given Name") }}* (min: {{ form.given_name_min }}, max: {{ form.given_name_max }})</label>
-    {{ form.given_name(class="w3-input w3-border w3-light-grey") }}
+    {{ form.given_name(class="w3-input w3-round w3-border w3-light-grey") }}
     <br>
     <label class="w3-text-black">{{ gettext("Family Name") }}* (min: {{ form.family_name_min }}, max: {{ form.family_name_max }})</label>
-    {{ form.family_name(class="w3-input w3-border w3-light-grey") }}
+    {{ form.family_name(class="w3-input w3-round w3-border w3-light-grey") }}
     <br>
     <label class="w3-text-black">{{ gettext("Email") }}* (min: {{ form.email_min }}, max: {{ form.email_max }})</label>
-    {{ form.email(class="w3-input w3-border w3-light-grey") }}
+    {{ form.email(class="w3-input w3-round w3-border w3-light-grey") }}
     <br>
     <label class="w3-text-black">{{ gettext("Language") }}*</label>
-    {{ form.language(class="w3-select w3-border w3-light-grey") }}
+    {{ form.language(class="w3-select w3-round w3-border w3-light-grey") }}
     <br>
     <br>
     <label class="w3-text-black">{{ gettext("Timezone") }}*</label>
-    {{ form.timezone(class="w3-select w3-border w3-light-grey") }}
+    {{ form.timezone(class="w3-select w3-round w3-border w3-light-grey") }}
     <br>
     <br>
     <label class="w3-text-black">{{ gettext("Organization") }}* (min: {{ form.organization_min }}, max: {{ form.organization_max }})</label>
-    {{ form.organization(class="w3-input w3-border w3-light-grey") }}
+    {{ form.organization(class="w3-input w3-round w3-border w3-light-grey") }}
     <br>
     <label class="w3-text-black">{{ gettext("Job Title") }}* (min: {{ form.job_title_min }}, max: {{ form.job_title_max }})</label>
-    {{ form.job_title(class="w3-input w3-border w3-light-grey") }}
+    {{ form.job_title(class="w3-input w3-round w3-border w3-light-grey") }}
     <br>
     {{ recaptcha }}
     <br/>

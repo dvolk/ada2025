@@ -1105,7 +1105,7 @@ def google_authorize():
             # Show activation message
             flash(
                 gettext(
-                    "Your account has been created, but it has to be activated by staff, which typically happens within 24 hours. As soon as it's activated, you'll be able to log in using Google. We appreciate your patience."
+                    "Your account has been created, but it has to be activated by staff, which typically happens within 24 hours. When it's activated, you'll be able to log in using Google."
                 )
             )
             return redirect(url_for("login"))
@@ -1190,7 +1190,7 @@ def login():
                     show_google_button=show_google_button,
                 )
 
-            # local users
+            # local users or oauth2 users who have set a password
             if user and user.check_password(form.password.data):
                 # pw ok ut account not activated
                 if not user.is_enabled:
