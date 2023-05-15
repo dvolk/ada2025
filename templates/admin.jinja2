@@ -7,6 +7,33 @@
     {{ idea("<a target='_blank' href='/flaskyadmin'>Click here to access the flask-admin interface</a>.") }}
 </div>
 <br>
+
+<div class="w3-container">
+    {% set keys = ["ADA2025_SQLALCHEMY_URL", "LOGIN_RECAPTCHA", "RECAPTCHA_SITE_KEY", "RECAPTCHA_SECRET_KEY", "GOOGLE_OAUTH2_CLIENT_ID",
+"GOOGLE_OAUTH2_CLIENT_SECRET"] %}
+    <h3>Config</h3>
+    <table class="w3-table-all">
+        <thead>
+            <th>Key</th>
+            <th>Value</th>
+        </thead>
+        {% for key in keys %}
+        <tr>
+            <td>{{ key }}</td>
+            <td>
+                {% if not env.get(key) %}
+                {{ icon('xmark') }}
+                {% elif 'SECRET' in key %}
+                {{ icon('key') }}
+                {% else %}
+                {{ env.get(key) }}
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+<br/>
 <div class="w3-container w3-yellow">
     <h3>Users</h3>
 </div>

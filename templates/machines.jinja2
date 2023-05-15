@@ -38,21 +38,26 @@
             </div>
           </div>
           <div class="w3-row">
-            <div class="w3-col m8">
+            <div class="w3-col m7">
               <p>{{ mt.description }}</p>
               <p>Created: {{ humanize.naturaldelta(now - mt.creation_date) }}</p>
             </div>
-            <div class="w3-col m4 w3-right-align">
+            <div class="w3-col m5 w3-right-align">
               <p>
                 Group: {{ mt.group.name }}<br/>
                 Provider: {{ mt.machine_provider.name }}<br/>
                 {% if mt.cpu_limit_cores %}
-                  CPU (cores): {{ mt.cpu_limit_cores }}
+                  CPUs: {{ mt.cpu_limit_cores }}
                 {% endif %}
                 {% if mt.cpu_limit_cores and mt.memory_limit_gb %}&nbsp; {% endif %}
                 {% if mt.memory_limit_gb %}
-                  Memory (GB): {{ mt.memory_limit_gb }}<br/>
+                  Memory: {{ mt.memory_limit_gb }} GB
                 {% endif %}
+                {% if mt.disk_size_gb %}
+                  &nbsp;
+                  Disk: {{ mt.disk_size_gb }} GB
+                {% endif %}
+                <br/>
                 Instances running: {{ count }}
                 {% if quota %}
                   / {{ quota }}
@@ -97,7 +102,7 @@
                 <button
                   title="Machine is being prepared. Refresh page to update status"
                   class="w3-button w3-blue w3-round" disabled>
-                  <i class="fa-solid fa-spinner fa-spin"></i> PROVISIONING
+                  <i class="fa-solid fa-spinner fa-spin"></i> {{ gettext('Preparing') }}
                 </button>
               {% else %}
                 <button

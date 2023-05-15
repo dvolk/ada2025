@@ -155,6 +155,7 @@ class ProtectedModelView(ModelView):
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for("welcome"))
 
+    # since we're here, add an option to clone rows
     @action(
         "clone", "Clone", "Are you sure you want to create a copy of the selected rows?"
     )
@@ -596,6 +597,7 @@ class MachineTemplate(db.Model):
     )
     memory_limit_gb = db.Column(db.Integer, nullable=True)
     cpu_limit_cores = db.Column(db.Integer, nullable=True)
+    disk_size_gb = db.Column(db.Integer, nullable=True)
     group_id = db.Column(db.Integer, db.ForeignKey("group.id"), nullable=False)
     group = db.relationship("Group", back_populates="machine_templates")
     machine_provider_id = db.Column(
@@ -1537,6 +1539,7 @@ def admin():
         title=gettext("Admin"),
         User=User,
         Machine=Machine,
+        env=os.environ,
     )
 
 
@@ -2585,6 +2588,7 @@ def create_initial_db():
                 type="libvirt",
                 memory_limit_gb=16,
                 cpu_limit_cores=4,
+                disk_size_gb=20,
                 # TODO add hdd size
                 image="debian11-5",
                 os_username="ubuntu",
@@ -2614,6 +2618,7 @@ def create_initial_db():
                 name="STFC test template",
                 type="openstack",
                 memory_limit_gb=32,
+                disk_size_gb=200,
                 cpu_limit_cores=8,
                 image="denis_dev_20230511",
                 os_username="ubuntu",

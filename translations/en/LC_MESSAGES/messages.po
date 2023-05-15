@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-05-09 14:29+0000\n"
+"POT-Creation-Date: 2023-05-15 00:45+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -18,212 +18,346 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.12.1\n"
 
-#: app.py:441 app.py:776
+#: app.py:134
+msgid "Invalid JSON data."
+msgstr ""
+
+#: app.py:803 app.py:1391
 msgid "Welcome page"
 msgstr "Welcome page"
 
-#: app.py:446 app.py:789 app.py:1136
+#: app.py:808 app.py:1453 app.py:1829
 msgid "Machines"
 msgstr "Machines"
 
-#: app.py:451 app.py:1032
+#: app.py:813 app.py:1759
 msgid "Data"
 msgstr "Data"
 
-#: app.py:456 app.py:883 templates/citations.jinja2:5
+#: app.py:818 app.py:1550 templates/citations.jinja2:5
 msgid "Citations"
 msgstr "Citations"
 
-#: app.py:461 app.py:861
+#: app.py:823 app.py:1527
 msgid "Settings"
 msgstr "Settings"
 
-#: app.py:466 app.py:897
+#: app.py:828 app.py:1564 app.py:1607
 msgid "Help"
 msgstr "Help"
 
-#: app.py:471 app.py:890
+#: app.py:833 app.py:1557
 msgid "About"
 msgstr "About"
 
-#: app.py:476 app.py:873
+#: app.py:838 app.py:1539
 msgid "Admin"
 msgstr "Admin"
 
-#: app.py:533
+#: app.py:895
 msgid "Access denied"
 msgstr ""
 
-#: app.py:534
+#: app.py:896
 msgid "Sorry, you don't have access to that page or resource."
 msgstr ""
 
-#: app.py:542
+#: app.py:904
 msgid "Not found"
 msgstr ""
 
-#: app.py:543
+#: app.py:905
 msgid "Sorry, that page or resource could not be found."
 msgstr ""
 
-#: app.py:551
+#: app.py:913
 msgid "Too many requests"
 msgstr ""
 
-#: app.py:552
+#: app.py:914
 msgid ""
 "Sorry, you're making too many requests. Please wait a while and then try "
 "again."
 msgstr ""
 
-#: app.py:562
+#: app.py:924
 msgid "Application error"
 msgstr ""
 
-#: app.py:563
+#: app.py:925
 msgid "Sorry, the application encountered a problem."
 msgstr ""
 
-#: app.py:612 templates/login.jinja2:17 templates/register.jinja2:8
+#: app.py:998 app.py:1236 templates/login.jinja2:17
+#: templates/register.jinja2:27
 msgid "Username"
 msgstr "Username"
 
-#: app.py:615 app.py:665 templates/login.jinja2:20 templates/register.jinja2:11
+#: app.py:1001 app.py:1251 templates/login.jinja2:20
+#: templates/register.jinja2:30
 msgid "Password"
 msgstr "Password"
 
-#: app.py:638
+#: app.py:1109
 msgid ""
-"Your account hasn't been activated yet. If it's been more than 24 hours "
-"please contact support."
+"Your account has been created, but it has to be activated by staff, which"
+" typically happens within 24 hours. When it's activated, you'll be able "
+"to log in using Google."
 msgstr ""
 
-#: app.py:646
+#: app.py:1119
+msgid "An error occurred while processing your Google login. Please try again."
+msgstr ""
+
+#: app.py:1144
+msgid "You've been logged out."
+msgstr ""
+
+#: app.py:1156
+msgid "Could not verify captcha. Try again."
+msgstr ""
+
+#: app.py:1172
+msgid "Invalid provider"
+msgstr ""
+
+#: app.py:1183
+msgid ""
+"Sorry, you can't use a local login. Try using the login method you signed"
+" in (eg. Google) with the first time, or contact support for help."
+msgstr ""
+
+#: app.py:1200
+msgid ""
+"Account not activated. If it's been more than 24 hours please contact "
+"support."
+msgstr ""
+
+#: app.py:1214
 msgid "Logged in successfully."
 msgstr ""
 
-#: app.py:649 app.py:652
+#: app.py:1217 app.py:1221
 msgid "Invalid username or password."
 msgstr ""
 
-#: app.py:660
-msgid "Name"
+#: app.py:1242
+msgid "Sorry, username can only contain letters, numbers, and dots."
 msgstr ""
 
-#: app.py:671 templates/register.jinja2:14
-msgid "Real Name"
+#: app.py:1257 templates/register.jinja2:33
+msgid "Given Name"
 msgstr ""
 
-#: app.py:675 templates/register.jinja2:20
+#: app.py:1263 templates/register.jinja2:36
+msgid "Family Name"
+msgstr ""
+
+#: app.py:1267 templates/register.jinja2:42
 msgid "Language"
 msgstr ""
 
-#: app.py:678 templates/register.jinja2:24
+#: app.py:1270 templates/register.jinja2:46
 msgid "Timezone"
 msgstr ""
 
-#: app.py:683 templates/register.jinja2:17
+#: app.py:1275 templates/register.jinja2:39
 msgid "Email"
 msgstr ""
 
-#: app.py:689 templates/register.jinja2:28
+#: app.py:1281 templates/register.jinja2:50
 msgid "Organization"
 msgstr ""
 
-#: app.py:692 templates/register.jinja2:31
-msgid "Group"
-msgstr ""
-
-#: app.py:696 templates/register.jinja2:34
+#: app.py:1287 templates/register.jinja2:53
 msgid "Job Title"
 msgstr ""
 
-#: app.py:699 templates/login.jinja2:24
+#: app.py:1290 templates/login.jinja2:28
 msgid "Register"
 msgstr "Register"
 
-#: app.py:738
+#: app.py:1304 app.py:1331 app.py:1364
+msgid "Register account"
+msgstr "Register account"
+
+#: app.py:1310
+msgid "Bad language specified"
+msgstr ""
+
+#: app.py:1312
+msgid "Bad timezone specified"
+msgstr ""
+
+#: app.py:1314
+msgid ""
+"Sorry, that username is invalid. The username can contain letters, "
+"numbers and ."
+msgstr ""
+
+#: app.py:1318 app.py:1322
+msgid "Sorry, that username or email is taken. Please choose another."
+msgstr ""
+
+#: app.py:1355
 msgid ""
 "Thank you for registering. You will be emailed when your account is "
 "activated"
 msgstr ""
 
-#: app.py:744
-msgid "Sorry, the form could not be validated."
-msgstr ""
-
-#: app.py:749
-msgid "Register account"
-msgstr "Register account"
-
-#: app.py:812 app.py:837
+#: app.py:1478 app.py:1503
 msgid "Invalid values for machine rename"
 msgstr ""
 
-#: app.py:818
+#: app.py:1484
 msgid ""
 "New name must be between 4 and 80 characters long, and can contain "
 "characters a-Z,0-9 and -"
 msgstr ""
 
-#: app.py:827
+#: app.py:1493
 msgid ""
 "New name contains non-alphanumeric characters. Characters that are "
 "allowed are a-Z,0-9 and -"
 msgstr ""
 
-#: app.py:843
+#: app.py:1509
 msgid "The requested machine name is already taken"
 msgstr ""
 
-#: app.py:939 templates/data.jinja2:66
+#: app.py:1599
+msgid "Problem report submitted successfully."
+msgstr ""
+
+#: app.py:1651 templates/data.jinja2:71
 msgid "Data Source"
 msgstr ""
 
-#: app.py:941 templates/data.jinja2:70
+#: app.py:1653 templates/data.jinja2:75
 msgid "Machine"
 msgstr ""
 
-#: app.py:942 templates/register.jinja2:37
+#: app.py:1654 templates/register.jinja2:58
 msgid "Submit"
 msgstr ""
 
-#: app.py:1024
+#: app.py:1742
 msgid "Starting data transfer. Refresh page to update status."
 msgstr ""
 
-#: app.py:1027
+#: app.py:1746
 msgid "The data transfer job submission could not be validated."
 msgstr ""
 
-#: app.py:1121
-msgid "Creating machine in the background. Refresh page to update status."
-msgstr ""
-
-#: app.py:1147
+#: app.py:1841
 msgid "You own that machine."
 msgstr ""
 
-#: app.py:1150
+#: app.py:1844
 msgid "You already have that machine."
 msgstr ""
 
-#: app.py:1155
+#: app.py:1849
 msgid "Shared machine has been added to your account."
 msgstr ""
 
-#: app.py:1168
+#: app.py:1863
 msgid "You can't revoke shares on a machine you don't own."
 msgstr ""
 
-#: app.py:1175
+#: app.py:1870
 msgid ""
 "Shares for machine have been removed and a new share link has been "
 "generated"
 msgstr ""
 
-#: app.py:1233
+#: app.py:1918
+msgid "Creating machine in the background. Refresh page to update status."
+msgstr ""
+
+#: app.py:1965
 msgid "Deleting machine"
+msgstr ""
+
+#: templates/about.jinja2:5
+msgid "About ADA Data Analysis 2025"
+msgstr ""
+
+#: templates/about.jinja2:7
+msgid ""
+"Welcome to ADA Data Analysis 2025, the cutting-edge data analysis service"
+" designed to empower professionals like you with advanced tools and "
+"resources for efficient data exploration and insights generation."
+msgstr ""
+
+#: templates/about.jinja2:9
+msgid ""
+"At ADA, our mission is to revolutionize the way you analyze and interpret"
+" data. We understand that in today's data-driven world, access to "
+"reliable, secure, and flexible data analysis platforms is essential for "
+"success. With that in mind, ADA offers a comprehensive suite of features "
+"and functionalities to meet the diverse needs of data scientists, "
+"researchers, analysts, and beyond."
+msgstr ""
+
+#: templates/about.jinja2:11
+msgid "Key Features:"
+msgstr ""
+
+#: templates/about.jinja2:15
+msgid ""
+"<b>Remote Data Access</b>: ADA enables you to securely access and work "
+"with your data from anywhere, at any time. No longer confined to a "
+"specific physical location, you can now explore and analyze your data on "
+"the go, whether you're in the office, at home, or traveling."
+msgstr ""
+
+#: templates/about.jinja2:17
+msgid ""
+"<b>Virtualized Linux Desktop Environments</b>: Our virtualized machines "
+"provide a powerful Linux-based desktop environment that comes pre-"
+"configured with the essential software, data, and computing resources. "
+"This allows you to seamlessly transition from your local machine to ADA, "
+"without the hassle of installing and configuring numerous tools."
+msgstr ""
+
+#: templates/about.jinja2:19
+msgid ""
+"<b>Customizability</b>: ADA understands that every user has unique "
+"requirements. That's why we offer a highly customizable experience, "
+"allowing you to tailor your virtualized environment to suit your specific"
+" analysis needs. Install additional software packages, define preferred "
+"settings, and personalize your workspace to maximize productivity."
+msgstr ""
+
+#: templates/about.jinja2:21
+msgid ""
+"<b>Secure and Isolated Workspaces</b>: Your data and analysis activities "
+"are of utmost importance to us. ADA ensures the highest level of security"
+" by providing isolated workspaces, protecting your valuable information "
+"from unauthorized access. Rest assured that your data and computations "
+"are kept confidential and protected."
+msgstr ""
+
+#: templates/about.jinja2:23
+msgid ""
+"<b>Dedicated Support</b>: We take pride in delivering exceptional "
+"customer service. Our dedicated support team is available to address your"
+" inquiries, provide assistance, and resolve any issues you may encounter "
+"during your data analysis journey with ADA."
+msgstr ""
+
+#: templates/about.jinja2:26
+msgid ""
+"For any inquiries, questions, or feedback, please don't hesitate to reach"
+" out to our support team at contact@ada-science.io. We are here to assist"
+" you every step of the way."
+msgstr ""
+
+#: templates/about.jinja2:28
+msgid ""
+"Thank you for choosing ADA Data Analysis 2025. We look forward to being "
+"your trusted partner in your data analysis endeavors."
 msgstr ""
 
 #: templates/base-bare.jinja2:57 templates/base.jinja2:55
@@ -271,37 +405,49 @@ msgid "Status"
 msgstr ""
 
 #: templates/data.jinja2:21
-msgid "Dismiss"
+msgid "Actions"
 msgstr ""
 
-#: templates/data.jinja2:51
+#: templates/data.jinja2:42
+msgid "Problem with data transfer from "
+msgstr ""
+
+#: templates/data.jinja2:42
+msgid " to machine "
+msgstr ""
+
+#: templates/data.jinja2:56
 msgid "Here you can transfer data into your machine from registered data sources"
 msgstr ""
 
-#: templates/data.jinja2:53
+#: templates/data.jinja2:58
 msgid ""
 "Select the data source and a machine you want to copy the data to and "
 "then click submit. The data will be copied into your machine."
 msgstr ""
 
-#: templates/data.jinja2:55
+#: templates/data.jinja2:60
 msgid ""
 "Please ensure you have enough space on your chosen machine to copy the "
 "data. If your machine disk becomes completely full, the machine may stop "
 "working."
 msgstr ""
 
-#: templates/data.jinja2:57
+#: templates/data.jinja2:62
 msgid "Data source sizes are not updated in real-time and may be outdated."
 msgstr ""
 
-#: templates/data.jinja2:62
+#: templates/data.jinja2:67
 msgid "New Data Transfer"
 msgstr ""
 
-#: templates/login.jinja2:23
+#: templates/login.jinja2:27
 msgid "Log In"
 msgstr "Log In"
+
+#: templates/login.jinja2:31
+msgid "Google Login"
+msgstr ""
 
 #: templates/machines.jinja2:5
 msgid "Create new machine"
@@ -311,71 +457,153 @@ msgstr ""
 msgid "This lists all templates that are available to the group you are in: {g}"
 msgstr ""
 
-#: templates/machines.jinja2:29
+#: templates/machines.jinja2:35
 msgid "Launch instance"
 msgstr ""
 
-#: templates/machines.jinja2:58
+#: templates/machines.jinja2:74
 msgid "List of machines"
 msgstr ""
 
-#: templates/machines.jinja2:59
+#: templates/machines.jinja2:75
 msgid ""
 "This lists all machines you have access to, both your own and those "
 "shared with you by other users."
 msgstr ""
 
-#: templates/machines.jinja2:78
+#: templates/machines.jinja2:99
 msgid "Open"
 msgstr ""
 
-#: templates/register.jinja2:4
+#: templates/machines.jinja2:105
+msgid "Preparing"
+msgstr ""
+
+#: templates/machines.jinja2:128
+msgid "Problem with machine "
+msgstr ""
+
+#: templates/machines.jinja2:130
+msgid "Report problem"
+msgstr ""
+
+#: templates/machines.jinja2:137
+msgid "Stop and remove machine"
+msgstr ""
+
+#: templates/register.jinja2:23
 msgid ""
 "Thank you for your interest in using Ada 2025. Please fill in the "
 "following form and you will be emailed once your account is activated."
 msgstr ""
 
-#: templates/welcome.jinja2:5
+#: templates/report_problem.jinja2:5
+msgid ""
+"We're sorry that there's a problem with the service, please fill in this "
+"form and we will look into it"
+msgstr ""
+
+#: templates/report_problem.jinja2:8
+msgid "Report a Problem"
+msgstr ""
+
+#: templates/report_problem.jinja2:15
+msgid "Title"
+msgstr ""
+
+#: templates/report_problem.jinja2:20
+msgid "Description"
+msgstr ""
+
+#: templates/report_problem.jinja2:25
+msgid "Machine (optional)"
+msgstr ""
+
+#: templates/report_problem.jinja2:30
+msgid "Data transfer job (optional)"
+msgstr ""
+
+#: templates/welcome.jinja2:8
+msgid "Problem Reports"
+msgstr ""
+
+#: templates/welcome.jinja2:14
+msgid "User"
+msgstr ""
+
+#: templates/welcome.jinja2:15
+msgid "Report title"
+msgstr ""
+
+#: templates/welcome.jinja2:16
+msgid "Created ago"
+msgstr ""
+
+#: templates/welcome.jinja2:30
 msgid "Welcome to ADA Data Analysis 2025"
 msgstr "Welcome to ADA Data Analysis 2025"
 
-#: templates/welcome.jinja2:7
-msgid "We hope you'll enjoy your stay with our new greatly improved service."
-msgstr "We hope you'll enjoy your stay with our new greatly improved service."
-
-#: templates/welcome.jinja2:9
-msgid "What is Ada?"
-msgstr "What is Ada?"
-
-#: templates/welcome.jinja2:12
+#: templates/welcome.jinja2:32
 msgid ""
-"This service allows you to remotely access your data and create machines "
-"(virtualized linux desktop environments), which contain all the software,"
-" data and compute resources you will need to perform your work."
+"Thank you for choosing ADA Data Analysis, the next-generation platform "
+"for data analysis and machine learning. We are thrilled to have you "
+"onboard and we are certain that you will appreciate the transformative "
+"capabilities of our newly improved service."
 msgstr ""
-"This service allows you to remotely access your data and create machines "
-"(virtualized linux desktop environments), which contain all the software,"
-" data and compute resources you will need to perform your work."
 
-#: templates/welcome.jinja2:16
+#: templates/welcome.jinja2:34
+msgid "Understanding ADA: Your Personal Data Analysis Platform"
+msgstr ""
+
+#: templates/welcome.jinja2:36
 msgid ""
-"For help and info, find the help button on the side bar menu. These pages"
-" have specifc information for each area of the site."
+"ADA is a new data analysis service that offers you the flexibility to "
+"access your data remotely, from anywhere at any time. With ADA, you can "
+"create virtual machines, which are essentially cloud-based Linux desktop "
+"environments. These environments are fully equipped with all the "
+"necessary software, data storage, and computational power you need to "
+"perform your analysis seamlessly. No more worrying about hardware "
+"limitations, software incompatibility, or data security; we've got you "
+"covered."
 msgstr ""
-"For help and info, find the help button on the side bar menu. These pages"
-" have specifc information for each area of the site."
 
-#: templates/welcome.jinja2:19
-msgid "Feedback and help"
-msgstr "Feedback and help"
+#: templates/welcome.jinja2:38
+msgid "Help & Information"
+msgstr ""
 
-#: templates/welcome.jinja2:21
-msgid "Have a question, request or an issue to report?"
-msgstr "Have a question, request or an issue to report?"
+#: templates/welcome.jinja2:40
+msgid ""
+"To ensure your experience is as smooth as possible, we've integrated a "
+"dedicated 'Help' button on the side bar menu. Simply click on this button"
+" to access a wide range of information related to each aspect of our "
+"platform. From how-to guides and tutorials to troubleshooting tips and "
+"FAQs, these pages are designed to help you make the most of the ADA "
+"platform."
+msgstr ""
 
-#: templates/welcome.jinja2:24
-msgid "Let us know at:"
-msgstr "Let us know at:"
+#: templates/welcome.jinja2:42
+msgid "We're Here to Help: Feedback and Support"
+msgstr ""
+
+#: templates/welcome.jinja2:44
+msgid ""
+"Your input is invaluable to us. If you have a question, a request, or "
+"encounter an issue, we encourage you to reach out to us. We're here to "
+"support you every step of the way. Our team of experts is always ready to"
+" provide assistance, answer your questions, and work on your suggestions "
+"to continually improve our service."
+msgstr ""
+
+#: templates/welcome.jinja2:46
+msgid "Contact us at:"
+msgstr ""
+
+#: templates/welcome.jinja2:48
+msgid ""
+"Your journey into the future of data analysis begins with ADA. Thank you "
+"for choosing us as your partner in this exciting endeavor. Enjoy your "
+"exploration!"
+msgstr ""
 
 #~ msgid ""
 #~ "This table shows the state of your"
@@ -422,4 +650,63 @@ msgstr "Let us know at:"
 
 #~ msgid "New Data Transfer"
 #~ msgstr ""
+
+#~ msgid ""
+#~ "Your account hasn't been activated yet."
+#~ " If it's been more than 24 "
+#~ "hours please contact support."
+#~ msgstr ""
+
+#~ msgid "Name"
+#~ msgstr ""
+
+#~ msgid "Real Name"
+#~ msgstr ""
+
+#~ msgid "Group"
+#~ msgstr ""
+
+#~ msgid "Sorry, the form could not be validated."
+#~ msgstr ""
+
+#~ msgid "We hope you'll enjoy your stay with our new greatly improved service."
+#~ msgstr "We hope you'll enjoy your stay with our new greatly improved service."
+
+#~ msgid "What is Ada?"
+#~ msgstr "What is Ada?"
+
+#~ msgid ""
+#~ "This service allows you to remotely "
+#~ "access your data and create machines "
+#~ "(virtualized linux desktop environments), "
+#~ "which contain all the software, data "
+#~ "and compute resources you will need "
+#~ "to perform your work."
+#~ msgstr ""
+#~ "This service allows you to remotely "
+#~ "access your data and create machines "
+#~ "(virtualized linux desktop environments), "
+#~ "which contain all the software, data "
+#~ "and compute resources you will need "
+#~ "to perform your work."
+
+#~ msgid ""
+#~ "For help and info, find the help"
+#~ " button on the side bar menu. "
+#~ "These pages have specifc information for"
+#~ " each area of the site."
+#~ msgstr ""
+#~ "For help and info, find the help"
+#~ " button on the side bar menu. "
+#~ "These pages have specifc information for"
+#~ " each area of the site."
+
+#~ msgid "Feedback and help"
+#~ msgstr "Feedback and help"
+
+#~ msgid "Have a question, request or an issue to report?"
+#~ msgstr "Have a question, request or an issue to report?"
+
+#~ msgid "Let us know at:"
+#~ msgstr "Let us know at:"
 

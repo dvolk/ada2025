@@ -2,8 +2,55 @@
 
 {% block content %}
 
-<h2>Settings</h2>
+  <h2>ADA Data Analysis 2025 Settings</h2>
 
-<p>Number of active threads: {{ threading.active_count() }}</p>
+  <form>
+
+    <h2>General Settings</h2>
+
+    <div class="w3-row w3-section">
+      <label>Language:</label>
+      <select class="w3-select" name="language">
+        <option value="" disabled selected>Select your language</option>
+        <option value="english">English</option>
+        <option value="spanish">Spanish</option>
+        <!-- Add more languages here -->
+      </select>
+    </div>
+
+    <div class="w3-row w3-section">
+      <label>Timezone:</label>
+      <input class="w3-input w3-border" name="timezone" type="text" placeholder="Enter your timezone">
+    </div>
+
+    <div class="w3-row w3-section">
+      <label>Email Notifications:</label>
+      <input class="w3-check" type="checkbox" checked="checked">
+      <label>Receive email notifications for completed computations or important updates</label>
+    </div>
+
+    <h2>Appearance Settings</h2>
+
+    <div class="w3-row w3-section">
+      <label>Theme:</label>
+      <select class="w3-select" name="theme">
+        <option value="" disabled selected>Select your theme</option>
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+        <!-- Add more themes here -->
+      </select>
+    </div>
+
+    <div class="w3-row w3-section">
+      <label>Font Size:</label>
+      <input class="w3-input w3-border" name="font-size" type="number" placeholder="Enter font size">
+    </div>
+
+    <!-- Add remaining categories and input fields in a similar manner -->
+
+    <p>
+      <button class="w3-button w3-section w3-blue w3-ripple"> Save </button>
+    </p>
+  </form>
 
 {% endblock %}

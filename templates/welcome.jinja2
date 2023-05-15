@@ -27,26 +27,24 @@
     </div>
   {% endif %}
 
-  <h2>{{ gettext("Welcome to ADA Data Analysis 2025") }}</h2>
+<h2>{{ _("Welcome to ADA Data Analysis 2025") }}</h2>
 
-  <p>{{ gettext("We hope you'll enjoy your stay with our new greatly improved service.") }}</p>
+<p>{{ _("Thank you for choosing ADA Data Analysis, the next-generation platform for data analysis and machine learning. We are thrilled to have you onboard and we are certain that you will appreciate the transformative capabilities of our newly improved service.") }}</p>
 
-  <h2>{{ gettext("What is Ada?") }}</h2>
+<h3>{{ _("Understanding ADA: Your Personal Data Analysis Platform") }}</h3>
 
-  <p>
-    {{ gettext("This service allows you to remotely access your data and create machines (virtualized linux desktop environments), which contain all the software, data and compute resources you will need to perform your work.") }}
-  </p>
+<p>{{ _("ADA is a new data analysis service that offers you the flexibility to access your data remotely, from anywhere at any time. With ADA, you can create virtual machines, which are essentially cloud-based Linux desktop environments. These environments are fully equipped with all the necessary software, data storage, and computational power you need to perform your analysis seamlessly. No more worrying about hardware limitations, software incompatibility, or data security; we've got you covered.") }}</p>
 
-  <p>
-    {{ gettext("For help and info, find the help button on the side bar menu. These pages have specifc information for each area of the site.") }}
-  </p>
+<h3>{{ _("Help & Information") }}</h3>
 
-  <h2>{{ gettext("Feedback and help") }}</h2>
+<p>{{ _("To ensure your experience is as smooth as possible, we've integrated a dedicated 'Help' button on the side bar menu. Simply click on this button to access a wide range of information related to each aspect of our platform. From how-to guides and tutorials to troubleshooting tips and FAQs, these pages are designed to help you make the most of the ADA platform.") }}</p>
 
-  <p>{{ gettext("Have a question, request or an issue to report?") }}</p>
+<h3>{{ _("We're Here to Help: Feedback and Support") }}</h3>
 
-  <p>
-    {{ gettext("Let us know at:") }} {{ email('contact@ada-science.io') }}
-  </p>
+<p>{{ _("Your input is invaluable to us. If you have a question, a request, or encounter an issue, we encourage you to reach out to us. We're here to support you every step of the way. Our team of experts is always ready to provide assistance, answer your questions, and work on your suggestions to continually improve our service.") }}</p>
+
+<p>{{ _("Contact us at:") }}</p> {{ email("contact@ada-science.io") }}
+
+<p>{{ _("Your journey into the future of data analysis begins with ADA. Thank you for choosing us as your partner in this exciting endeavor. Enjoy your exploration!") }}</p>
 
 {% endblock %}
