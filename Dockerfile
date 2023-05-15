@@ -8,9 +8,9 @@ WORKDIR /app
 RUN apt update && \
     apt -y install --no-install-recommends \
     build-essential \
-    libvirt-clients virtinst libvirt-dev # libvirt support \
-    python3-openstackclient # openstack support \
-    libpq-dev # sqlalchemy postgres support
+    libvirt-clients virtinst libvirt-dev\
+    python3-openstackclient\
+    libpq-dev
 
 # Copy the requirements file into the container
 COPY requirements.txt .
