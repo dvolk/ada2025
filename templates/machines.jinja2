@@ -40,25 +40,25 @@
           <div class="w3-row">
             <div class="w3-col m7">
               <p>{{ mt.description }}</p>
-              <p>Created: {{ humanize.naturaldelta(now - mt.creation_date) }}</p>
+              <p>{{ gettext("Created:") }} {{ humanize.naturaldelta(now - mt.creation_date) }}</p>
             </div>
             <div class="w3-col m5 w3-right-align">
               <p>
-                Group: {{ mt.group.name }}<br/>
-                Provider: {{ mt.machine_provider.name }}<br/>
+                {{ gettext("Group:") }} {{ mt.group.name }}<br/>
+                {{ gettext("Provider:") }} {{ mt.machine_provider.name }}<br/>
                 {% if mt.cpu_limit_cores %}
-                  CPUs: {{ mt.cpu_limit_cores }}
+                  {{ gettext("CPUs:") }} {{ mt.cpu_limit_cores }}
                 {% endif %}
                 {% if mt.cpu_limit_cores and mt.memory_limit_gb %}&nbsp; {% endif %}
                 {% if mt.memory_limit_gb %}
-                  Memory: {{ mt.memory_limit_gb }} GB
+                  {{ gettext("Memory:") }} {{ mt.memory_limit_gb }} GB
                 {% endif %}
                 {% if mt.disk_size_gb %}
                   &nbsp;
-                  Disk: {{ mt.disk_size_gb }} GB
+                  {{ gettext("Disk:") }} {{ mt.disk_size_gb }} GB
                 {% endif %}
                 <br/>
-                Instances running: {{ count }}
+                {{ gettext("Instances running:") }} {{ count }}
                 {% if quota %}
                   / {{ quota }}
                 {% endif %}
@@ -156,24 +156,24 @@
             </div>
             <div class="w3-col m4 w3-right-align">
               <p>
-                Template: {{ machine.machine_template.name }}<br/>
+                {{ gettext("Template:") }} {{ machine.machine_template.name }}<br/>
                 {% if machine.owner.id != current_user.id %}
-                  Shared with you by: {{ machine.owner.username }}<br/>
+                  {{ gettext("Shared with you by:") }} {{ machine.owner.username }}<br/>
                 {% else %}
-                  Owner: {{ machine.owner.username }}<br/>
+                  {{ gettext("Owner:") }} {{ machine.owner.username }}<br/>
 
                   {% if machine.shared_users %}
-                    Shared with other users: {{ machine.shared_users|join(", ", attribute="username") }}<br/>
+                    {{ gettext("Shared with other users:") }} {{ machine.shared_users|join(", ", attribute="username") }}<br/>
                   {% endif %}
                 {% endif %}
                 {% if machine.ip %}
-                  IP: {{ machine.ip }}<br/>
+                  {{ gettext("IP:") }} {{ machine.ip }}<br/>
                 {% endif %}
-                Created: {{ humanize.naturaldelta(now - machine.creation_date) }} ago
+                {{ gettext("Created:") }} {{ humanize.naturaldelta(now - machine.creation_date) }} ago
               </p>
               {% set finished_jobs = machine_format_dtj(machine) %}
               {% if finished_jobs %}
-                <p>Data:<br/>
+                <p>{{ gettext("Data:") }}<br/>
                   {% for job in finished_jobs %}
                     {{ job }}<br/>
                   {% endfor %}

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-05-15 00:45+0000\n"
+"POT-Creation-Date: 2023-05-16 09:47+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -16,266 +16,278 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.12.1\n"
+"Generated-By: Babel 2.10.3\n"
 
-#: app.py:134
+#: app.py:135
 msgid "Invalid JSON data."
 msgstr ""
 
-#: app.py:803 app.py:1391
+#: app.py:804 app.py:1392
 msgid "Welcome page"
 msgstr "欢迎页面"
 
-#: app.py:808 app.py:1453 app.py:1829
+#: app.py:809 app.py:1454 app.py:1840
 msgid "Machines"
 msgstr "虚拟机"
 
-#: app.py:813 app.py:1759
+#: app.py:814 app.py:1770
 msgid "Data"
 msgstr "数据"
 
-#: app.py:818 app.py:1550 templates/citations.jinja2:5
+#: app.py:819 app.py:1551 templates/citations.jinja2:5
 msgid "Citations"
 msgstr "引用"
 
-#: app.py:823 app.py:1527
+#: app.py:824 app.py:1528
 msgid "Settings"
 msgstr "设置"
 
-#: app.py:828 app.py:1564 app.py:1607
+#: app.py:829 app.py:1565 app.py:1608
 msgid "Help"
 msgstr "帮助"
 
-#: app.py:833 app.py:1557
+#: app.py:834 app.py:1558
 msgid "About"
 msgstr "关于"
 
-#: app.py:838 app.py:1539
+#: app.py:839 app.py:1540
 msgid "Admin"
 msgstr "管理员"
 
-#: app.py:895
+#: app.py:896
 msgid "Access denied"
 msgstr "访问被拒绝"
 
-#: app.py:896
+#: app.py:897
 msgid "Sorry, you don't have access to that page or resource."
 msgstr "抱歉，您无权访问该页面或资源。"
 
-#: app.py:904
+#: app.py:905
 msgid "Not found"
 msgstr "未找到"
 
-#: app.py:905
+#: app.py:906
 msgid "Sorry, that page or resource could not be found."
 msgstr "抱歉，找不到该页面或资源。"
 
-#: app.py:913
+#: app.py:914
 msgid "Too many requests"
 msgstr "请求过多"
 
-#: app.py:914
+#: app.py:915
 msgid ""
 "Sorry, you're making too many requests. Please wait a while and then try "
 "again."
 msgstr "抱歉，您的请求过多。请稍等片刻后再试。"
 
-#: app.py:924
+#: app.py:925
 msgid "Application error"
 msgstr "应用程序错误"
 
-#: app.py:925
+#: app.py:926
 msgid "Sorry, the application encountered a problem."
 msgstr "抱歉，应用程序遇到了问题。"
 
-#: app.py:998 app.py:1236 templates/login.jinja2:17
+#: app.py:999 app.py:1237 templates/login.jinja2:17
 #: templates/register.jinja2:27
 msgid "Username"
 msgstr "用户名"
 
-#: app.py:1001 app.py:1251 templates/login.jinja2:20
+#: app.py:1002 app.py:1252 templates/login.jinja2:20
 #: templates/register.jinja2:30
 msgid "Password"
 msgstr "密码"
 
-#: app.py:1109
+#: app.py:1110
 msgid ""
 "Your account has been created, but it has to be activated by staff, which"
 " typically happens within 24 hours. When it's activated, you'll be able "
 "to log in using Google."
 msgstr ""
 
-#: app.py:1119
+#: app.py:1120
 msgid "An error occurred while processing your Google login. Please try again."
 msgstr ""
 
-#: app.py:1144
+#: app.py:1145
 msgid "You've been logged out."
 msgstr ""
 
-#: app.py:1156
+#: app.py:1157
 msgid "Could not verify captcha. Try again."
 msgstr ""
 
-#: app.py:1172
+#: app.py:1173
 msgid "Invalid provider"
 msgstr ""
 
-#: app.py:1183
+#: app.py:1184
 msgid ""
 "Sorry, you can't use a local login. Try using the login method you signed"
 " in (eg. Google) with the first time, or contact support for help."
 msgstr ""
 
-#: app.py:1200
+#: app.py:1201
 msgid ""
 "Account not activated. If it's been more than 24 hours please contact "
 "support."
 msgstr ""
 
-#: app.py:1214
+#: app.py:1215
 msgid "Logged in successfully."
 msgstr "登录成功。"
 
-#: app.py:1217 app.py:1221
+#: app.py:1218 app.py:1222
 msgid "Invalid username or password."
 msgstr "用户名或密码无效。"
 
-#: app.py:1242
+#: app.py:1243
 msgid "Sorry, username can only contain letters, numbers, and dots."
 msgstr ""
 
-#: app.py:1257 templates/register.jinja2:33
+#: app.py:1258 templates/register.jinja2:33
 msgid "Given Name"
 msgstr ""
 
-#: app.py:1263 templates/register.jinja2:36
+#: app.py:1264 templates/register.jinja2:36
 msgid "Family Name"
 msgstr ""
 
-#: app.py:1267 templates/register.jinja2:42
+#: app.py:1268 templates/register.jinja2:42
 msgid "Language"
 msgstr "语言"
 
-#: app.py:1270 templates/register.jinja2:46
+#: app.py:1271 templates/register.jinja2:46
 msgid "Timezone"
 msgstr "时区"
 
-#: app.py:1275 templates/register.jinja2:39
+#: app.py:1276 templates/register.jinja2:39
 msgid "Email"
 msgstr "电子邮件"
 
-#: app.py:1281 templates/register.jinja2:50
+#: app.py:1282 templates/register.jinja2:50
 msgid "Organization"
 msgstr "组织"
 
-#: app.py:1287 templates/register.jinja2:53
+#: app.py:1288 templates/register.jinja2:53
 msgid "Job Title"
 msgstr "职位"
 
-#: app.py:1290 templates/login.jinja2:28
+#: app.py:1291 templates/login.jinja2:28
 msgid "Register"
 msgstr "注册"
 
-#: app.py:1304 app.py:1331 app.py:1364
+#: app.py:1305 app.py:1332 app.py:1365
 msgid "Register account"
 msgstr "注册账户"
 
-#: app.py:1310
+#: app.py:1311
 msgid "Bad language specified"
 msgstr ""
 
-#: app.py:1312
+#: app.py:1313
 msgid "Bad timezone specified"
 msgstr ""
 
-#: app.py:1314
+#: app.py:1315
 msgid ""
 "Sorry, that username is invalid. The username can contain letters, "
 "numbers and ."
 msgstr ""
 
-#: app.py:1318 app.py:1322
+#: app.py:1319 app.py:1323
 msgid "Sorry, that username or email is taken. Please choose another."
 msgstr ""
 
-#: app.py:1355
+#: app.py:1356
 msgid ""
 "Thank you for registering. You will be emailed when your account is "
 "activated"
 msgstr "感谢您的注册。当您的帐户激活时，您将收到电子邮件。"
 
-#: app.py:1478 app.py:1503
+#: app.py:1479 app.py:1504
 msgid "Invalid values for machine rename"
 msgstr ""
 
-#: app.py:1484
+#: app.py:1485
 msgid ""
 "New name must be between 4 and 80 characters long, and can contain "
 "characters a-Z,0-9 and -"
 msgstr "新名称必须为 4 到 80 个字符长，并且可以包含字符 a-Z、0-9 和 -"
 
-#: app.py:1493
+#: app.py:1494
 msgid ""
 "New name contains non-alphanumeric characters. Characters that are "
 "allowed are a-Z,0-9 and -"
 msgstr "新名称包含非字母数字字符。允许的字符为 a-Z、0-9 和 -"
 
-#: app.py:1509
+#: app.py:1510
 msgid "The requested machine name is already taken"
 msgstr "请求的机器名称已被占用"
 
-#: app.py:1599
+#: app.py:1600
 msgid "Problem report submitted successfully."
 msgstr ""
 
-#: app.py:1651 templates/data.jinja2:71
+#: app.py:1652 templates/data.jinja2:71
 msgid "Data Source"
 msgstr "数据源"
 
-#: app.py:1653 templates/data.jinja2:75
+#: app.py:1654 templates/data.jinja2:75
 msgid "Machine"
 msgstr "机器"
 
-#: app.py:1654 templates/register.jinja2:58
+#: app.py:1655 templates/register.jinja2:58
 msgid "Submit"
 msgstr "提交"
 
-#: app.py:1742
+#: app.py:1668
+msgid "No data transfer job id given."
+msgstr ""
+
+#: app.py:1674
+msgid "Data transfer job doesn't exist."
+msgstr ""
+
+#: app.py:1678
+msgid "You don't own that data transfer job."
+msgstr ""
+
+#: app.py:1753
 msgid "Starting data transfer. Refresh page to update status."
 msgstr "开始数据传输。刷新页面以更新状态。"
 
-#: app.py:1746
+#: app.py:1757
 msgid "The data transfer job submission could not be validated."
 msgstr "无法验证数据传输任务提交。"
 
-#: app.py:1841
+#: app.py:1852
 msgid "You own that machine."
 msgstr "您拥有该机器。"
 
-#: app.py:1844
+#: app.py:1855
 msgid "You already have that machine."
 msgstr "您已经拥有了该机器。"
 
-#: app.py:1849
+#: app.py:1860
 msgid "Shared machine has been added to your account."
 msgstr "共享的机器已添加到您的帐户。"
 
-#: app.py:1863
+#: app.py:1874
 msgid "You can't revoke shares on a machine you don't own."
 msgstr "您不能撤销您不拥有的机器上的共享。"
 
-#: app.py:1870
+#: app.py:1881
 msgid ""
 "Shares for machine have been removed and a new share link has been "
 "generated"
 msgstr "已移除机器的共享，并已生成新的共享链接"
 
-#: app.py:1918
+#: app.py:1933
 msgid "Creating machine in the background. Refresh page to update status."
 msgstr "在后台创建机器。刷新页面以更新状态。"
 
-#: app.py:1965
+#: app.py:1984
 msgid "Deleting machine"
 msgstr "删除机器"
 
@@ -447,7 +459,7 @@ msgstr "登录"
 
 #: templates/login.jinja2:31
 msgid "Google Login"
-msgstr ""
+msgstr "谷歌登录"
 
 #: templates/machines.jinja2:5
 msgid "Create new machine"
@@ -455,11 +467,39 @@ msgstr "创建新的机器"
 
 #: templates/machines.jinja2:7
 msgid "This lists all templates that are available to the group you are in: {g}"
-msgstr "这列出了您所在组可用的所有模板：{g}"
+msgstr "这里列出了您所在组可用的所有模板：{g}"
 
 #: templates/machines.jinja2:35
 msgid "Launch instance"
 msgstr "启动实例"
+
+#: templates/machines.jinja2:43 templates/machines.jinja2:172
+msgid "Created:"
+msgstr "已创建："
+
+#: templates/machines.jinja2:47
+msgid "Group:"
+msgstr "组："
+
+#: templates/machines.jinja2:48
+msgid "Provider:"
+msgstr "提供者："
+
+#: templates/machines.jinja2:50
+msgid "CPUs:"
+msgstr "CPU："
+
+#: templates/machines.jinja2:54
+msgid "Memory:"
+msgstr "内存："
+
+#: templates/machines.jinja2:58
+msgid "Disk:"
+msgstr "硬盘："
+
+#: templates/machines.jinja2:61
+msgid "Instances running:"
+msgstr "运行中的实例："
 
 #: templates/machines.jinja2:74
 msgid "List of machines"
@@ -469,7 +509,7 @@ msgstr "机器列表"
 msgid ""
 "This lists all machines you have access to, both your own and those "
 "shared with you by other users."
-msgstr "这列出了您可以访问的所有机器，包括您自己的和其他用户共享给您的机器。"
+msgstr "这里列出了您可以访问的所有机器，包括您自己的和其他用户共享给您的。"
 
 #: templates/machines.jinja2:99
 msgid "Open"
@@ -477,19 +517,43 @@ msgstr "打开"
 
 #: templates/machines.jinja2:105
 msgid "Preparing"
-msgstr ""
+msgstr "准备中"
 
 #: templates/machines.jinja2:128
 msgid "Problem with machine "
-msgstr ""
+msgstr "机器出现问题 "
 
 #: templates/machines.jinja2:130
 msgid "Report problem"
-msgstr ""
+msgstr "报告问题"
 
 #: templates/machines.jinja2:137
 msgid "Stop and remove machine"
-msgstr ""
+msgstr "停止并移除机器"
+
+#: templates/machines.jinja2:159
+msgid "Template:"
+msgstr "模板："
+
+#: templates/machines.jinja2:161
+msgid "Shared with you by:"
+msgstr "被以下用户分享给您："
+
+#: templates/machines.jinja2:163
+msgid "Owner:"
+msgstr "所有者："
+
+#: templates/machines.jinja2:166
+msgid "Shared with other users:"
+msgstr "被分享给其他用户："
+
+#: templates/machines.jinja2:170
+msgid "IP:"
+msgstr "IP："
+
+#: templates/machines.jinja2:176
+msgid "Data:"
+msgstr "数据："
 
 #: templates/register.jinja2:23
 msgid ""
@@ -501,8 +565,7 @@ msgstr "感谢您对使用 Ada 2025 的兴趣。请填写以下表格，一旦�
 msgid ""
 "We're sorry that there's a problem with the service, please fill in this "
 "form and we will look into it"
-msgstr ""
-"很抱歉服务出现了问题，请填写此表单，我们将进行调查"
+msgstr "很抱歉服务出现了问题，请填写此表单，我们将进行调查"
 
 #: templates/report_problem.jinja2:8
 msgid "Report a Problem"
@@ -550,8 +613,7 @@ msgid ""
 "for data analysis and machine learning. We are thrilled to have you "
 "onboard and we are certain that you will appreciate the transformative "
 "capabilities of our newly improved service."
-msgstr ""
-"感谢您选择 ADA 数据分析，这是下一代的数据分析和机器学习平台。我们很高兴您加入我们，我们相信您会喜欢我们新改进服务的变革能力。"
+msgstr "感谢您选择 ADA 数据分析，这是下一代的数据分析和机器学习平台。我们很高兴您加入我们，我们相信您会喜欢我们新改进服务的变革能力。"
 
 #: templates/welcome.jinja2:34
 msgid "Understanding ADA: Your Personal Data Analysis Platform"
@@ -568,7 +630,8 @@ msgid ""
 "limitations, software incompatibility, or data security; we've got you "
 "covered."
 msgstr ""
-"ADA 是一项新的数据分析服务，提供给您灵活的远程访问数据的能力，无论何时何地。使用 ADA，您可以创建虚拟机，这些实际上是基于云的 Linux 桌面环境。这些环境配备了所有必要的软件、数据存储和您需要无缝进行分析的计算能力。不再担心硬件限制、软件不兼容或数据安全；我们为您提供了覆盖。"
+"ADA 是一项新的数据分析服务，提供给您灵活的远程访问数据的能力，无论何时何地。使用 ADA，您可以创建虚拟机，这些实际上是基于云的 Linux "
+"桌面环境。这些环境配备了所有必要的软件、数据存储和您需要无缝进行分析的计算能力。不再担心硬件限制、软件不兼容或数据安全；我们为您提供了覆盖。"
 
 #: templates/welcome.jinja2:38
 msgid "Help & Information"
@@ -583,7 +646,8 @@ msgid ""
 "FAQs, these pages are designed to help you make the most of the ADA "
 "platform."
 msgstr ""
-"为了确保您的体验尽可能顺畅，我们在侧边栏菜单中集成了一个专用的 '帮助' 按钮。只需点击此按钮即可访问我们平台各个方面的大量信息。从操作指南和教程到故障排除提示和常见问题解答，这些页面旨在帮助您充分利用 ADA 平台。"
+"为了确保您的体验尽可能顺畅，我们在侧边栏菜单中集成了一个专用的 '帮助' "
+"按钮。只需点击此按钮即可访问我们平台各个方面的大量信息。从操作指南和教程到故障排除提示和常见问题解答，这些页面旨在帮助您充分利用 ADA 平台。"
 
 #: templates/welcome.jinja2:42
 msgid "We're Here to Help: Feedback and Support"
@@ -596,8 +660,7 @@ msgid ""
 "support you every step of the way. Our team of experts is always ready to"
 " provide assistance, answer your questions, and work on your suggestions "
 "to continually improve our service."
-msgstr ""
-"您的反馈对我们非常宝贵。如果您有任何问题、请求或遇到问题，我们鼓励您联系我们。我们将全程为您提供支持。我们的专家团队始终准备提供帮助，回答您的问题，并根据您的建议不断改进我们的服务。"
+msgstr "您的反馈对我们非常宝贵。如果您有任何问题、请求或遇到问题，我们鼓励您联系我们。我们将全程为您提供支持。我们的专家团队始终准备提供帮助，回答您的问题，并根据您的建议不断改进我们的服务。"
 
 #: templates/welcome.jinja2:46
 msgid "Contact us at:"
@@ -608,8 +671,7 @@ msgid ""
 "Your journey into the future of data analysis begins with ADA. Thank you "
 "for choosing us as your partner in this exciting endeavor. Enjoy your "
 "exploration!"
-msgstr ""
-"您探索数据分析未来的旅程从 ADA 开始。感谢您选择我们作为这一激动人心事业的合作伙伴。祝您探索愉快！"
+msgstr "您探索数据分析未来的旅程从 ADA 开始。感谢您选择我们作为这一激动人心事业的合作伙伴。祝您探索愉快！"
 
 #~ msgid ""
 #~ "Your account hasn't been activated yet."
@@ -662,3 +724,39 @@ msgstr ""
 
 #~ msgid "Let us know at:"
 #~ msgstr "请通过以下方式联系我们："
+
+#~ msgid "Create new machine"
+#~ msgstr "创建新的机器"
+
+#~ msgid ""
+#~ "This lists all templates that are "
+#~ "available to the group you are in:"
+#~ " {g}"
+#~ msgstr "这列出了您所在组可用的所有模板：{g}"
+
+#~ msgid "Launch instance"
+#~ msgstr "启动实例"
+
+#~ msgid "List of machines"
+#~ msgstr "机器列表"
+
+#~ msgid ""
+#~ "This lists all machines you have "
+#~ "access to, both your own and those"
+#~ " shared with you by other users."
+#~ msgstr "这列出了您可以访问的所有机器，包括您自己的和其他用户共享给您的机器。"
+
+#~ msgid "Open"
+#~ msgstr "打开"
+
+#~ msgid "Preparing"
+#~ msgstr ""
+
+#~ msgid "Problem with machine "
+#~ msgstr ""
+
+#~ msgid "Report problem"
+#~ msgstr ""
+
+#~ msgid "Stop and remove machine"
+#~ msgstr ""

@@ -1665,18 +1665,15 @@ def dismiss_datatransferjob():
     """
     job_id = request.form.get("job_id")
     if not job_id:
-        flash(gettext("No data transfer job id given."), "danger")
-        return redirect(url_for("data"))
+        abort(404)
 
     job = DataTransferJob.query.filter_by(id=job_id).first()
 
     if not job:
-        flash(gettext("Data transfer job doesn't exist."), "danger")
-        return redirect(url_for("data"))
+        abort(404)
 
-    if not job.user != current_user:
-        flash(gettext("You don't own that data transfer job."), "danger")
-        return redirect(url_for("data"))
+    if job.user != current_user:
+        abort(403)
 
     job.state = DataTransferJobState.HIDDEN
     db.session.commit()

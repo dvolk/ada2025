@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-05-15 00:45+0000\n"
+"POT-Creation-Date: 2023-05-16 09:47+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -16,266 +16,278 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.12.1\n"
+"Generated-By: Babel 2.10.3\n"
 
-#: app.py:134
+#: app.py:135
 msgid "Invalid JSON data."
 msgstr ""
 
-#: app.py:803 app.py:1391
+#: app.py:804 app.py:1392
 msgid "Welcome page"
 msgstr "Welcome page"
 
-#: app.py:808 app.py:1453 app.py:1829
+#: app.py:809 app.py:1454 app.py:1840
 msgid "Machines"
 msgstr "Machines"
 
-#: app.py:813 app.py:1759
+#: app.py:814 app.py:1770
 msgid "Data"
 msgstr "Data"
 
-#: app.py:818 app.py:1550 templates/citations.jinja2:5
+#: app.py:819 app.py:1551 templates/citations.jinja2:5
 msgid "Citations"
 msgstr "Citations"
 
-#: app.py:823 app.py:1527
+#: app.py:824 app.py:1528
 msgid "Settings"
 msgstr "Settings"
 
-#: app.py:828 app.py:1564 app.py:1607
+#: app.py:829 app.py:1565 app.py:1608
 msgid "Help"
 msgstr "Help"
 
-#: app.py:833 app.py:1557
+#: app.py:834 app.py:1558
 msgid "About"
 msgstr "About"
 
-#: app.py:838 app.py:1539
+#: app.py:839 app.py:1540
 msgid "Admin"
 msgstr "Admin"
 
-#: app.py:895
+#: app.py:896
 msgid "Access denied"
 msgstr ""
 
-#: app.py:896
+#: app.py:897
 msgid "Sorry, you don't have access to that page or resource."
 msgstr ""
 
-#: app.py:904
+#: app.py:905
 msgid "Not found"
 msgstr ""
 
-#: app.py:905
+#: app.py:906
 msgid "Sorry, that page or resource could not be found."
 msgstr ""
 
-#: app.py:913
+#: app.py:914
 msgid "Too many requests"
 msgstr ""
 
-#: app.py:914
+#: app.py:915
 msgid ""
 "Sorry, you're making too many requests. Please wait a while and then try "
 "again."
 msgstr ""
 
-#: app.py:924
+#: app.py:925
 msgid "Application error"
 msgstr ""
 
-#: app.py:925
+#: app.py:926
 msgid "Sorry, the application encountered a problem."
 msgstr ""
 
-#: app.py:998 app.py:1236 templates/login.jinja2:17
+#: app.py:999 app.py:1237 templates/login.jinja2:17
 #: templates/register.jinja2:27
 msgid "Username"
 msgstr "Username"
 
-#: app.py:1001 app.py:1251 templates/login.jinja2:20
+#: app.py:1002 app.py:1252 templates/login.jinja2:20
 #: templates/register.jinja2:30
 msgid "Password"
 msgstr "Password"
 
-#: app.py:1109
+#: app.py:1110
 msgid ""
 "Your account has been created, but it has to be activated by staff, which"
 " typically happens within 24 hours. When it's activated, you'll be able "
 "to log in using Google."
 msgstr ""
 
-#: app.py:1119
+#: app.py:1120
 msgid "An error occurred while processing your Google login. Please try again."
 msgstr ""
 
-#: app.py:1144
+#: app.py:1145
 msgid "You've been logged out."
 msgstr ""
 
-#: app.py:1156
+#: app.py:1157
 msgid "Could not verify captcha. Try again."
 msgstr ""
 
-#: app.py:1172
+#: app.py:1173
 msgid "Invalid provider"
 msgstr ""
 
-#: app.py:1183
+#: app.py:1184
 msgid ""
 "Sorry, you can't use a local login. Try using the login method you signed"
 " in (eg. Google) with the first time, or contact support for help."
 msgstr ""
 
-#: app.py:1200
+#: app.py:1201
 msgid ""
 "Account not activated. If it's been more than 24 hours please contact "
 "support."
 msgstr ""
 
-#: app.py:1214
+#: app.py:1215
 msgid "Logged in successfully."
 msgstr ""
 
-#: app.py:1217 app.py:1221
+#: app.py:1218 app.py:1222
 msgid "Invalid username or password."
 msgstr ""
 
-#: app.py:1242
+#: app.py:1243
 msgid "Sorry, username can only contain letters, numbers, and dots."
 msgstr ""
 
-#: app.py:1257 templates/register.jinja2:33
+#: app.py:1258 templates/register.jinja2:33
 msgid "Given Name"
 msgstr ""
 
-#: app.py:1263 templates/register.jinja2:36
+#: app.py:1264 templates/register.jinja2:36
 msgid "Family Name"
 msgstr ""
 
-#: app.py:1267 templates/register.jinja2:42
+#: app.py:1268 templates/register.jinja2:42
 msgid "Language"
 msgstr ""
 
-#: app.py:1270 templates/register.jinja2:46
+#: app.py:1271 templates/register.jinja2:46
 msgid "Timezone"
 msgstr ""
 
-#: app.py:1275 templates/register.jinja2:39
+#: app.py:1276 templates/register.jinja2:39
 msgid "Email"
 msgstr ""
 
-#: app.py:1281 templates/register.jinja2:50
+#: app.py:1282 templates/register.jinja2:50
 msgid "Organization"
 msgstr ""
 
-#: app.py:1287 templates/register.jinja2:53
+#: app.py:1288 templates/register.jinja2:53
 msgid "Job Title"
 msgstr ""
 
-#: app.py:1290 templates/login.jinja2:28
+#: app.py:1291 templates/login.jinja2:28
 msgid "Register"
 msgstr "Register"
 
-#: app.py:1304 app.py:1331 app.py:1364
+#: app.py:1305 app.py:1332 app.py:1365
 msgid "Register account"
 msgstr "Register account"
 
-#: app.py:1310
+#: app.py:1311
 msgid "Bad language specified"
 msgstr ""
 
-#: app.py:1312
+#: app.py:1313
 msgid "Bad timezone specified"
 msgstr ""
 
-#: app.py:1314
+#: app.py:1315
 msgid ""
 "Sorry, that username is invalid. The username can contain letters, "
 "numbers and ."
 msgstr ""
 
-#: app.py:1318 app.py:1322
+#: app.py:1319 app.py:1323
 msgid "Sorry, that username or email is taken. Please choose another."
 msgstr ""
 
-#: app.py:1355
+#: app.py:1356
 msgid ""
 "Thank you for registering. You will be emailed when your account is "
 "activated"
 msgstr ""
 
-#: app.py:1478 app.py:1503
+#: app.py:1479 app.py:1504
 msgid "Invalid values for machine rename"
 msgstr ""
 
-#: app.py:1484
+#: app.py:1485
 msgid ""
 "New name must be between 4 and 80 characters long, and can contain "
 "characters a-Z,0-9 and -"
 msgstr ""
 
-#: app.py:1493
+#: app.py:1494
 msgid ""
 "New name contains non-alphanumeric characters. Characters that are "
 "allowed are a-Z,0-9 and -"
 msgstr ""
 
-#: app.py:1509
+#: app.py:1510
 msgid "The requested machine name is already taken"
 msgstr ""
 
-#: app.py:1599
+#: app.py:1600
 msgid "Problem report submitted successfully."
 msgstr ""
 
-#: app.py:1651 templates/data.jinja2:71
+#: app.py:1652 templates/data.jinja2:71
 msgid "Data Source"
 msgstr ""
 
-#: app.py:1653 templates/data.jinja2:75
+#: app.py:1654 templates/data.jinja2:75
 msgid "Machine"
 msgstr ""
 
-#: app.py:1654 templates/register.jinja2:58
+#: app.py:1655 templates/register.jinja2:58
 msgid "Submit"
 msgstr ""
 
-#: app.py:1742
+#: app.py:1668
+msgid "No data transfer job id given."
+msgstr ""
+
+#: app.py:1674
+msgid "Data transfer job doesn't exist."
+msgstr ""
+
+#: app.py:1678
+msgid "You don't own that data transfer job."
+msgstr ""
+
+#: app.py:1753
 msgid "Starting data transfer. Refresh page to update status."
 msgstr ""
 
-#: app.py:1746
+#: app.py:1757
 msgid "The data transfer job submission could not be validated."
 msgstr ""
 
-#: app.py:1841
+#: app.py:1852
 msgid "You own that machine."
 msgstr ""
 
-#: app.py:1844
+#: app.py:1855
 msgid "You already have that machine."
 msgstr ""
 
-#: app.py:1849
+#: app.py:1860
 msgid "Shared machine has been added to your account."
 msgstr ""
 
-#: app.py:1863
+#: app.py:1874
 msgid "You can't revoke shares on a machine you don't own."
 msgstr ""
 
-#: app.py:1870
+#: app.py:1881
 msgid ""
 "Shares for machine have been removed and a new share link has been "
 "generated"
 msgstr ""
 
-#: app.py:1918
+#: app.py:1933
 msgid "Creating machine in the background. Refresh page to update status."
 msgstr ""
 
-#: app.py:1965
+#: app.py:1984
 msgid "Deleting machine"
 msgstr ""
 
@@ -461,6 +473,34 @@ msgstr ""
 msgid "Launch instance"
 msgstr ""
 
+#: templates/machines.jinja2:43 templates/machines.jinja2:172
+msgid "Created:"
+msgstr ""
+
+#: templates/machines.jinja2:47
+msgid "Group:"
+msgstr ""
+
+#: templates/machines.jinja2:48
+msgid "Provider:"
+msgstr ""
+
+#: templates/machines.jinja2:50
+msgid "CPUs:"
+msgstr ""
+
+#: templates/machines.jinja2:54
+msgid "Memory:"
+msgstr ""
+
+#: templates/machines.jinja2:58
+msgid "Disk:"
+msgstr ""
+
+#: templates/machines.jinja2:61
+msgid "Instances running:"
+msgstr ""
+
 #: templates/machines.jinja2:74
 msgid "List of machines"
 msgstr ""
@@ -489,6 +529,30 @@ msgstr ""
 
 #: templates/machines.jinja2:137
 msgid "Stop and remove machine"
+msgstr ""
+
+#: templates/machines.jinja2:159
+msgid "Template:"
+msgstr ""
+
+#: templates/machines.jinja2:161
+msgid "Shared with you by:"
+msgstr ""
+
+#: templates/machines.jinja2:163
+msgid "Owner:"
+msgstr ""
+
+#: templates/machines.jinja2:166
+msgid "Shared with other users:"
+msgstr ""
+
+#: templates/machines.jinja2:170
+msgid "IP:"
+msgstr ""
+
+#: templates/machines.jinja2:176
+msgid "Data:"
 msgstr ""
 
 #: templates/register.jinja2:23
@@ -709,4 +773,40 @@ msgstr ""
 
 #~ msgid "Let us know at:"
 #~ msgstr "Let us know at:"
+
+#~ msgid "Create new machine"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "This lists all templates that are "
+#~ "available to the group you are in:"
+#~ " {g}"
+#~ msgstr ""
+
+#~ msgid "Launch instance"
+#~ msgstr ""
+
+#~ msgid "List of machines"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "This lists all machines you have "
+#~ "access to, both your own and those"
+#~ " shared with you by other users."
+#~ msgstr ""
+
+#~ msgid "Open"
+#~ msgstr ""
+
+#~ msgid "Preparing"
+#~ msgstr ""
+
+#~ msgid "Problem with machine "
+#~ msgstr ""
+
+#~ msgid "Report problem"
+#~ msgstr ""
+
+#~ msgid "Stop and remove machine"
+#~ msgstr ""
 
