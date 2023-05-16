@@ -14,6 +14,7 @@ import uuid
 import socket
 import os
 import shlex
+from abc import ABC, abstractmethod
 
 # flask and related imports
 from flask import (
@@ -109,7 +110,7 @@ limiter = Limiter(
     get_remote_address,
     app=app,
     storage_uri="memory://",
-    strategy="fixed-window",
+    strategy="moving-window",
 )
 
 recaptcha = ReCaptcha(
@@ -1664,9 +1665,19 @@ def dismiss_datatransferjob():
     """
     job_id = request.form.get("job_id")
     if not job_id:
-        abort(404)
+        flash(gettext("No data transfer job id given."), "danger")
+        return redirect(url_for("data"))
 
-    job = DataTransferJob.query.filter_by(id=job_id).first_or_404()
+    job = DataTransferJob.query.filter_by(id=job_id).first()
+
+    if not job:
+        flash(gettext("Data transfer job doesn't exist."), "danger")
+        return redirect(url_for("data"))
+
+    if not job.user != current_user:
+        flash(gettext("You don't own that data transfer job."), "danger")
+        return redirect(url_for("data"))
+
     job.state = DataTransferJobState.HIDDEN
     db.session.commit()
     return "OK"
@@ -1902,18 +1913,22 @@ def new_machine():
         shared_users=[],
         machine_template=mt,
     )
-    db.session.add(m)
-    db.session.commit()
 
     logging.warning("starting new machine thread")
 
     if mt.type == "docker":
-        threading.Thread(target=docker_start_container, args=(m.id,)).start()
+        target = DockerService.start
     elif mt.type == "libvirt":
-        threading.Thread(target=libvirt_start_vm, args=(m.id,)).start()
+        target = LibvirtService.start
     elif mt.type == "openstack":
-        threading.Thread(target=openstack_start_vm, args=(m.id,)).start()
+        target = OpenStackService.start
+    else:
+        raise RuntimeError(mt.type)
 
+    db.session.add(m)
+    db.session.commit()
+
+    threading.Thread(target=target, args=(m.id,)).start()
     flash(
         gettext("Creating machine in the background. Refresh page to update status."),
         category="success",
@@ -1950,543 +1965,586 @@ def stop_machine():
             f"machine {machine_id} is not in correct state for deletion: {machine.state}"
         )
 
+    if machine.machine_template.type == "docker":
+        target = DockerService.stop
+    elif machine.machine_template.type == "libvirt":
+        target = LibvirtService.stop
+    elif machine.machine_template.type == "openstack":
+        target = OpenStackService.stop
+    else:
+        raise RuntimeError(machine.machine_template.type)
+
     # good to go
     logging.info(f"deleting machine with machine id {machine_id}")
     machine.state = MachineState.DELETING
     db.session.commit()
 
-    if machine.machine_template.type == "docker":
-        threading.Thread(target=docker_stop_container, args=(machine_id,)).start()
-    elif machine.machine_template.type == "libvirt":
-        threading.Thread(target=libvirt_stop_vm, args=(machine.id,)).start()
-    elif machine.machine_template.type == "openstack":
-        threading.Thread(target=openstack_stop_vm, args=(machine.id,)).start()
+    threading.Thread(target=target, args=(machine.id,)).start()
 
     flash(gettext("Deleting machine"), category="success")
     return redirect(url_for("machines"))
 
 
-@log_function_call
-def openstack_conn_from_mp(mp):
-    auth_url = mp.provider_data.get("auth_url")
-    user_domain_name = mp.provider_data.get("user_domain_name")
-    project_domain_name = mp.provider_data.get("project_domain_name")
-    username = mp.provider_data.get("username")
-    password = mp.provider_data.get("password")
-    project_name = mp.provider_data.get("project_name")
+class VirtService(ABC):
+    @staticmethod
+    def set_app(app):
+        # maybe the parts that need the app context should be abstracted into callbacks, or maybe that TOO abstract
+        VirtService.app = app
 
-    env = {
-        "OS_AUTH_URL": auth_url,
-        "OS_USERNAME": username,
-        "OS_PASSWORD": password,
-        "OS_PROJECT_NAME": project_name,
-        "OS_USER_DOMAIN_NAME": user_domain_name,
-        "OS_PROJECT_DOMAIN_NAME": project_domain_name,
-    }
-    conn = openstack.connection.Connection(
-        auth_url=auth_url,
-        username=username,
-        password=password,
-        project_name=project_name,
-        project_domain_name=project_domain_name,
-        user_domain_name=user_domain_name,
-    )
+    @staticmethod
+    @abstractmethod
+    def start(m_id: int):
+        pass
 
-    return conn, env
+    @staticmethod
+    @abstractmethod
+    def stop(m_id: int):
+        pass
 
 
-@log_function_call
-def openstack_wait_for_vm_ip(conn, server_id, network_uuid, timeout=600):
-    start_time = time.time()
-    server = None
-
-    # Get the network name using the network UUID
-    network = conn.network.get_network(network_uuid)
-    network_name = network.name
-
-    while (duration := time.time() - start_time) < timeout:
-        server = conn.compute.get_server(server_id)
-        addresses = server.addresses.get(network_name, [])
-
-        for address in addresses:
-            if address.get("OS-EXT-IPS:type") == "fixed":
-                ip = address.get("addr")
-                logging.info(f"OpenStack VM {server_id} got IP {ip} after {duration}")
-                return ip
-
-        time.sleep(5)
-
-    raise TimeoutError(
-        f"OpenStack VM '{server_id}' did not get an IP address in {timeout}s."
-    )
-
-
-def openstack_wait_for_volume(env, volume_id, timeout=1200):
-    start_time = time.time()
-
-    while (duration := time.time() - start_time) < timeout:
-        # Get volume details in JSON format
-        volume_details_output = subprocess.check_output(
-            ["openstack", "volume", "show", volume_id, "-f", "json"], env=env
-        )
-        volume_details = json.loads(volume_details_output)
-
-        # Check volume status
-        if volume_details["status"] == "available":
-            logging.info(
-                f"OpenStack volume {volume_id} is available after {duration}s."
-            )
-            return volume_details
-
-        logging.info(
-            f"Volume {volume_id} is not available yet. Retrying in 5 seconds..."
-        )
-        time.sleep(5)
-
-    raise TimeoutError(f"OpenStack VM volume {volume_id} timeout in {timeout}s.")
-
-
-def openstack_wait_for_vm_state(env, server_id, state, timeout=300):
-    start_time = time.time()
-
-    while (duration := time.time() - start_time) < timeout:
-        # Get server details in JSON format
-        server_details_output = subprocess.check_output(
-            ["openstack", "server", "show", server_id, "-f", "json"], env=env
-        )
-        server_details = json.loads(server_details_output)
-
-        # Check server status
-        if server_details["status"] == state:
-            logging.info(f"Server {server_id} is {state} after {duration}s.")
-            return server_details
-
-        logging.info(f"Server {server_id} is not {state} yet. Retrying in 5 seconds...")
-        time.sleep(5)
-
-    raise TimeoutError(f"OpenStack VM '{server_id}' state not {state} in {timeout}s.")
-
-
-# Function to create a new VM from an image
-@log_function_call
-def openstack_start_vm(m_id):
-    with app.app_context():
-        try:
-            m = Machine.query.filter_by(id=m_id).first()
-            mt = m.machine_template
-            mp = mt.machine_provider
-
-            vm_name = m.name
-            flavor_name = mt.extra_data.get("flavor_name")
-            network_uuid = mt.extra_data.get("network_uuid")
-            vol_size = mt.extra_data.get("vol_size")
-            security_groups = mt.extra_data.get("security_groups", [])
-            vol_image = mt.image
-
-            conn, env = openstack_conn_from_mp(mp)
-
-            # Find the network by UUID
-            network = conn.network.get_network(network_uuid)
-            if not network:
-                raise ValueError(f"OpenStack network {network_uuid} not found.")
-
-            # Find the flavor by name
-            flavor = conn.compute.find_flavor(flavor_name)
-            if not flavor:
-                raise ValueError(f"OpenStack flavor {flavor_name} not found.")
-
-            # Create a bootable volume from the specified image
-            cinder = cinderclient.Client("3", session=conn.session)
-            image = conn.compute.find_image(vol_image)
-            if not image:
-                raise ValueError(f"OpenStack image {vol_image} not found.")
-
-            volume = cinder.volumes.create(
-                size=vol_size,
-                imageRef=image.id,
-                name=f"{vm_name}_boot",
-            )
-
-            openstack_wait_for_volume(env, volume.id)
-
-            # Create the server (VM)
-            server = conn.compute.create_server(
-                name=vm_name,
-                flavor_id=flavor.id,
-                networks=[{"uuid": network_uuid}],
-                security_groups=security_groups,
-                block_device_mapping_v2=[
-                    {
-                        "boot_index": "0",
-                        "uuid": volume.id,
-                        "source_type": "volume",
-                        "destination_type": "volume",
-                        "delete_on_termination": True,
-                    }
-                ],
-            )
-
-            openstack_wait_for_vm_state(env, server.id, "ACTIVE")
-
-            # wait for ip
-            m.ip = openstack_wait_for_vm_ip(conn, server.id, network.id)
+class OpenStackService(VirtService):
+    # Function to create a new VM from an image
+    @log_function_call
+    @staticmethod
+    def start(m_id: int):
+        with OpenStackService.app.app_context():
             try:
-                m.hostname = get_hostname(m.ip)
-            except:
-                logging.error(f"Couldn't get openstack hostname for {m.ip}")
-                m.hostname = ""
-            m.state = MachineState.READY
-            db.session.commit()
+                m = Machine.query.filter_by(id=m_id).first()
+                mt = m.machine_template
+                mp = mt.machine_provider
 
-        except Exception:
-            logging.exception("Couldn't start openstack vm: ")
-            m.state = MachineState.FAILED
-            db.session.commit()
+                vm_name = m.name
+                flavor_name = mt.extra_data.get("flavor_name")
+                network_uuid = mt.extra_data.get("network_uuid")
+                vol_size = mt.extra_data.get("vol_size")
+                security_groups = mt.extra_data.get("security_groups", [])
+                vol_image = mt.image
 
+                conn, env = OpenStackService.conn_from_mp(mp)
 
-@log_function_call
-def openstack_get_vm_by_ip(conn, target_ip):
-    servers = conn.compute.servers()
+                # Find the network by UUID
+                network = conn.network.get_network(network_uuid)
+                if not network:
+                    raise ValueError(f"OpenStack network {network_uuid} not found.")
 
-    for server in servers:
-        addresses = server.addresses
-        for network, network_addresses in addresses.items():
-            for address in network_addresses:
-                ip = address.get("addr")
-                if ip == target_ip:
-                    return server
+                # Find the flavor by name
+                flavor = conn.compute.find_flavor(flavor_name)
+                if not flavor:
+                    raise ValueError(f"OpenStack flavor {flavor_name} not found.")
 
-    raise ValueError(f"Couldn't find VM with IP {target_ip}")
+                # Create a bootable volume from the specified image
+                cinder = cinderclient.Client("3", session=conn.session)
+                image = conn.compute.find_image(vol_image)
+                if not image:
+                    raise ValueError(f"OpenStack image {vol_image} not found.")
 
-
-def openstack_stop_vm(m_id):
-    with app.app_context():
-        try:
-            m = Machine.query.get(m_id)
-            mt = m.machine_template
-            mp = mt.machine_provider
-            conn, _ = openstack_conn_from_mp(mp)
-
-            # Check if the server exists
-            server = conn.compute.find_server(m.name)
-            if server is None:
-                logging.info(
-                    f"OpenStack VM {m.name} does not exist. Marking as DELETED."
+                volume = cinder.volumes.create(
+                    size=vol_size,
+                    imageRef=image.id,
+                    name=f"{vm_name}_boot",
                 )
-                m.state = MachineState.DELETED
-            else:
-                # Try to delete the server
+
+                OpenStackService.wait_for_volume(env, volume.id)
+
+                # Create the server (VM)
+                server = conn.compute.create_server(
+                    name=vm_name,
+                    flavor_id=flavor.id,
+                    networks=[{"uuid": network_uuid}],
+                    security_groups=security_groups,
+                    block_device_mapping_v2=[
+                        {
+                            "boot_index": "0",
+                            "uuid": volume.id,
+                            "source_type": "volume",
+                            "destination_type": "volume",
+                            "delete_on_termination": True,
+                        }
+                    ],
+                )
+
+                OpenStackService.wait_for_vm_state(env, server.id, "ACTIVE")
+
+                # wait for ip
+                m.ip = OpenStackService.wait_for_vm_ip(conn, server.id, network.id)
                 try:
-                    conn.compute.delete_server(server)
+                    m.hostname = get_hostname(m.ip)
+                except:
+                    logging.error(f"Couldn't get openstack hostname for {m.ip}")
+                    m.hostname = ""
+                m.state = MachineState.READY
+                db.session.commit()
+
+            except Exception:
+                logging.exception("Couldn't start openstack vm: ")
+                m.state = MachineState.FAILED
+                db.session.commit()
+
+    @staticmethod
+    def stop(m_id: int):
+        with OpenStackService.app.app_context():
+            try:
+                m = Machine.query.filter_by(id=m_id)
+                mt = m.machine_template
+                mp = mt.machine_provider
+                conn, _ = OpenStackService.conn_from_mp(mp)
+
+                # Check if the server exists
+                server = conn.compute.find_server(m.name)
+                if server is None:
+                    logging.info(
+                        f"OpenStack VM {m.name} does not exist. Marking as DELETED."
+                    )
                     m.state = MachineState.DELETED
-                    db.session.commit()
-                    logging.info(f"OpenStack VM {m.name} deleted successfully.")
+                else:
+                    # Try to delete the server
+                    try:
+                        conn.compute.delete_server(server)
+                        m.state = MachineState.DELETED
+                        db.session.commit()
+                        logging.info(f"OpenStack VM {m.name} deleted successfully.")
+                    except Exception:
+                        logging.exception(f"Problem deleting OpenStack VM: ")
+                        m.state = MachineState.FAILED
+                        db.session.commit()
+
+            except Exception as e:
+                logging.exception(f"Couldn't stop openstack vm: ")
+                m.state = MachineState.FAILED
+                db.session.commit()
+
+    @log_function_call
+    @staticmethod
+    def conn_from_mp(mp):
+        auth_url = mp.provider_data.get("auth_url")
+        user_domain_name = mp.provider_data.get("user_domain_name")
+        project_domain_name = mp.provider_data.get("project_domain_name")
+        username = mp.provider_data.get("username")
+        password = mp.provider_data.get("password")
+        project_name = mp.provider_data.get("project_name")
+
+        env = {
+            "OS_AUTH_URL": auth_url,
+            "OS_USERNAME": username,
+            "OS_PASSWORD": password,
+            "OS_PROJECT_NAME": project_name,
+            "OS_USER_DOMAIN_NAME": user_domain_name,
+            "OS_PROJECT_DOMAIN_NAME": project_domain_name,
+        }
+        conn = openstack.connection.Connection(
+            auth_url=auth_url,
+            username=username,
+            password=password,
+            project_name=project_name,
+            project_domain_name=project_domain_name,
+            user_domain_name=user_domain_name,
+        )
+
+        return conn, env
+
+    @log_function_call
+    @staticmethod
+    def wait_for_vm_ip(conn, server_id, network_uuid, timeout=600):
+        start_time = time.time()
+        server = None
+
+        # Get the network name using the network UUID
+        network = conn.network.get_network(network_uuid)
+        network_name = network.name
+
+        while (duration := time.time() - start_time) < timeout:
+            server = conn.compute.get_server(server_id)
+            addresses = server.addresses.get(network_name, [])
+
+            for address in addresses:
+                if address.get("OS-EXT-IPS:type") == "fixed":
+                    ip = address.get("addr")
+                    logging.info(
+                        f"OpenStack VM {server_id} got IP {ip} after {duration}"
+                    )
+                    return ip
+
+            time.sleep(5)
+
+        raise TimeoutError(
+            f"OpenStack VM '{server_id}' did not get an IP address in {timeout}s."
+        )
+
+    @staticmethod
+    def wait_for_volume(env, volume_id, timeout=1200):
+        start_time = time.time()
+
+        while (duration := time.time() - start_time) < timeout:
+            # Get volume details in JSON format
+            volume_details_output = subprocess.check_output(
+                ["openstack", "volume", "show", volume_id, "-f", "json"], env=env
+            )
+            volume_details = json.loads(volume_details_output)
+
+            # Check volume status
+            if volume_details["status"] == "available":
+                logging.info(
+                    f"OpenStack volume {volume_id} is available after {duration}s."
+                )
+                return volume_details
+
+            logging.info(
+                f"Volume {volume_id} is not available yet. Retrying in 5 seconds..."
+            )
+            time.sleep(5)
+
+        raise TimeoutError(f"OpenStack VM volume {volume_id} timeout in {timeout}s.")
+
+    @staticmethod
+    def wait_for_vm_state(env, server_id, state, timeout=300):
+        start_time = time.time()
+
+        while (duration := time.time() - start_time) < timeout:
+            # Get server details in JSON format
+            server_details_output = subprocess.check_output(
+                ["openstack", "server", "show", server_id, "-f", "json"], env=env
+            )
+            server_details = json.loads(server_details_output)
+
+            # Check server status
+            if server_details["status"] == state:
+                logging.info(f"Server {server_id} is {state} after {duration}s.")
+                return server_details
+
+            logging.info(
+                f"Server {server_id} is not {state} yet. Retrying in 5 seconds..."
+            )
+            time.sleep(5)
+
+        raise TimeoutError(
+            f"OpenStack VM '{server_id}' state not {state} in {timeout}s."
+        )
+
+    @log_function_call
+    @staticmethod
+    def get_vm_by_ip(conn, target_ip):
+        servers = conn.compute.servers()
+
+        for server in servers:
+            addresses = server.addresses
+            for network, network_addresses in addresses.items():
+                for address in network_addresses:
+                    ip = address.get("addr")
+                    if ip == target_ip:
+                        return server
+
+        raise ValueError(f"Couldn't find VM with IP {target_ip}")
+
+
+class DockerService(VirtService):
+    @log_function_call
+    @staticmethod
+    def start(m_id: int):
+        logging.warning("entered docker_start_container thread")
+        with DockerService.app.app_context():
+            try:
+                m = Machine.query.filter_by(id=m_id).first()
+                mt = m.machine_template
+                mp = mt.machine_provider
+
+                network = mp.provider_data.get("network")
+                cpu_cores = mt.cpu_limit_cores
+                mem_limit_gb = mt.memory_limit_gb
+
+                docker_base_url = mp.provider_data.get("base_url")
+                client = docker.DockerClient(docker_base_url)
+
+                cpu_period = 100000
+                cpu_quota = int(cpu_period * cpu_cores)
+                mem_limit = f"{mem_limit_gb * 1024}m"  # Convert GB to MB
+
+                # Define container options, including CPU and memory limits
+                container_options = {
+                    "name": m.name,
+                    "image": mt.image,
+                    "network": network,
+                    "cpu_period": cpu_period,
+                    "cpu_quota": cpu_quota,
+                    "mem_limit": mem_limit,
+                }
+                logging.info(json.dumps(container_options, indent=4))
+
+                # Start the container
+                container = client.containers.run(
+                    **container_options,
+                    detach=True,
+                )
+
+                m.ip = DockerService.wait_for_ip(client, m.name, network)
+
+                m.state = MachineState.READY
+                db.session.commit()
+            except Exception:
+                logging.exception("Error: ")
+                try:
+                    container.stop()
                 except Exception:
-                    logging.exception(f"Problem deleting OpenStack VM: ")
-                    m.state = MachineState.FAILED
-                    db.session.commit()
+                    logging.exception("Error: ")
+                try:
+                    container.remove()
+                except Exception:
+                    logging.exception("Error: ")
+
+                m.state = MachineState.FAILED
+                m.ip = ""
+                db.session.commit()
+
+        logging.warning("all done!")
+
+    @log_function_call
+    @staticmethod
+    def stop(machine_id: int):
+        try:
+            with DockerService.app.app_context():
+                machine = Machine.query.filter_by(id=machine_id).first()
+                mt = machine.machine_template
+                mp = mt.machine_provider
+
+                network = mp.provider_data.get("network")
+                machine_ip = machine.ip
+                docker_base_url = mp.provider_data.get("base_url")
+                client = docker.DockerClient(docker_base_url)
+
+                try:
+                    container = DockerService.get_container_by_ip(
+                        client, machine.ip, network
+                    )
+                    logging.info(f"Found container for ip {machine.ip}")
+                    container.stop()
+                except Exception as e:
+                    logging.exception("Error: Unknown error occurred")
+
+                machine.state = MachineState.DELETED
+                db.session.commit()
+                logging.info(f"deleted container with machine id {machine_id}")
+        except Exception:
+            logging.exception("Error stopping container: ")
+
+    @log_function_call
+    @staticmethod
+    def get_container_by_ip(client, ip_address, network):
+        try:
+            network = client.networks.get(network)
+            containers = network.containers
+
+            # Search for the container with the specified IP address
+            for cont in containers:
+                cont_ips = [
+                    x["IPAddress"]
+                    for x in cont.attrs["NetworkSettings"]["Networks"].values()
+                ]
+                if ip_address in cont_ips:
+                    return cont
+
+            raise ValueError(f"container for ip {ip_address} not found")
 
         except Exception as e:
-            logging.exception(f"Couldn't stop openstack vm: ")
-            m.state = MachineState.FAILED
-            db.session.commit()
+            logging.exception(f"Error getting container from ip {ip_address}:")
+
+    @log_function_call
+    @staticmethod
+    def get_ip(client, container_name, network):
+        container = client.containers.get(container_name)
+        maybe_ip = container.attrs["NetworkSettings"]["Networks"][network]["IPAddress"]
+        return maybe_ip
+
+    @staticmethod
+    def wait_for_ip(client, container_name, network, timeout=300):
+        start_time = time.time()
+
+        while not (ip := DockerService.get_ip(client, container_name, network)):
+            if time.time() - start_time > timeout:
+                raise TimeoutError(f"Waiting for IP timed out after {timeout} seconds")
+            time.sleep(1)
+
+        return ip
 
 
-@log_function_call
-def docker_get_container_by_ip(client, ip_address, network):
-    try:
-        network = client.networks.get(network)
-        containers = network.containers
-
-        # Search for the container with the specified IP address
-        for cont in containers:
-            cont_ips = [
-                x["IPAddress"]
-                for x in cont.attrs["NetworkSettings"]["Networks"].values()
-            ]
-            if ip_address in cont_ips:
-                return cont
-
-        raise ValueError(f"container for ip {ip_address} not found")
-
-    except Exception as e:
-        logging.exception(f"Error getting container from ip {ip_address}:")
-
-
-@log_function_call
-def docker_get_ip(client, container_name, network):
-    container = client.containers.get(container_name)
-    maybe_ip = container.attrs["NetworkSettings"]["Networks"][network]["IPAddress"]
-    return maybe_ip
-
-
-def docker_wait_for_ip(client, container_name, network, timeout=300):
-    start_time = time.time()
-
-    while not (ip := docker_get_ip(client, container_name, network)):
-        if time.time() - start_time > timeout:
-            raise TimeoutError(f"Waiting for IP timed out after {timeout} seconds")
-        time.sleep(1)
-
-    return ip
-
-
-@log_function_call
-def docker_stop_container(machine_id):
-    try:
-        with app.app_context():
-            machine = Machine.query.filter_by(id=machine_id).first()
-            mt = machine.machine_template
-            mp = mt.machine_provider
-
-            network = mp.provider_data.get("network")
-            machine_ip = machine.ip
-            docker_base_url = mp.provider_data.get("base_url")
-            client = docker.DockerClient(docker_base_url)
-
+class LibvirtService(VirtService):
+    @log_function_call
+    @staticmethod
+    def start(m_id):
+        """
+        Start a vm and wait for it to have an ip
+        """
+        logging.info("entered start_libvirt_vm thread")
+        with LibvirtService.app.app_context():
             try:
-                container = docker_get_container_by_ip(client, machine.ip, network)
-                logging.info(f"Found container for ip {machine.ip}")
-                container.stop()
-            except Exception as e:
-                logging.exception("Error: Unknown error occurred")
+                m = Machine.query.filter_by(id=m_id).first()
+                mt = m.machine_template
+                mp = mt.machine_provider
 
-            machine.state = MachineState.DELETED
-            db.session.commit()
-            logging.info(f"deleted container with machine id {machine_id}")
-    except Exception:
-        logging.exception("Error stopping container: ")
+                qemu_url = mp.provider_data.get("base_url")
 
+                name = m.name
+                image = mt.image
+                cores = mt.cpu_limit_cores
+                mem = int(mt.memory_limit_gb) * 1024 * 1024
 
-@log_function_call
-def docker_start_container(m_id):
-    logging.warning("entered docker_start_container thread")
-    with app.app_context():
-        try:
-            m = Machine.query.filter_by(id=m_id).first()
-            mt = m.machine_template
-            mp = mt.machine_provider
+                # TODO rewrite the following to use python api
+                # clone vm
+                subprocess.run(
+                    [
+                        "virt-clone",
+                        "--connect",
+                        qemu_url,
+                        "--original",
+                        image,
+                        "--name",
+                        name,
+                        "--auto-clone",
+                    ]
+                )
 
-            network = mp.provider_data.get("network")
-            cpu_cores = mt.cpu_limit_cores
-            mem_limit_gb = mt.memory_limit_gb
+                # Set the CPU and memory limits
+                subprocess.run(
+                    [
+                        "virsh",
+                        "--connect",
+                        qemu_url,
+                        "setvcpus",
+                        name,
+                        str(cores),
+                        "--config",
+                        "--maximum",
+                    ]
+                )
+                subprocess.run(
+                    [
+                        "virsh",
+                        "--connect",
+                        qemu_url,
+                        "setvcpus",
+                        name,
+                        str(cores),
+                        "--config",
+                    ]
+                )
+                subprocess.run(
+                    [
+                        "virsh",
+                        "--connect",
+                        qemu_url,
+                        "setmaxmem",
+                        name,
+                        str(mem),
+                        "--config",
+                    ]
+                )
+                subprocess.run(
+                    [
+                        "virsh",
+                        "--connect",
+                        qemu_url,
+                        "setmem",
+                        name,
+                        str(mem),
+                        "--config",
+                    ]
+                )
 
-            docker_base_url = mp.provider_data.get("base_url")
-            client = docker.DockerClient(docker_base_url)
+                # start vm
+                subprocess.run(["virsh", "--connect", qemu_url, "start", name])
 
-            cpu_period = 100000
-            cpu_quota = int(cpu_period * cpu_cores)
-            mem_limit = f"{mem_limit_gb * 1024}m"  # Convert GB to MB
+                conn = libvirt.open(qemu_url)
+                logging.info(f"waiting for vm {name} to come up")
+                LibvirtService.wait_for_vm(conn, name)
+                logging.info(f"vm {name} is up, waiting for ip")
+                ip = LibvirtService.wait_for_ip(conn, name)
+                logging.info(f"vm {name} has acquired an ip: {ip}")
 
-            # Define container options, including CPU and memory limits
-            container_options = {
-                "name": m.name,
-                "image": mt.image,
-                "network": network,
-                "cpu_period": cpu_period,
-                "cpu_quota": cpu_quota,
-                "mem_limit": mem_limit,
-            }
-            logging.info(json.dumps(container_options, indent=4))
-
-            # Start the container
-            container = client.containers.run(
-                **container_options,
-                detach=True,
-            )
-
-            m.ip = docker_wait_for_ip(client, m.name, network)
-
-            m.state = MachineState.READY
-            db.session.commit()
-        except Exception:
-            logging.exception("Error: ")
-            try:
-                container.stop()
+                m.ip = ip
+                m.state = MachineState.READY
+                db.session.commit()
             except Exception:
-                logging.exception("Error: ")
-            try:
-                container.remove()
-            except Exception:
-                logging.exception("Error: ")
+                logging.exception("Error creating libvirt vm: ")
+                m.state = MachineState.FAILED
+                db.session.commit()
 
-            m.state = MachineState.FAILED
-            m.ip = ""
-            db.session.commit()
-
-    logging.warning("all done!")
-
-
-@log_function_call
-def libvirt_get_vm_ip(conn, vm_name):
-    domain = conn.lookupByName(vm_name)
-
-    interfaces = domain.interfaceAddresses(
-        libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE
-    )
-
-    for _, interface in interfaces.items():
-        for address in interface["addrs"]:
-            if address["type"] == libvirt.VIR_IP_ADDR_TYPE_IPV4:
-                logging.info(f"vm {vm_name} acquired ip: {address['addr']}")
-                return address["addr"]
-
-    return None
-
-
-@log_function_call
-def libvirt_wait_for_ip(conn, vm_name, timeout=300):
-    start_time = time.time()
-
-    while not (ip := libvirt_get_vm_ip(conn, vm_name)):
-        if time.time() - start_time > timeout:
-            raise TimeoutError(f"Waiting for IP timed out after {timeout} seconds")
-        time.sleep(1)
-
-    return ip
-
-
-@log_function_call
-def libvirt_wait_for_vm(conn, vm_name, timeout=600):
-    # Wait for the virtual machine to be in the running state
-    domain = conn.lookupByName(vm_name)
-
-    start_time = time.time()
-    while (duration := time.time() - start_time) < timeout:
-        state, _ = domain.state()
-        if state == libvirt.VIR_DOMAIN_RUNNING:
-            logging.info(f"libvirt vm {vm_name} up after {duration}s")
-            return
-        time.sleep(1)
-
-    raise TimeoutError(f"Waiting for VM {vm_name} timed out after {timeout}s")
-
-
-@log_function_call
-def libvirt_start_vm(m_id):
-    """
-    Start a vm and wait for it to have an ip
-    """
-    logging.info("entered start_libvirt_vm thread")
-    with app.app_context():
-        try:
+    @log_function_call
+    @staticmethod
+    def stop(m_id: int):
+        with LibvirtService.app.app_context():
             m = Machine.query.filter_by(id=m_id).first()
-            mt = m.machine_template
-            mp = mt.machine_provider
+            try:
+                mt = m.machine_template
+                mp = mt.machine_provider
+                vm_name = m.name
+                qemu_base_url = mp.provider_data.get("base_url")
 
-            qemu_url = mp.provider_data.get("base_url")
+                # Create a new connection to a local libvirt session
+                conn = libvirt.open(qemu_base_url)
 
-            name = m.name
-            image = mt.image
-            cores = mt.cpu_limit_cores
-            mem = int(mt.memory_limit_gb) * 1024 * 1024
+                # Stop the virtual machine
+                domain = conn.lookupByName(vm_name)
+                domain.destroy()
 
-            # TODO rewrite the following to use python api
-            # clone vm
-            subprocess.run(
-                [
-                    "virt-clone",
-                    "--connect",
-                    qemu_url,
-                    "--original",
-                    image,
-                    "--name",
-                    name,
-                    "--auto-clone",
-                ]
-            )
+                # Delete the disk
+                storage_paths = []
+                for pool in conn.listAllStoragePools():
+                    for vol in pool.listAllVolumes():
+                        if vm_name in vol.name():
+                            storage_paths.append(vol.path())
+                            vol.delete(0)
 
-            # Set the CPU and memory limits
-            subprocess.run(
-                [
-                    "virsh",
-                    "--connect",
-                    qemu_url,
-                    "setvcpus",
-                    name,
-                    str(cores),
-                    "--config",
-                    "--maximum",
-                ]
-            )
-            subprocess.run(
-                [
-                    "virsh",
-                    "--connect",
-                    qemu_url,
-                    "setvcpus",
-                    name,
-                    str(cores),
-                    "--config",
-                ]
-            )
-            subprocess.run(
-                [
-                    "virsh",
-                    "--connect",
-                    qemu_url,
-                    "setmaxmem",
-                    name,
-                    str(mem),
-                    "--config",
-                ]
-            )
-            subprocess.run(
-                ["virsh", "--connect", qemu_url, "setmem", name, str(mem), "--config"]
-            )
-
-            # start vm
-            subprocess.run(["virsh", "--connect", qemu_url, "start", name])
-
-            conn = libvirt.open(qemu_url)
-            logging.info(f"waiting for vm {name} to come up")
-            libvirt_wait_for_vm(conn, name)
-            logging.info(f"vm {name} is up, waiting for ip")
-            ip = libvirt_wait_for_ip(conn, name)
-            logging.info(f"vm {name} has acquired an ip: {ip}")
-
-            m.ip = ip
-            m.state = MachineState.READY
-            db.session.commit()
-        except Exception:
-            logging.exception("Error creating libvirt vm: ")
-            m.state = MachineState.FAILED
+                domain.undefine()
+                conn.close()
+            except Exception:
+                logging.exception("Error stopping libvirt vm:")
+            m.state = MachineState.DELETED
             db.session.commit()
 
+        logging.info(f"Stopped virtual machine {vm_name} and deleted its disk")
 
-@log_function_call
-def libvirt_stop_vm(m_id):
-    with app.app_context():
-        m = Machine.query.filter_by(id=m_id).first()
-        try:
-            mt = m.machine_template
-            mp = mt.machine_provider
-            vm_name = m.name
-            qemu_base_url = mp.provider_data.get("base_url")
+    @log_function_call
+    @staticmethod
+    def get_vm_ip(conn, vm_name):
+        domain = conn.lookupByName(vm_name)
 
-            # Create a new connection to a local libvirt session
-            conn = libvirt.open(qemu_base_url)
+        interfaces = domain.interfaceAddresses(
+            libvirt.VIR_DOMAIN_INTERFACE_ADDRESSES_SRC_LEASE
+        )
 
-            # Stop the virtual machine
-            domain = conn.lookupByName(vm_name)
-            domain.destroy()
+        for _, interface in interfaces.items():
+            for address in interface["addrs"]:
+                if address["type"] == libvirt.VIR_IP_ADDR_TYPE_IPV4:
+                    logging.info(f"vm {vm_name} acquired ip: {address['addr']}")
+                    return address["addr"]
 
-            # Delete the disk
-            storage_paths = []
-            for pool in conn.listAllStoragePools():
-                for vol in pool.listAllVolumes():
-                    if vm_name in vol.name():
-                        storage_paths.append(vol.path())
-                        vol.delete(0)
+        return None
 
-            domain.undefine()
-            conn.close()
-        except Exception:
-            logging.exception("Error stopping libvirt vm:")
-        m.state = MachineState.DELETED
-        db.session.commit()
+    @log_function_call
+    @staticmethod
+    def wait_for_ip(conn, vm_name, timeout=300):
+        start_time = time.time()
 
-    logging.info(f"Stopped virtual machine {vm_name} and deleted its disk")
+        while not (ip := LibvirtService.get_vm_ip(conn, vm_name)):
+            if time.time() - start_time > timeout:
+                raise TimeoutError(f"Waiting for IP timed out after {timeout} seconds")
+            time.sleep(1)
+
+        return ip
+
+    @log_function_call
+    @staticmethod
+    def wait_for_vm(conn, vm_name, timeout=600):
+        # Wait for the virtual machine to be in the running state
+        domain = conn.lookupByName(vm_name)
+
+        start_time = time.time()
+        while (duration := time.time() - start_time) < timeout:
+            state, _ = domain.state()
+            if state == libvirt.VIR_DOMAIN_RUNNING:
+                logging.info(f"libvirt vm {vm_name} up after {duration}s")
+                return
+            time.sleep(1)
+
+        raise TimeoutError(f"Waiting for VM {vm_name} timed out after {timeout}s")
 
 
 def create_initial_db():
@@ -2678,6 +2736,8 @@ def clean_up_db():
 def main(debug=False):
     create_initial_db()
     clean_up_db()
+
+    VirtService.set_app(app)
 
     if debug:
         app.run(debug=True)
