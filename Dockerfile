@@ -8,8 +8,10 @@ WORKDIR /app
 RUN apt update && \
     apt -y install --no-install-recommends \
     build-essential \
-    libvirt-clients virtinst libvirt-dev\
-    python3-openstackclient\
+    libvirt-clients \
+    virtinst \
+    libvirt-dev \
+    python3-openstackclient \
     libpq-dev
 
 # Copy the requirements file into the container
