@@ -44,6 +44,7 @@ from flask_admin.actions import action
 from flask_admin.contrib.sqla import ModelView
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
+from wtforms.widgets import TextArea
 from wtforms import (
     StringField,
     PasswordField,
@@ -96,10 +97,11 @@ except Exception:
 
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "your_secret_key"
+app.config["SECRET_KEY"] = "aVAFR068QBytObmP37e8Fhq44RSn4Ad5"
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "ADA2025_SQLALCHEMY_URL", "sqlite:///app.db"
 )
+app.config["FLASK_ADMIN_FLUID_LAYOUT"] = True
 logging.info(f"Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
 
 db = SQLAlchemy(app)
@@ -131,8 +133,16 @@ recaptcha.init_app(app)
 LOGIN_RECAPTCHA = os.environ.get("LOGIN_RECAPTCHA", False)
 
 
+class CustomTextAreaWidget(TextArea):
+    def __call__(self, field, **kwargs):
+        kwargs.setdefault("rows", 15)  # Change to the number of rows you want
+        return super(CustomTextAreaWidget, self).__call__(field, **kwargs)
+
+
 # for nicer formatting of json data in flask-admin forms
 class JsonTextAreaField(TextAreaField):
+    widget = CustomTextAreaWidget()
+
     def process_formdata(self, valuelist):
         if valuelist:
             value = valuelist[0]
@@ -451,7 +461,6 @@ class DataTransferJob(db.Model):
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
-    finish_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
 
     user = db.relationship("User", back_populates="data_transfer_jobs")
     data_source = db.relationship("DataSource", back_populates="data_transfer_jobs")
@@ -472,11 +481,10 @@ class ProtectedDataTransferJobModelView(ProtectedModelView):
         "data_source",
         "machine",
         "creation_date",
-        "finish_date",
     )
     form_columns = ("state", "user", "data_source", "machine")
     column_searchable_list = ("state",)
-    column_sortable_list = ("id", "state", "creation_date", "finish_date")
+    column_sortable_list = ("id", "state", "creation_date")
     column_filters = ("state", "user", "data_source", "machine")
     column_auto_select_related = True
 
@@ -567,7 +575,7 @@ class MachineProvider(db.Model):
 
 
 class ProtectedMachineProviderModelView(ProtectedModelView):
-    column_list = ("id", "name", "type", "customer", "provider_data")
+    column_list = ("id", "name", "type", "customer", "creation_date")
     column_searchable_list = ("name", "type", "customer")
     column_filters = ("name", "customer")
 
@@ -638,8 +646,6 @@ class ProtectedMachineTemplateModelView(ProtectedModelView):
         "memory_limit_gb",
         "cpu_limit_cores",
         "group",
-        "machines",
-        "extra_data",
     )
     form_columns = (
         "name",
@@ -739,7 +745,6 @@ class ProtectedMachineModelView(ProtectedModelView):
         "creation_date",
         "owner",
         "machine_template",
-        "shared_users",
     )
     form_columns = (
         "name",
@@ -818,6 +823,81 @@ class ProtectedProblemReportModelView(ProtectedModelView):
     )
 
 
+class Audit(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    remote_ip = db.Column(db.String(16))
+    action = db.Column(db.String(128))
+    state = db.Column(db.String(128))
+    creation_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    finished_date = db.Column(db.DateTime)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), index=True)
+    user = db.relationship("User")
+    machine_id = db.Column(db.Integer, db.ForeignKey("machine.id"), index=True)
+    machine = db.relationship("Machine")
+    data_transfer_job_id = db.Column(db.Integer, db.ForeignKey("data_transfer_job.id"))
+    data_transfer_job = db.relationship("DataTransferJob")
+
+
+def create_audit(action, user=None, machine=None, data_transfer_job=None):
+    audit = Audit(
+        user=user,
+        action=action,
+        state="running",
+        remote_ip=get_remote_address(),
+        machine=machine,
+        data_transfer_job=data_transfer_job,
+    )
+    db.session.add(audit)
+    db.session.commit()
+    return audit
+
+
+def get_audit(audit_id):
+    audit = Audit.query.filter_by(id=audit_id).first()
+    if not audit:
+        logging.error(f"audit {audit_id} not found")
+    return audit
+
+
+def update_audit(audit, state="running", machine=None, data_transfer_job=None, F=False):
+    audit.state = state
+    if machine:
+        audit.machine = machine
+    if data_transfer_job:
+        audit.data_transfer_job = data_transfer_job
+    db.session.commit()
+
+
+def finish_audit(audit, state, F=False):
+    audit.state = state
+    audit.finished_date = datetime.datetime.utcnow()
+    db.session.commit()
+
+
+class ProtectedAuditModelView(ProtectedModelView):
+    column_list = (
+        "user",
+        "remote_ip",
+        "action",
+        "state",
+        "machine",
+        "data_transfer_job",
+        "creation_date",
+    )
+    column_searchable_list = ("action", "state")
+    column_filters = ("action", "state")
+    form_columns = (
+        "user",
+        "action",
+        "state",
+        "machine",
+        "remote_ip",
+        "data_transfer_job",
+        "creation_date",
+        "finished_date",
+    )
+
+
 # add flask-sqlalchemy views to flask-admin
 admin.add_view(ProtectedUserModelView(User, db.session))
 admin.add_view(ProtectedDataSourceModelView(DataSource, db.session))
@@ -827,6 +907,7 @@ admin.add_view(ProtectedMachineProviderModelView(MachineProvider, db.session))
 admin.add_view(ProtectedMachineTemplateModelView(MachineTemplate, db.session))
 admin.add_view(ProtectedMachineModelView(Machine, db.session))
 admin.add_view(ProtectedProblemReportModelView(ProblemReport, db.session))
+admin.add_view(ProtectedAuditModelView(Audit, db.session))
 
 
 # This is used in base.jinja2 to build the side bar menu
@@ -1158,6 +1239,36 @@ def google_authorize():
         return redirect(url_for("login"))
 
 
+@app.route("/visit_machine/<m_id>")
+@limiter.limit("60 per minute")
+@login_required
+def visit_machine(m_id):
+    audit = create_audit("visit machine", user=current_user)
+    m = Machine.query.filter_by(id=m_id).first()
+    if not m:
+        finish_audit(audit, "bad machine id")
+        flash("Machine not found", "danger")
+        return redirect(url_for("machines"))
+
+    update_audit(audit, machine=m)
+
+    if current_user != m.owner and current_user not in m.shared_users:
+        finish_audit(audit, "bad user")
+        flash("Machine not found", "danger")
+        return redirect(url_for("machines"))
+
+    # TODO use per machine access key
+    access_key = "Sw8OSELATBzI74XT"
+
+    if m.hostname and m.machine_template.extra_data.get("has_https"):
+        machine_url = "https://" + m.hostname + "/" + access_key
+    else:
+        machine_url = "http://" + m.ip + "/" + access_key
+
+    finish_audit(audit, "ok")
+    return redirect(machine_url)
+
+
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("60 per hour")
 def login():
@@ -1185,8 +1296,10 @@ def login():
 
     # POST path
     if request.method == "POST":
+        audit = create_audit("login")
         if LOGIN_RECAPTCHA:
             if not recaptcha.verify():
+                finish_audit(audit, "recaptcha failed")
                 flash(gettext("Could not verify captcha. Try again."), "danger")
                 return render_template(
                     "login.jinja2",
@@ -1196,13 +1309,14 @@ def login():
                 )
         if form.validate_on_submit():
             user = User.query.filter_by(username=form.username.data).first()
-
             # oauth2 returning users
             if user and user.provider_id:
                 if user.provider == "google":
                     # google users
+                    finish_audit(audit, "google login")
                     return redirect(url_for("google_login"))
                 else:
+                    finish_audit(audit, "invalid provider")
                     flash(gettext("Invalid provider"), "danger")
                     return render_template(
                         "login.jinja2",
@@ -1213,6 +1327,7 @@ def login():
 
             # oauth2 users trying to log in locally but don't have a password
             if user and user.provider != "local" and not user.password_hash:
+                finish_audit(audit, "local login no pw")
                 flash(
                     gettext(
                         "Sorry, you can't use a local login. Try using the login method you signed in (eg. Google) with the first time, or contact support for help.",
@@ -1228,8 +1343,10 @@ def login():
 
             # local users or oauth2 users who have set a password
             if user and user.check_password(form.password.data):
-                # pw ok ut account not activated
+                audit.user = user
+                # pw ok but account not activated
                 if not user.is_enabled:
+                    finish_audit(audit, "acc not activated")
                     flash(
                         gettext(
                             "Account not activated. If it's been more than 24 hours please contact support."
@@ -1245,11 +1362,14 @@ def login():
 
                 # log user in
                 login_user(user)
+                finish_audit(audit, "ok")
                 flash(gettext("Logged in successfully."), "success")
                 return redirect(url_for("index"))
             else:
+                finish_audit(audit, "bad password")
                 flash(gettext("Invalid username or password."), "danger")
         else:
+            finish_audit(audit, "bad form")
             logging.warning(f"wtforms didn't validate form: { form.errors }")
             # technically it's not invalid but don't give that away
             flash(gettext("Invalid username or password."), "danger")
@@ -1330,7 +1450,9 @@ def register():
     form = RegistrationForm()
 
     if request.method == "POST":
+        audit = create_audit("registration")
         if not recaptcha.verify():
+            finish_audit(audit, "recaptcha failed")
             flash("Could not verify captcha. Try again.", "danger")
             return render_template(
                 "register.jinja2",
@@ -1365,6 +1487,7 @@ def register():
                     "Sorry, that username or email is taken. Please choose another."
                 )
             if error_msg:
+                finish_audit(audit, "validation failed")
                 print(f"Registration error: {error_msg}")
                 flash(error_msg, "danger")
                 return render_template(
@@ -1392,6 +1515,9 @@ def register():
 
             db.session.add(new_user)
             db.session.commit()
+
+            audit.user = new_user
+            finish_audit(audit, "ok")
 
             flash(
                 gettext(
@@ -1749,14 +1875,17 @@ def data():
     ]
 
     if request.method == "POST":
+        audit = create_audit("data transfer", user=current_user)
         if form.validate_on_submit():
             machine = Machine.query.filter_by(id=form.machine.data).first()
             data_source = DataSource.query.filter_by(id=form.data_source.data).first()
 
             if not machine or not data_source:
+                finish_audit(audit, "bad args")
                 abort(404)
 
             if machine not in machines or data_source not in data_sources:
+                finish_audit(audit, "bad permissions")
                 abort(403)
 
             # security checks ok
@@ -1767,14 +1896,17 @@ def data():
                 data_source=data_source,
                 machine=machine,
             )
+            update_audit(audit, machine=machine, data_transfer_job=job)
             db.session.add(job)
-            db.session.flush()
             db.session.commit()
-            threading.Thread(target=start_data_transfer, args=(job.id,)).start()
+            threading.Thread(
+                target=start_data_transfer, args=(job.id, audit.id)
+            ).start()
 
             flash(gettext("Starting data transfer. Refresh page to update status."))
             return redirect(url_for("data"))
         else:
+            finish_audit(audit, "bad form")
             flash(
                 gettext("The data transfer job submission could not be validated."),
                 "danger",
@@ -1824,13 +1956,15 @@ def do_rsync(source_host, source_port, source_dir, dest_host, dest_dir):
 
 
 @log_function_call
-def start_data_transfer(job_id):
+def start_data_transfer(job_id, audit_id):
     """
     Thread function that takes a job and runs the data transfer
     """
     with app.app_context():
+        audit = get_audit(audit_id)
         job = DataTransferJob.query.filter_by(id=job_id).first()
         if not job:
+            finish_audit(audit, "bad job id")
             logging.error(f"job {job_id} not found!")
 
         result = do_rsync(
@@ -1841,10 +1975,11 @@ def start_data_transfer(job_id):
             dest_dir="",
         )
 
-        job.finish_time = datetime.datetime.utcnow()
         if result:
+            finish_audit(audit, "ok")
             job.state = DataTransferJobState.DONE
         else:
+            finish_audit(audit, "error")
             job.state = DataTransferJobState.FAILED
         db.session.commit()
 
@@ -1917,11 +2052,13 @@ def new_machine():
     Launches thread to create the container/vm
     """
     machine_template_name = request.form.get("machine_template_name", "")
+    audit = create_audit("create machine", user=current_user)
 
     mt = MachineTemplate.query.filter_by(name=machine_template_name).first_or_404()
 
     if quota := mt.extra_data.get("quota"):
         if count_machines(mt) >= quota:
+            finish_audit(audit, "template quota exceeded")
             flash("Quota for template exceeded", "danger")
             return redirect(url_for("machines"))
 
@@ -1936,6 +2073,7 @@ def new_machine():
         shared_users=[],
         machine_template=mt,
     )
+    update_audit(audit, machine=m)
 
     logging.warning("starting new machine thread")
 
@@ -1951,7 +2089,7 @@ def new_machine():
     db.session.add(m)
     db.session.commit()
 
-    threading.Thread(target=target, args=(m.id,)).start()
+    threading.Thread(target=target, args=(m.id, audit.id)).start()
     flash(
         gettext("Creating machine in the background. Refresh page to update status."),
         category="success",
@@ -1970,41 +2108,54 @@ def stop_machine():
     """
 
     # sanity checks
+    audit = create_audit("stop machine", user=current_user)
     machine_id = request.form.get("machine_id")
+
     if not machine_id:
+        finish_audit(audit, "machine_id missing")
         logging.warning(f"machine_id parameter missing: {machine_id}")
         abort(404)
-    machine_id = int(machine_id)
-    machine = Machine.query.filter_by(id=machine_id).first_or_404()
-    if not current_user.is_admin and not current_user == machine.owner:
+
+    try:
+        machine_id = int(machine_id)
+    except Exception:
+        finish_audit(audit, "machine_id bad")
+        logging.warning(f"machine_id not int: {machine_id}")
+        abort(404)
+
+    m = Machine.query.filter_by(id=machine_id).first_or_404()
+    update_audit(audit, machine=m)
+
+    if not current_user.is_admin and not current_user == m.owner:
+        finish_audit(audit, "bad user")
         logging.error(
             f"user {current_user.id} is not the owner of machine {machine_id} nor admin"
         )
         abort(403)
-    if machine.state in [
+    if m.state in [
         MachineState.PROVISIONING,
         MachineState.DELETED,
         MachineState.DELETING,
     ]:
         logging.warning(
-            f"machine {machine_id} is not in correct state for deletion: {machine.state}"
+            f"machine {machine_id} is not in correct state for deletion: {m.state}"
         )
 
-    if machine.machine_template.type == "docker":
+    if m.machine_template.type == "docker":
         target = DockerService.stop
-    elif machine.machine_template.type == "libvirt":
+    elif m.machine_template.type == "libvirt":
         target = LibvirtService.stop
-    elif machine.machine_template.type == "openstack":
+    elif m.machine_template.type == "openstack":
         target = OpenStackService.stop
     else:
-        raise RuntimeError(machine.machine_template.type)
+        raise RuntimeError(m.machine_template.type)
 
     # good to go
     logging.info(f"deleting machine with machine id {machine_id}")
-    machine.state = MachineState.DELETING
+    m.state = MachineState.DELETING
     db.session.commit()
 
-    threading.Thread(target=target, args=(machine.id,)).start()
+    threading.Thread(target=target, args=(m.id, audit.id)).start()
 
     flash(gettext("Deleting machine"), category="success")
     return redirect(url_for("machines"))
@@ -2018,12 +2169,12 @@ class VirtService(ABC):
 
     @staticmethod
     @abstractmethod
-    def start(m_id: int):
+    def start(m_id: int, audit_id: int):
         pass
 
     @staticmethod
     @abstractmethod
-    def stop(m_id: int):
+    def stop(m_id: int, audit_id: int):
         pass
 
 
@@ -2031,8 +2182,9 @@ class OpenStackService(VirtService):
     # Function to create a new VM from an image
     @log_function_call
     @staticmethod
-    def start(m_id: int):
+    def start(m_id: int, audit_id):
         with OpenStackService.app.app_context():
+            audit = get_audit(audit_id)
             try:
                 m = Machine.query.filter_by(id=m_id).first()
                 mt = m.machine_template
@@ -2108,16 +2260,19 @@ class OpenStackService(VirtService):
                     logging.exception(f"Couldn't get openstack hostname for {m.ip}")
                     m.hostname = ""
                 m.state = MachineState.READY
+                finish_audit(audit, "ok")
                 db.session.commit()
 
             except Exception:
+                finish_audit(audit, "failed")
                 logging.exception("Couldn't start openstack vm: ")
                 m.state = MachineState.FAILED
                 db.session.commit()
 
     @staticmethod
-    def stop(m_id: int):
+    def stop(m_id: int, audit_id: int):
         with OpenStackService.app.app_context():
+            audit = get_audit(audit_id)
             try:
                 m = Machine.query.filter_by(id=m_id).first()
                 mt = m.machine_template
@@ -2128,9 +2283,11 @@ class OpenStackService(VirtService):
                 server = conn.compute.find_server(m.name)
                 # Try to delete the server
                 conn.compute.delete_server(server)
+                finish_audit(audit, "ok")
                 logging.info(f"OpenStack VM {m.name} deleted successfully.")
 
             except Exception:
+                finish_audit(audit, "error")
                 logging.exception(f"Couldn't stop openstack vm: ")
             m.state = MachineState.DELETED
             db.session.commit()
@@ -2261,9 +2418,10 @@ class OpenStackService(VirtService):
 class DockerService(VirtService):
     @log_function_call
     @staticmethod
-    def start(m_id: int):
+    def start(m_id: int, audit_id: int):
         logging.warning("entered docker_start_container thread")
         with DockerService.app.app_context():
+            audit = get_audit(audit_id)
             try:
                 m = Machine.query.filter_by(id=m_id).first()
                 mt = m.machine_template
@@ -2300,8 +2458,10 @@ class DockerService(VirtService):
                 m.ip = DockerService.wait_for_ip(client, m.name, network)
 
                 m.state = MachineState.READY
+                finish_audit(audit, "ok")
                 db.session.commit()
             except Exception:
+                finish_audit(audit, "error")
                 logging.exception("Error: ")
                 try:
                     container.stop()
@@ -2320,9 +2480,10 @@ class DockerService(VirtService):
 
     @log_function_call
     @staticmethod
-    def stop(machine_id: int):
-        try:
-            with DockerService.app.app_context():
+    def stop(machine_id: int, audit_id: int):
+        with DockerService.app.app_context():
+            audit = get_audit(audit_id)
+            try:
                 machine = Machine.query.filter_by(id=machine_id).first()
                 mt = machine.machine_template
                 mp = mt.machine_provider
@@ -2342,10 +2503,12 @@ class DockerService(VirtService):
                     logging.exception("Error: Unknown error occurred")
 
                 machine.state = MachineState.DELETED
+                finish_audit(audit, "ok")
                 db.session.commit()
                 logging.info(f"deleted container with machine id {machine_id}")
-        except Exception:
-            logging.exception("Error stopping container: ")
+            except Exception:
+                finish_audit(audit, "error")
+                logging.exception("Error stopping container: ")
 
     @log_function_call
     @staticmethod
@@ -2390,12 +2553,13 @@ class DockerService(VirtService):
 class LibvirtService(VirtService):
     @log_function_call
     @staticmethod
-    def start(m_id):
+    def start(m_id: int, audit_id: int):
         """
         Start a vm and wait for it to have an ip
         """
         logging.info("entered start_libvirt_vm thread")
         with LibvirtService.app.app_context():
+            audit = get_audit(audit_id)
             try:
                 m = Machine.query.filter_by(id=m_id).first()
                 mt = m.machine_template
@@ -2482,16 +2646,19 @@ class LibvirtService(VirtService):
 
                 m.ip = ip
                 m.state = MachineState.READY
+                finish_audit(audit, "ok")
                 db.session.commit()
             except Exception:
+                finish_audit(audit, "error")
                 logging.exception("Error creating libvirt vm: ")
                 m.state = MachineState.FAILED
                 db.session.commit()
 
     @log_function_call
     @staticmethod
-    def stop(m_id: int):
+    def stop(m_id: int, audit_id: int):
         with LibvirtService.app.app_context():
+            audit = get_audit(audit_id)
             try:
                 m = Machine.query.filter_by(id=m_id).first()
                 mt = m.machine_template
@@ -2515,8 +2682,10 @@ class LibvirtService(VirtService):
                             vol.delete(0)
 
                 domain.undefine()
+                finish_audit(audit, "ok")
                 conn.close()
             except Exception:
+                finish_audit(audit, "error")
                 logging.exception("Error stopping libvirt vm:")
             m.state = MachineState.DELETED
             db.session.commit()

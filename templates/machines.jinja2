@@ -94,7 +94,7 @@
                 <a
                   target="_blank"
                   title="Open machine page"
-                  href="{{ machine_url }}/Sw8OSELATBzI74XT"
+                  href="{{ url_for('visit_machine', m_id=machine.id) }}"
                   class="w3-button w3-blue w3-round">
                   {{ icon("external-link") }} {{ gettext('Open') }}
                 </a>
@@ -147,7 +147,7 @@
           <div class="w3-row">
             <div class="w3-col m8">
               <p>
-                <a href="{{ machine_url }}/Sw8OSELATBzI74XT" target="_blank">
+                <a href="{{ url_for('visit_machine', m_id=machine.id) }}" target="_blank">
 
                   <div class="fallback-div" style="display: none; width: 240px; height: 140px; border: 3px dashed gray; text-align: center; line-height: 140px; border-radius:4px">Thumbnail Not Available</div>
                   <img class="vm-thumbnail w3-round lighten-on-hover blur-on-hover" src="{{ machine_url }}/screenshots/screenshot-thumb.png" alt="Alternative text" style="display: none; max-width: 300px; max-height: 175px;">
