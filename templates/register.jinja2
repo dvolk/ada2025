@@ -23,7 +23,7 @@
   <p>{{ gettext("Thank you for your interest in using Ada 2025. Please fill in the following form and you will be emailed once your account is activated.") }}</p>
 
   <form method="POST" action="{{ url_for('register') }}">
-    {{ form.csrf_token }}
+    {{ form.hidden_tag() }}
       <label class="w3-text-black">{{ gettext("Username") }}* (character length min: {{ form.username_min }}, max: {{ form.username_max }})</label>
       {{ form.username(class="w3-input w3-round w3-border w3-light-grey") }}
     <br>

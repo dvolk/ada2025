@@ -22,8 +22,8 @@
           </thead>
           {% for j in sorted_jobs %}
           <tr>
-              <td style="vertical-align: middle;">{{ j.data_source.source_host }}:{{ j.data_source.source_dir }}</td>
-              <td style="vertical-align: middle;">{{ j.machine.name }}</td>
+              <td style="vertical-align: middle;">{{ j.data_source.name }}</td>
+              <td style="vertical-align: middle;">{{ j.machine.display_name }}</td>
               <td style="vertical-align: middle;">{{ j.state.name }}</td>
 
               <td style="vertical-align: middle;">
@@ -39,7 +39,7 @@
                    };
                    xhr.send('job_id={{ j.id }}');">{{ icon('check') }}
                 </a>
-                <a href="{{ url_for('report_problem', data_transfer_job_id=j.id, machine_name=j.machine.name, title=gettext('Problem with data transfer from ') + j.data_source.source_host + gettext(' to machine ') + j.machine.name ) }}"
+                <a href="{{ url_for('report_problem', data_transfer_job_id=j.id, machine_id=j.machine.id, title=gettext('Problem with data transfer from ') + j.data_source.name + gettext(' to machine ') + j.machine.display_name ) }}"
                    class="w3-button w3-small w3-blue-gray w3-round"
                    title="Report problem">
                     {{ icon('flag') }}
@@ -62,7 +62,7 @@
   {{ idea(gettext("Data source sizes are not updated in real-time and may be outdated.")) }}
 
   <form action="/data" method="POST">
-    {{ form.csrf_token }}
+    {{ form.hidden_tag() }}
     <div class="w3-container w3-yellow">
       <h2>{{ gettext("New Data Transfer") }}</h2>
     </div>

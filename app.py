@@ -15,6 +15,7 @@ import socket
 import os
 import shlex
 from abc import ABC, abstractmethod
+import re
 
 # flask and related imports
 from flask import (
@@ -43,7 +44,14 @@ from flask_admin.actions import action
 from flask_admin.contrib.sqla import ModelView
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SelectField, TextAreaField, SubmitField
+from wtforms import (
+    StringField,
+    PasswordField,
+    SelectField,
+    TextAreaField,
+    SubmitField,
+    HiddenField,
+)
 from wtforms.validators import DataRequired, Email, Length, Regexp
 from flask_babel import Babel, gettext
 from flask_limiter import Limiter
@@ -238,6 +246,13 @@ def log_function_call(func):
     return wrapper
 
 
+def is_name_safe(display_name):
+    # Disallow <, >, &, /, \, and ;
+    blacklist = re.compile(r"[<>&/\\;]")
+
+    return not bool(blacklist.search(display_name))
+
+
 # Association table for many-to-many relationship between User and Machine (shared_users)
 shared_user_machine = db.Table(
     "shared_user_machine",
@@ -365,10 +380,11 @@ class DataSource(db.Model):
     """
 
     id = db.Column(db.Integer, primary_key=True)
-    source_username = db.Column(db.String, nullable=False, default="root")
-    source_host = db.Column(db.String, nullable=False)
+    name = db.Column(db.String, nullable=False)
+    source_username = db.Column(db.String(64), nullable=False, default="root")
+    source_host = db.Column(db.String(256), nullable=False)
     source_port = db.Column(db.Integer, nullable=False, default=22)
-    source_dir = db.Column(db.String, nullable=False)
+    source_dir = db.Column(db.String(256), nullable=False)
     data_size = db.Column(db.Integer, nullable=False)  # in MB
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
@@ -382,7 +398,7 @@ class DataSource(db.Model):
     )
 
     def __repr__(self):
-        return f"<{self.source_host}:{self.source_dir}>"
+        return f"<{self.name}>"
 
 
 class ProtectedDataSourceModelView(ProtectedModelView):
@@ -684,9 +700,15 @@ class Machine(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    display_name = db.Column(db.String(100), nullable=False)
     ip = db.Column(db.String(45))
     hostname = db.Column(db.String(200), default="")
-    token = db.Column(db.String(16), nullable=False, default=lambda: gen_token(16))
+    share_token = db.Column(
+        db.String(16), nullable=False, default=lambda: gen_token(16)
+    )
+    access_token = db.Column(
+        db.String(16), nullable=False, default=lambda: gen_token(16)
+    )
     state = db.Column(db.Enum(MachineState), nullable=False, index=True)
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
@@ -705,16 +727,15 @@ class Machine(db.Model):
     problem_reports = db.relationship("ProblemReport", back_populates="machine")
 
     def __repr__(self):
-        return f"<{self.name}>"
+        return f"<{self.display_name}>"
 
 
 class ProtectedMachineModelView(ProtectedModelView):
     column_list = (
         "id",
-        "name",
+        "display_name",
         "ip",
         "hostname",
-        "token",
         "state",
         "creation_date",
         "owner",
@@ -723,17 +744,30 @@ class ProtectedMachineModelView(ProtectedModelView):
     )
     form_columns = (
         "name",
+        "display_name",
         "ip",
         "hostname",
-        "token",
         "state",
+        "share_token",
+        "access_token",
         "owner",
         "shared_users",
         "machine_template",
         "data_transfer_jobs",
     )
-    column_searchable_list = ("name", "ip", "token", "state")
-    column_sortable_list = ("id", "name", "ip", "state", "creation_date")
+    column_searchable_list = (
+        "name",
+        "ip",
+        "share_token",
+        "state",
+    )
+    column_sortable_list = (
+        "id",
+        "name",
+        "ip",
+        "state",
+        "creation_date",
+    )
     column_filters = ("state", "owner", "machine_template")
     column_auto_select_related = True
 
@@ -1315,6 +1349,14 @@ def register():
                 error_msg = gettext(
                     "Sorry, that username is invalid. The username can contain letters, numbers and ."
                 )
+            if not is_name_safe(form.given_name.data):
+                error_msg = "Sorry, that given name is not allowed."
+            if not is_name_safe(form.family_name.data):
+                error_msg = "Sorry, that last name is not allowed."
+            if not is_name_safe(form.username.data):
+                error_msg = "Sorry, that username name is not allowed."
+            if not is_name_safe(form.email.data):
+                error_msg = "Sorry, that email is not allowed."
             if User.query.filter_by(username=form.username.data).first():
                 error_msg = gettext(
                     "Sorry, that username or email is taken. Please choose another."
@@ -1474,49 +1516,34 @@ def contains_non_alphanumeric_chars(string):
 @login_required
 def rename_machine():
     machine_id = request.form.get("machine_id")
-    machine_new_name = request.form.get("machine_new_name")
-    if not machine_new_name or not machine_id:
+    machine_new_display_name = request.form.get("machine_new_name")
+
+    if not machine_new_display_name or not machine_id:
         flash(gettext("Invalid values for machine rename"), "danger")
         return redirect(url_for("machines"))
 
-    if len(machine_new_name) <= 3 or len(machine_new_name) > 80:
-        logging.error(f"len(machine_new_name) = {len(machine_new_name)}")
-        flash(
-            gettext(
-                "New name must be between 4 and 80 characters long, and can contain characters a-Z,0-9 and -"
-            ),
-            "danger",
-        )
+    if not is_name_safe(machine_new_display_name):
+        flash(gettext("Invalid values for machine rename"), "danger")
         return redirect(url_for("machines"))
-
-    if contains_non_alphanumeric_chars(machine_new_name):
-        flash(
-            gettext(
-                "New name contains non-alphanumeric characters. Characters that are allowed are a-Z,0-9 and -"
-            ),
-            "danger",
-        )
-        return redirect(url_for("machines"))
-
     try:
         machine_id = int(machine_id)
     except:
         flash(gettext("Invalid values for machine rename"), "danger")
         return redirect(url_for("machines"))
 
-    machine = Machine.query.filter_by(id=machine_id).first()
-
-    if Machine.query.filter_by(name=machine_new_name).first():
-        flash(gettext("The requested machine name is already taken"), "danger")
+    if len(machine_new_display_name) <= 3 or len(machine_new_display_name) > 99:
+        flash(gettext("New name must be between 4 and 99 characters long"), "danger")
         return redirect(url_for("machines"))
+
+    machine = Machine.query.filter_by(id=machine_id).first()
 
     # TODO: check if the new name includes a username other than CU.name
 
-    old_name = machine.name
-    machine.name = machine_new_name
+    old_display_name = machine.display_name
+    machine.display_name = machine_new_display_name
     db.session.commit()
 
-    flash(f"Machine {old_name} renamed to {machine_new_name}")
+    flash(f"Machine {old_display_name} renamed to {machine_new_display_name}")
     return redirect(url_for("machines"))
 
 
@@ -1568,8 +1595,8 @@ def help():
 class ProblemReportForm(FlaskForm):
     title = StringField("Title", validators=[DataRequired()])
     description = TextAreaField("Description", validators=[])
-    machine_name = StringField("machine_name", validators=[DataRequired()])
-    data_transfer_job_id = StringField("data_transfer_job_id", validators=[])
+    machine_id = HiddenField("machine_id")
+    data_transfer_job_id = HiddenField("data_transfer_job_id")
     submit = SubmitField("Submit")
 
 
@@ -1580,10 +1607,10 @@ def report_problem():
     form = ProblemReportForm()
     if request.method == "POST":
         if form.validate_on_submit():
-            machine_name = form.machine_name.data
+            machine_id = form.machine_id.data
             data_transfer_job_id = form.data_transfer_job_id.data
 
-            machine = Machine.query.filter_by(name=machine_name).first()
+            machine = Machine.query.filter_by(id=machine_id).first()
             data_transfer_job = DataTransferJob.query.filter_by(
                 id=data_transfer_job_id
             ).first()
@@ -1600,7 +1627,7 @@ def report_problem():
             flash(gettext("Problem report submitted successfully."), "success")
             return redirect(url_for("index"))
     else:
-        form.machine_name.data = request.args.get("machine_name")
+        form.machine_id.data = request.args.get("machine_id")
         form.data_transfer_job_id.data = request.args.get("data_transfer_job_id")
         form.title.data = request.args.get("title")
         return render_template(
@@ -1693,11 +1720,11 @@ def machine_format_dtj(machine):
                 DataTransferJob.state == DataTransferJobState.DONE,
             )
         )
-        .with_entities(Source.source_host, Source.source_dir)
+        .with_entities(Source.name)
         .distinct()
     )
 
-    return {f"{source_host}:{source_dir}" for source_host, source_dir in jobs}
+    return {job[0] for job in jobs}
 
 
 @app.route("/data", methods=["GET", "POST"])
@@ -1716,11 +1743,10 @@ def data():
     # fill in the form select options
     form = DataTransferForm()
     form.data_source.choices = [
-        (ds.id, f"{ds.source_host}:{ds.source_dir} ({ds.data_size} MB)")
-        for ds in data_sources
+        (ds.id, f"{ds.name} ({ds.data_size} MB)") for ds in data_sources
     ]
     form.machine.choices = [
-        (m.id, m.name) for m in machines if m.state == MachineState.READY
+        (m.id, m.display_name) for m in machines if m.state == MachineState.READY
     ]
 
     if request.method == "POST":
@@ -1844,7 +1870,7 @@ def share_accept(machine_token):
     """
     This is the endpoint hit by the user accepting a share
     """
-    machine = Machine.query.filter_by(token=machine_token).first_or_404()
+    machine = Machine.query.filter_by(share_token=machine_token).first_or_404()
     if current_user == machine.owner:
         flash(gettext("You own that machine."))
         return redirect(url_for("machines"))
@@ -1871,7 +1897,7 @@ def share_revoke(machine_id):
         flash(gettext("You can't revoke shares on a machine you don't own.", "danger"))
         return redirect(url_for("machines"))
 
-    machine.token = gen_token(16)
+    machine.share_token = gen_token(16)
     machine.shared_users = []
     db.session.commit()
     flash(
@@ -1903,7 +1929,8 @@ def new_machine():
     machine_name = mk_safe_machine_name(current_user.username)
 
     m = Machine(
-        name=machine_name,
+        name=str(uuid.uuid4()),
+        display_name=f"{current_user.given_name}'s {mt.name}",
         ip="",
         state=MachineState.PROVISIONING,
         owner=current_user,
@@ -2067,7 +2094,7 @@ class OpenStackService(VirtService):
                 try:
                     m.hostname = get_hostname(m.ip)
                 except:
-                    logging.error(f"Couldn't get openstack hostname for {m.ip}")
+                    logging.exception(f"Couldn't get openstack hostname for {m.ip}")
                     m.hostname = ""
                 m.state = MachineState.READY
                 db.session.commit()
@@ -2081,34 +2108,21 @@ class OpenStackService(VirtService):
     def stop(m_id: int):
         with OpenStackService.app.app_context():
             try:
-                m = Machine.query.filter_by(id=m_id)
+                m = Machine.query.filter_by(id=m_id).first()
                 mt = m.machine_template
                 mp = mt.machine_provider
                 conn, _ = OpenStackService.conn_from_mp(mp)
 
                 # Check if the server exists
                 server = conn.compute.find_server(m.name)
-                if server is None:
-                    logging.info(
-                        f"OpenStack VM {m.name} does not exist. Marking as DELETED."
-                    )
-                    m.state = MachineState.DELETED
-                else:
-                    # Try to delete the server
-                    try:
-                        conn.compute.delete_server(server)
-                        m.state = MachineState.DELETED
-                        db.session.commit()
-                        logging.info(f"OpenStack VM {m.name} deleted successfully.")
-                    except Exception:
-                        logging.exception(f"Problem deleting OpenStack VM: ")
-                        m.state = MachineState.FAILED
-                        db.session.commit()
+                # Try to delete the server
+                conn.compute.delete_server(server)
+                logging.info(f"OpenStack VM {m.name} deleted successfully.")
 
             except Exception as e:
                 logging.exception(f"Couldn't stop openstack vm: ")
-                m.state = MachineState.FAILED
-                db.session.commit()
+            m.state = MachineState.DELETED
+            db.session.commit()
 
     @log_function_call
     @staticmethod
@@ -2467,8 +2481,8 @@ class LibvirtService(VirtService):
     @staticmethod
     def stop(m_id: int):
         with LibvirtService.app.app_context():
-            m = Machine.query.filter_by(id=m_id).first()
             try:
+                m = Machine.query.filter_by(id=m_id).first()
                 mt = m.machine_template
                 mp = mt.machine_provider
                 vm_name = m.name
@@ -2550,6 +2564,7 @@ def create_initial_db():
         if not User.query.filter_by(username="admin").first():
             logging.warning("Creating default data.")
             demo_source1 = DataSource(
+                name="Demo Experiment 1",
                 source_username="root",
                 source_host="localhost",
                 source_port="22",
@@ -2557,6 +2572,7 @@ def create_initial_db():
                 data_size="123",
             )
             demo_source2 = DataSource(
+                name="Demo Experiment 2",
                 source_username="root",
                 source_host="localhost",
                 source_port="22",
@@ -2564,6 +2580,7 @@ def create_initial_db():
                 data_size="321",
             )
             demo_source3 = DataSource(
+                name="Demo Experiment 3",
                 source_username="root",
                 source_host="localhost",
                 source_port="22",
@@ -2572,7 +2589,7 @@ def create_initial_db():
             )
 
             admin_group = Group(name="admins")
-            normal_user_group = Group(name="XRAY scientists")
+            tester_group = Group(name="Testers")
 
             admin_user = User(
                 is_enabled=True,
@@ -2580,26 +2597,26 @@ def create_initial_db():
                 given_name="Admin",
                 family_name="Admin",
                 group=admin_group,
-                language="zh",
+                language="en",
                 is_admin=True,
                 email="admin@ada.stfc.ac.uk",
                 data_sources=[demo_source1, demo_source2],
             )
-            admin_password = gen_token(16)
+            admin_password = gen_token(8)
             logging.info(f"Created user: username: admin password: {admin_password}")
             admin_user.set_password(admin_password)
             normal_user = User(
                 is_enabled=True,
-                username="xrayscientist",
-                given_name="John",
+                username="user",
+                given_name="Name",
                 family_name="Smith",
-                group=normal_user_group,
-                language="zh",
+                group=tester_group,
+                language="en",
                 is_admin=False,
                 email="xrays.smith@llnl.gov",
                 data_sources=[demo_source2, demo_source3],
             )
-            normal_user_password = gen_token(16)
+            normal_user_password = gen_token(8)
             normal_user.set_password(normal_user_password)
             logging.info(
                 f"Created user: username: xrayscientist password: {normal_user_password}"
@@ -2637,9 +2654,24 @@ def create_initial_db():
                     "project_name": "IDAaaS-Dev",
                 },
             )
+            imperial_os_machine_provider = MachineProvider(
+                name="Imperial OpenStack",
+                type="openstack",
+                customer="unknown",
+                provider_data={
+                    # TODO add provider core, mem, hdd limits
+                    # and enforcement in /new_machine
+                    "auth_url": "",
+                    "user_domain_name": "",
+                    "project_domain_name": "Default",
+                    "username": "",
+                    "password": "",
+                    "project_name": "daaas",
+                },
+            )
 
             test_machine_template1 = MachineTemplate(
-                name="Muon analysis template",
+                name="Muon analysis",
                 type="libvirt",
                 memory_limit_gb=16,
                 cpu_limit_cores=4,
@@ -2656,13 +2688,13 @@ def create_initial_db():
                 },
             )
             test_machine_template2 = MachineTemplate(
-                name="XRAY analysis template",
+                name="XRAY analysis",
                 type="docker",
                 memory_limit_gb=16,
                 cpu_limit_cores=4,
                 image="workspace",
                 os_username="ubuntu",
-                group=normal_user_group,
+                group=admin_group,
                 machine_provider=docker_machine_provider,
                 description="This is a docker machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",
                 extra_data={
@@ -2670,18 +2702,18 @@ def create_initial_db():
                 },
             )
             test_machine_template3 = MachineTemplate(
-                name="STFC test template",
+                name="STFC test",
                 type="openstack",
                 memory_limit_gb=32,
                 disk_size_gb=200,
                 cpu_limit_cores=8,
                 image="denis_dev_20230511",
                 os_username="ubuntu",
-                group=normal_user_group,
+                group=tester_group,
                 machine_provider=stfc_os_machine_provider,
                 description="This is a STFC openstack template that's added by default when you're running in debug mode.",
                 extra_data={
-                    "flavor_name": "c2.large",
+                    "flavor_name": "l3.tiny",
                     "network_uuid": "5be315b7-7ebd-4254-97fe-18c1df501538",
                     "vol_size": "200",
                     "has_https": True,
@@ -2690,16 +2722,42 @@ def create_initial_db():
                         {"name": "HTTPS"},
                         {"name": "SSH"},
                     ],
-                    "quota": 32,
+                    "quota": 4,
+                },
+            )
+            test_machine_template4 = MachineTemplate(
+                name="Imperial test",
+                type="openstack",
+                memory_limit_gb=512,
+                disk_size_gb=200,
+                cpu_limit_cores=64,
+                image="denis_dev_20230511",
+                os_username="ubuntu",
+                group=tester_group,
+                machine_provider=imperial_os_machine_provider,
+                description="This is a Imperial openstack template that's added by default when you're running in debug mode.",
+                extra_data={
+                    "flavor_name": "daaas.gpu",
+                    "network_uuid": "5be315b7-7ebd-4254-97fe-18c1df501538",
+                    "vol_size": "200",
+                    "has_https": True,
+                    "security_groups": [
+                        {"name": "HTTP"},
+                        {"name": "HTTPS"},
+                        {"name": "SSH"},
+                    ],
+                    "quota": 8,
                 },
             )
 
             db.session.add(admin_group)
             db.session.add(admin_user)
-            db.session.add(normal_user_group)
+            db.session.add(tester_group)
             db.session.add(normal_user)
             db.session.add(libvirt_machine_provider)
             db.session.add(docker_machine_provider)
+            db.session.add(imperial_os_machine_provider)
+            db.session.add(test_machine_template4)
             db.session.add(test_machine_template3)
             db.session.add(test_machine_template2)
             db.session.add(test_machine_template1)

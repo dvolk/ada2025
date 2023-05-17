@@ -40,7 +40,7 @@
           <div class="w3-row">
             <div class="w3-col m7">
               <p>{{ mt.description }}</p>
-              <p>{{ gettext("Created:") }} {{ humanize.naturaldelta(now - mt.creation_date) }}</p>
+              <p>{{ gettext("Created:") }} {{ humanize.naturaldelta(now - mt.creation_date) }} {{ gettext("ago") }}</p>
             </div>
             <div class="w3-col m5 w3-right-align">
               <p>
@@ -85,7 +85,7 @@
           <div class="w3-row" style="display: flex; align-items: center;">
             <div class="w3-col m6" style="display: flex; align-items: center;">
               <h3>
-                {{ icon('cube') }} {{ machine.name }}
+                {{ icon('cube') }} {{ machine.display_name }}
               </h3>
 
             </div>
@@ -120,12 +120,12 @@
                 <button
                   class="w3-button w3-blue w3-round"
                   title="Rename machine"
-                  onclick="renameObject('{{ machine.name }}', {{ machine.id }})"
+                  onclick='renameObject({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
                   >
                   {{ icon('pen') }}
                 </button>
               {% endif %}
-              <a href="{{ url_for('report_problem', machine_name=machine.name, title=gettext('Problem with machine ') + machine.name ) }}"
+              <a href="{{ url_for('report_problem', machine_id=machine.id, title=gettext('Problem with machine ') + machine.display_name ) }}"
                  class="w3-button w3-blue-gray w3-round"
                  title={{ gettext("Report problem") }}>
                  {{ icon('flag') }}
