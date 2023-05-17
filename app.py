@@ -62,7 +62,8 @@ from authlib.integrations.flask_client import OAuth
 from werkzeug.middleware.proxy_fix import ProxyFix
 import jinja2
 
-# flask recaptcha uses jinja2.Markup, which doesn't exist any more, so we monkey-patch to use markupsafe.Markup
+# flask recaptcha uses jinja2.Markup, which doesn't exist any more,
+# so we monkey-patch to use markupsafe.Markup
 jinja2.Markup = Markup
 from flask_recaptcha import ReCaptcha
 
@@ -615,11 +616,9 @@ class MachineTemplate(db.Model):
     memory_limit_gb = db.Column(db.Integer, nullable=True)
     cpu_limit_cores = db.Column(db.Integer, nullable=True)
     disk_size_gb = db.Column(db.Integer, nullable=True)
-    group_id = db.Column(db.Integer, db.ForeignKey("group.id"), nullable=False)
+    group_id = db.Column(db.Integer, db.ForeignKey("group.id"))
     group = db.relationship("Group", back_populates="machine_templates")
-    machine_provider_id = db.Column(
-        db.Integer, db.ForeignKey("machine_provider.id"), nullable=False
-    )
+    machine_provider_id = db.Column(db.Integer, db.ForeignKey("machine_provider.id"))
     machine_provider = db.relationship(
         "MachineProvider", back_populates="machine_templates"
     )
@@ -787,7 +786,7 @@ class ProblemReport(db.Model):
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
     is_hidden = db.Column(db.Boolean, nullable=False, default=False)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     user = db.relationship("User", back_populates="problem_reports")
     machine_id = db.Column(db.Integer, db.ForeignKey("machine.id"))
     machine = db.relationship("Machine", back_populates="problem_reports")
@@ -2058,36 +2057,46 @@ class OpenStackService(VirtService):
                 if not flavor:
                     raise ValueError(f"OpenStack flavor {flavor_name} not found.")
 
-                # Create a bootable volume from the specified image
-                cinder = cinderclient.Client("3", session=conn.session)
                 image = conn.compute.find_image(vol_image)
                 if not image:
                     raise ValueError(f"OpenStack image {vol_image} not found.")
 
-                volume = cinder.volumes.create(
-                    size=vol_size,
-                    imageRef=image.id,
-                    name=f"{vm_name}_boot",
-                )
+                if vol_size:
+                    # Create a bootable volume from the specified image
+                    cinder = cinderclient.Client("3", session=conn.session)
 
-                OpenStackService.wait_for_volume(env, volume.id)
+                    volume = cinder.volumes.create(
+                        size=vol_size,
+                        imageRef=image.id,
+                        name=f"{vm_name}_boot",
+                    )
 
-                # Create the server (VM)
-                server = conn.compute.create_server(
-                    name=vm_name,
-                    flavor_id=flavor.id,
-                    networks=[{"uuid": network_uuid}],
-                    security_groups=security_groups,
-                    block_device_mapping_v2=[
-                        {
-                            "boot_index": "0",
-                            "uuid": volume.id,
-                            "source_type": "volume",
-                            "destination_type": "volume",
-                            "delete_on_termination": True,
-                        }
-                    ],
-                )
+                    OpenStackService.wait_for_volume(env, volume.id)
+
+                    # Create the server (VM)
+                    server = conn.compute.create_server(
+                        name=vm_name,
+                        flavor_id=flavor.id,
+                        networks=[{"uuid": network_uuid}],
+                        security_groups=security_groups,
+                        block_device_mapping_v2=[
+                            {
+                                "boot_index": "0",
+                                "uuid": volume.id,
+                                "source_type": "volume",
+                                "destination_type": "volume",
+                                "delete_on_termination": True,
+                            }
+                        ],
+                    )
+                else:
+                    server = conn.compute.create_server(
+                        name=vm_name,
+                        flavor_id=flavor.id,
+                        networks=[{"uuid": network_uuid}],
+                        security_groups=security_groups,
+                        image_id=image.id,
+                    )
 
                 OpenStackService.wait_for_vm_state(env, server.id, "ACTIVE")
 
@@ -2121,7 +2130,7 @@ class OpenStackService(VirtService):
                 conn.compute.delete_server(server)
                 logging.info(f"OpenStack VM {m.name} deleted successfully.")
 
-            except Exception as e:
+            except Exception:
                 logging.exception(f"Couldn't stop openstack vm: ")
             m.state = MachineState.DELETED
             db.session.commit()
@@ -2607,21 +2616,21 @@ def create_initial_db():
             admin_password = gen_token(8)
             logging.info(f"Created user: username: admin password: {admin_password}")
             admin_user.set_password(admin_password)
-            normal_user = User(
+            tester_user = User(
                 is_enabled=True,
-                username="user",
-                given_name="Name",
-                family_name="Smith",
+                username="tester",
+                given_name="NoName",
+                family_name="NoFamilyName",
                 group=tester_group,
                 language="en",
                 is_admin=False,
                 email="xrays.smith@llnl.gov",
                 data_sources=[demo_source2, demo_source3],
             )
-            normal_user_password = gen_token(8)
-            normal_user.set_password(normal_user_password)
+            tester_user_password = gen_token(8)
+            tester_user.set_password(tester_user_password)
             logging.info(
-                f"Created user: username: xrayscientist password: {normal_user_password}"
+                f"Created user: username: tester password: {tester_user_password}"
             )
 
             docker_machine_provider = MachineProvider(
@@ -2656,41 +2665,10 @@ def create_initial_db():
                     "project_name": "IDAaaS-Dev",
                 },
             )
-            imperial_os_machine_provider = MachineProvider(
-                name="Imperial OpenStack",
-                type="openstack",
-                customer="unknown",
-                provider_data={
-                    # TODO add provider core, mem, hdd limits
-                    # and enforcement in /new_machine
-                    "auth_url": "",
-                    "user_domain_name": "",
-                    "project_domain_name": "Default",
-                    "username": "",
-                    "password": "",
-                    "project_name": "daaas",
-                },
-            )
 
-            test_machine_template1 = MachineTemplate(
-                name="Muon analysis",
-                type="libvirt",
-                memory_limit_gb=16,
-                cpu_limit_cores=4,
-                disk_size_gb=20,
-                # TODO add hdd size
-                image="debian11-5",
-                os_username="ubuntu",
-                group=admin_group,
-                machine_provider=libvirt_machine_provider,
-                description="This is a libvirt machine template that's added by default when you're running in debug mode. It references the image \"debian11-5\"",
-                extra_data={
-                    # TODO maybe make this a column
-                    "quota": 3,
-                },
-            )
+            # docker test
             test_machine_template2 = MachineTemplate(
-                name="XRAY analysis",
+                name="Docker bare demo",
                 type="docker",
                 memory_limit_gb=16,
                 cpu_limit_cores=4,
@@ -2698,13 +2676,30 @@ def create_initial_db():
                 os_username="ubuntu",
                 group=admin_group,
                 machine_provider=docker_machine_provider,
-                description="This is a docker machine template that's added by default when you're running in debug mode. It references the image \"workspace\"",
+                description="This is a docker machine template that's added by default when you're running in debug mode. It has a desktop but no special software installed",
                 extra_data={
                     "quota": 2,
                 },
             )
+            # libvirt test
+            test_machine_template1 = MachineTemplate(
+                name="Libvirt bare demo",
+                type="libvirt",
+                memory_limit_gb=16,
+                cpu_limit_cores=4,
+                disk_size_gb=20,
+                image="debian11-5",
+                os_username="ubuntu",
+                group=admin_group,
+                machine_provider=libvirt_machine_provider,
+                description="This is a libvirt machine template that's added by default when you're running in debug mode. It has a desktop but no special software installed",
+                extra_data={
+                    "quota": 3,
+                },
+            )
+            # stfc base image test
             test_machine_template3 = MachineTemplate(
-                name="STFC test",
+                name="STFC bare demo",
                 type="openstack",
                 memory_limit_gb=32,
                 disk_size_gb=200,
@@ -2727,42 +2722,42 @@ def create_initial_db():
                     "quota": 4,
                 },
             )
+            # stfc rfi case test
             test_machine_template4 = MachineTemplate(
-                name="Imperial test",
+                name="STFC RFI demo",
                 type="openstack",
-                memory_limit_gb=512,
-                disk_size_gb=200,
-                cpu_limit_cores=64,
-                image="denis_dev_20230511",
+                memory_limit_gb=32,
+                cpu_limit_cores=8,
+                image="rfi_demo_20230517",
                 os_username="ubuntu",
                 group=tester_group,
-                machine_provider=imperial_os_machine_provider,
-                description="This is a Imperial openstack template that's added by default when you're running in debug mode.",
+                machine_provider=stfc_os_machine_provider,
+                description="RFI demo is a prototype image that includes Fiji (with plugins TrackEM2, SIFT, BDV, MoBIE), Ilastik, napari, ICY (ec-CLEM) and MIB",
                 extra_data={
-                    "flavor_name": "daaas.gpu",
+                    "flavor_name": "l3.tiny",
                     "network_uuid": "5be315b7-7ebd-4254-97fe-18c1df501538",
-                    "vol_size": "200",
+                    "vol_size": None,
                     "has_https": True,
                     "security_groups": [
                         {"name": "HTTP"},
                         {"name": "HTTPS"},
                         {"name": "SSH"},
                     ],
-                    "quota": 8,
+                    "quota": 4,
                 },
             )
 
             db.session.add(admin_group)
             db.session.add(admin_user)
             db.session.add(tester_group)
-            db.session.add(normal_user)
-            db.session.add(libvirt_machine_provider)
+            db.session.add(tester_user)
             db.session.add(docker_machine_provider)
-            db.session.add(imperial_os_machine_provider)
-            db.session.add(test_machine_template4)
-            db.session.add(test_machine_template3)
-            db.session.add(test_machine_template2)
+            db.session.add(libvirt_machine_provider)
+            db.session.add(stfc_os_machine_provider)
             db.session.add(test_machine_template1)
+            db.session.add(test_machine_template2)
+            db.session.add(test_machine_template3)
+            db.session.add(test_machine_template4)
             db.session.commit()
 
 

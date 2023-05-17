@@ -49,7 +49,7 @@
 
     <div class="w3-sidebar w3-bar-block w3-collapse w3-card" style="width:250px;" id="mySidebar">
       <button class="w3-bar-item w3-button w3-hide-large" onclick="w3_close()">
-        <h1>{{ icon('xmark') }} Close</h1>
+        <h1>{{ icon('xmark') }} {{ gettext('Close') }}</h1>
       </button>
       <p class="w3-bar-item w3-xlarge">
         <a href="/"><img class="ada-blue" style="border-radius: 19px" src="/static/ada.png" height=38/> {{ gettext('Data Analysis') }}</a>
@@ -73,13 +73,16 @@
     </div>
 
     <div class="w3-main" style="margin-left:250px">
-
       <div class="ada-blue">
-
         <div class="w3-container">
           {% for menu_item in main_menu %}
             {% if menu_item["name"] == title %}
-              <button class="w3-button w3-hide-large" onclick="w3_open()"><h1>{{ icon('bars') }} Menu</h1></button>
+              <div class="w3-hide-large" style="width: 100%; cursor: pointer;" onclick="w3_open()">
+                <h1 style="display: flex; justify-content: space-between;">
+                  <span>{{ icon('bars') }} {{ gettext('Menu') }}</span>
+                  <span>{{ title }}</span>
+                </h1>
+              </div>
               <h1 class="w3-hide-medium w3-hide-small">{{ icon(menu_item["icon"]) }} {{ title }}</h1>
             {% endif %}
           {% endfor %}
