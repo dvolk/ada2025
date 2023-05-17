@@ -1910,7 +1910,7 @@ def share_revoke(machine_id):
 
 @app.route("/new_machine", methods=["POST"])
 @limiter.limit(
-    "100 per day, 10 per minute, 1/2 seconds", key_func=lambda: current_user.username
+    "100 per day, 10 per minute, 1/3 seconds", key_func=lambda: current_user.username
 )
 @login_required
 def new_machine():
@@ -1929,8 +1929,8 @@ def new_machine():
     machine_name = mk_safe_machine_name(current_user.username)
 
     m = Machine(
-        name=str(uuid.uuid4()),
-        display_name=f"{current_user.given_name}'s {mt.name}",
+        name=machine_name,
+        display_name=machine_name,
         ip="",
         state=MachineState.PROVISIONING,
         owner=current_user,
@@ -1961,7 +1961,9 @@ def new_machine():
 
 
 @app.route("/stop_machine", methods=["POST"])
-@limiter.limit("60 per minute")
+@limiter.limit(
+    "100 per day, 10 per minute, 1/3 seconds", key_func=lambda: current_user.username
+)
 @login_required
 def stop_machine():
     """
