@@ -2624,7 +2624,7 @@ def create_initial_db():
                 group=tester_group,
                 language="en",
                 is_admin=False,
-                email="xrays.smith@llnl.gov",
+                email="noname@example.com",
                 data_sources=[demo_source2, demo_source3],
             )
             tester_user_password = gen_token(8)
