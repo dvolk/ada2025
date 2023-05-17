@@ -2676,7 +2676,7 @@ def create_initial_db():
                 os_username="ubuntu",
                 group=admin_group,
                 machine_provider=docker_machine_provider,
-                description="This is a docker machine template that's added by default when you're running in debug mode. It has a desktop but no special software installed",
+                description="This is a docker machine template that's added by default when you're running in debug mode. It has a desktop but no special software installed. This is meant for development on a local pc.",
                 extra_data={
                     "quota": 2,
                 },
@@ -2692,7 +2692,7 @@ def create_initial_db():
                 os_username="ubuntu",
                 group=admin_group,
                 machine_provider=libvirt_machine_provider,
-                description="This is a libvirt machine template that's added by default when you're running in debug mode. It has a desktop but no special software installed",
+                description="This is a libvirt machine template that's added by default when you're running in debug mode. It has a desktop but no special software installed. This is meant for development on a local pc.",
                 extra_data={
                     "quota": 3,
                 },
@@ -2708,7 +2708,7 @@ def create_initial_db():
                 os_username="ubuntu",
                 group=tester_group,
                 machine_provider=stfc_os_machine_provider,
-                description="This is a STFC openstack template that's added by default when you're running in debug mode.",
+                description="This is a STFC openstack template that's added by default when you're running in debug mode. It has a desktop but no special software installed. ",
                 extra_data={
                     "flavor_name": "l3.tiny",
                     "network_uuid": "5be315b7-7ebd-4254-97fe-18c1df501538",
