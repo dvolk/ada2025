@@ -42,6 +42,7 @@ from flask_login import (
 from flask_admin import Admin
 from flask_admin.actions import action
 from flask_admin.contrib.sqla import ModelView
+from flask_admin.model import typefmt
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
 from wtforms.widgets import TextArea
@@ -210,6 +211,19 @@ class ProtectedModelView(ModelView):
 
     def _get_field_names(self):
         return self.model.__table__.columns.keys()
+
+    # since we're here, change the date fomat
+    column_type_formatters = dict(typefmt.BASE_FORMATTERS)
+    column_type_formatters.update(
+        {
+            datetime.datetime: lambda view, value: humanize.naturaldelta(
+                datetime.datetime.utcnow() - value
+            )
+            + " ago"
+        }
+    )
+    # since we're here... sort by id desc
+    column_default_sort = ("id", True)
 
 
 socket.setdefaulttimeout(5)
