@@ -16,6 +16,9 @@ import os
 import shlex
 from abc import ABC, abstractmethod
 import re
+import html
+import hashlib
+from functools import cache
 
 # flask and related imports
 from flask import (
@@ -108,7 +111,7 @@ def gen_token(length):
 
 app = Flask(__name__)
 
-app.config["SECRET_KEY"] = os.environ.get("ADA2025_SECRET_KEY") or gen_token(32)
+app.config["SECRET_KEY"] = os.environ.get("ADA2025_FLASK_SECRET_KEY") or gen_token(32)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "ADA2025_SQLALCHEMY_URL", "sqlite:///app.db"
 )
@@ -120,6 +123,8 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
+
+
 admin = Admin(
     url="/flaskyadmin",
     template_mode="bootstrap4",
@@ -299,6 +304,72 @@ user_data_source_association = db.Table(
     db.Column("data_source_id", db.Integer, db.ForeignKey("data_source.id")),
 )
 
+colors = [
+    "crimson",
+    "indigo",
+    "purple",
+    "salmon",
+    "seagreen",
+    "sandybrown",
+    "slategray",
+    "teal",
+    "steelblue",
+    "chocolate",
+    "darkcyan",
+    "darkgoldenrod",
+    "darkkhaki",
+    "darkorange",
+    "darkseagreen",
+    "dodgerblue",
+    "orchid",
+    "royalblue",
+    "slateblue",
+    "yellowgreen",
+]
+
+
+@cache
+def color(name):
+    # Create a hash object
+    h = hashlib.md5()
+
+    # Add the name to the hash object
+    h.update(name.encode())
+
+    # Get the hash of the name as an integer
+    name_hash = int(h.hexdigest(), 16)
+
+    # Use the hash to pick a color
+    color_code = colors[name_hash % len(colors)]
+
+    return color_code
+
+
+def _color_formatter(view, context, model, name):
+    # Check if this is a field of a related model
+    if "." in name:
+        # Split the name into the relation name and the field name
+        relation_name, field_name = name.split(".", 1)
+        # Get the related model
+        related_model = getattr(model, relation_name)
+        # Get the value of the __repr__ of the related model
+        attr_value = str(related_model) if related_model else ""
+    else:
+        # This is a field of the model itself
+        attr_value = str(getattr(model, name))
+        if attr_value == "None":
+            return Markup("")
+
+    # Escape the special HTML characters
+    attr_value_escaped = html.escape(attr_value)
+
+    color_code = color(attr_value_escaped)
+    return Markup(
+        '<div class="rounded pl-2 pr-2" style="color: #fff; background-color: {0}; text-align: center;">{1}</div>'.format(
+            color_code, attr_value_escaped
+        )
+    )
+
 
 class User(db.Model, UserMixin):
     """
@@ -395,6 +466,10 @@ class ProtectedUserModelView(ProtectedModelView):
         if form.password.data:
             model.set_password(form.password.data)
 
+    column_formatters = {
+        "group": _color_formatter,
+    }
+
 
 class DataSource(db.Model):
     """
@@ -430,9 +505,8 @@ class DataSource(db.Model):
 class ProtectedDataSourceModelView(ProtectedModelView):
     column_list = (
         "id",
-        "source_username",
+        "name",
         "source_host",
-        "source_port",
         "source_dir",
         "data_size",
         "creation_date",
@@ -451,6 +525,9 @@ class ProtectedDataSourceModelView(ProtectedModelView):
     column_sortable_list = ("id", "source_host", "data_size", "creation_date")
     column_filters = ("source_host", "source_dir", "data_size")
     column_auto_select_related = True
+    column_formatters = {
+        "source_host": _color_formatter,
+    }
 
 
 Index("source_host_source_dir_idx", DataSource.source_host, DataSource.source_dir)
@@ -502,6 +579,12 @@ class ProtectedDataTransferJobModelView(ProtectedModelView):
     column_sortable_list = ("id", "state", "creation_date")
     column_filters = ("state", "user", "data_source", "machine")
     column_auto_select_related = True
+    column_formatters = {
+        "state": _color_formatter,
+        "user": _color_formatter,
+        "machine": _color_formatter,
+        "data_source": _color_formatter,
+    }
 
 
 class Group(db.Model):
@@ -614,6 +697,8 @@ class ProtectedMachineProviderModelView(ProtectedModelView):
 
     column_formatters = {
         "provider_data": _provider_data_formatter,
+        "type": _color_formatter,
+        "customer": _color_formatter,
     }
 
     def scaffold_form(self):
@@ -696,6 +781,8 @@ class ProtectedMachineTemplateModelView(ProtectedModelView):
 
     column_formatters = {
         "extra_data": _extra_data_formatter,
+        "group": _color_formatter,
+        "type": _color_formatter,
     }
 
     def scaffold_form(self):
@@ -789,6 +876,11 @@ class ProtectedMachineModelView(ProtectedModelView):
     )
     column_filters = ("state", "owner", "machine_template")
     column_auto_select_related = True
+    column_formatters = {
+        "owner": _color_formatter,
+        "state": _color_formatter,
+        "machine_template": _color_formatter,
+    }
 
 
 class ProblemReport(db.Model):
@@ -926,6 +1018,16 @@ class ProtectedAuditModelView(ProtectedModelView):
         "creation_date",
         "finished_date",
     )
+    column_formatters = {
+        "sesh_id": _color_formatter,
+        "user": _color_formatter,
+        "state": _color_formatter,
+        "remote_ip": _color_formatter,
+        "action": _color_formatter,
+        "state": _color_formatter,
+        "machine": _color_formatter,
+        "data_transfer_job": _color_formatter,
+    }
 
 
 # add flask-sqlalchemy views to flask-admin
