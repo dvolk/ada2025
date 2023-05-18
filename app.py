@@ -2280,7 +2280,9 @@ class OpenStackService(VirtService):
                         image_id=image.id,
                     )
 
-                OpenStackService.wait_for_vm_state(env, server.id, "ACTIVE")
+                OpenStackService.wait_for_vm_state(
+                    env, server.id, "ACTIVE", timeout=2400
+                )
 
                 # wait for ip
                 m.ip = OpenStackService.wait_for_vm_ip(conn, server.id, network.id)
