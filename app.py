@@ -96,12 +96,23 @@ except Exception:
     hostname = ""
 
 
+def gen_token(length):
+    """
+    Generate a cryptographically secure alphanumeric string of the given length.
+    """
+    alphabet = string.ascii_letters + string.digits
+    secure_string = "".join(secrets.choice(alphabet) for _ in range(length))
+    return secure_string
+
+
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "aVAFR068QBytObmP37e8Fhq44RSn4Ad5"
+
+app.config["SECRET_KEY"] = os.environ.get("ADA2025_SECRET_KEY") or gen_token(32)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "ADA2025_SQLALCHEMY_URL", "sqlite:///app.db"
 )
 app.config["FLASK_ADMIN_FLUID_LAYOUT"] = True
+app.config["FLASK_ADMIN_SWATCH"] = "journal"
 logging.info(f"Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
 
 db = SQLAlchemy(app)
@@ -167,13 +178,10 @@ class JsonTextAreaField(TextAreaField):
 # make the flask-admin interface only accessible to admins
 class ProtectedModelView(ModelView):
     def is_accessible(self):
-        if not (current_user.is_authenticated and current_user.is_admin):
-            return redirect(url_for("login"))
-        else:
-            return True
+        return current_user.is_authenticated and current_user.is_admin
 
     def inaccessible_callback(self, name, **kwargs):
-        return redirect(url_for("welcome"))
+        return redirect(url_for("login"))
 
     # since we're here, add an option to clone rows
     @action(
@@ -278,21 +286,14 @@ user_data_source_association = db.Table(
 )
 
 
-def gen_token(length):
-    """
-    Generate a cryptographically secure alphanumeric string of the given length.
-    """
-    alphabet = string.ascii_letters + string.digits
-    secure_string = "".join(secrets.choice(alphabet) for _ in range(length))
-    return secure_string
-
-
 class User(db.Model, UserMixin):
     """
     User model, also used for flask-login
     """
 
     id = db.Column(db.Integer, primary_key=True)
+    # small token generated every time a User object is created
+    sesh_id = db.Column(db.String(2), nullable=False, default=lambda: gen_token(2))
     is_enabled = db.Column(db.Boolean, nullable=False, default=False)
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
     username = db.Column(db.String(100), unique=True, nullable=False)
@@ -826,6 +827,7 @@ class ProtectedProblemReportModelView(ProtectedModelView):
 class Audit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     remote_ip = db.Column(db.String(16))
+    sesh_id = db.Column(db.String(2))
     action = db.Column(db.String(128))
     state = db.Column(db.String(128))
     creation_date = db.Column(db.DateTime, default=datetime.datetime.utcnow)
@@ -841,6 +843,7 @@ class Audit(db.Model):
 def create_audit(action, user=None, machine=None, data_transfer_job=None):
     audit = Audit(
         user=user,
+        sesh_id=user.sesh_id if user and user.is_authenticated else None,
         action=action,
         state="running",
         remote_ip=get_remote_address(),
@@ -859,23 +862,36 @@ def get_audit(audit_id):
     return audit
 
 
-def update_audit(audit, state="running", machine=None, data_transfer_job=None, F=False):
+def update_audit(
+    audit, state="running", user=None, machine=None, data_transfer_job=None
+):
     audit.state = state
     if machine:
         audit.machine = machine
+    if user and user.is_authenticated:
+        audit.user = user
+        audit.sesh_id = user.sesh_id
     if data_transfer_job:
         audit.data_transfer_job = data_transfer_job
     db.session.commit()
 
 
-def finish_audit(audit, state, F=False):
+def finish_audit(audit, state, user=None, machine=None, data_transfer_job=None):
     audit.state = state
+    if machine:
+        audit.machine = machine
+    if user and user.is_authenticated:
+        audit.user = user
+        audit.sesh_id = user.sesh_id
+    if data_transfer_job:
+        audit.data_transfer_job = data_transfer_job
     audit.finished_date = datetime.datetime.utcnow()
     db.session.commit()
 
 
 class ProtectedAuditModelView(ProtectedModelView):
     column_list = (
+        "sesh_id",
         "user",
         "remote_ip",
         "action",
@@ -1216,6 +1232,7 @@ def google_authorize():
 
         if user and user.is_enabled and user.group:
             # Log the user in
+            user.sesh_id = gen_token(2)
             login_user(user)
             return redirect(url_for("index"))
         else:
@@ -1343,10 +1360,9 @@ def login():
 
             # local users or oauth2 users who have set a password
             if user and user.check_password(form.password.data):
-                audit.user = user
                 # pw ok but account not activated
                 if not user.is_enabled:
-                    finish_audit(audit, "acc not activated")
+                    finish_audit(audit, "acc not activated", user=user)
                     flash(
                         gettext(
                             "Account not activated. If it's been more than 24 hours please contact support."
@@ -1361,8 +1377,9 @@ def login():
                     )
 
                 # log user in
+                user.sesh_id = gen_token(2)
                 login_user(user)
-                finish_audit(audit, "ok")
+                finish_audit(audit, "ok", user=user)
                 flash(gettext("Logged in successfully."), "success")
                 return redirect(url_for("index"))
             else:
@@ -1516,8 +1533,7 @@ def register():
             db.session.add(new_user)
             db.session.commit()
 
-            audit.user = new_user
-            finish_audit(audit, "ok")
+            finish_audit(audit, "ok", user=new_user)
 
             flash(
                 gettext(
