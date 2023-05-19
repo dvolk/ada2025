@@ -920,6 +920,7 @@ class ProtectedProblemReportModelView(ProtectedModelView):
     )
     column_searchable_list = ("title", "description")
     column_filters = ("is_hidden", "user", "machine", "data_transfer_job")
+    column_auto_select_related = True
     form_columns = (
         "title",
         "description",
@@ -1008,6 +1009,7 @@ class ProtectedAuditModelView(ProtectedModelView):
     )
     column_searchable_list = ("action", "state")
     column_filters = ("action", "state")
+    column_auto_select_related = True
     form_columns = (
         "user",
         "action",

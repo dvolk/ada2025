@@ -13,14 +13,21 @@
 "GOOGLE_OAUTH2_CLIENT_SECRET"] %}
     <h3>Config</h3>
     <table class="w3-table-all">
+        <colgroup>
+            <col width="0%" />
+            <col width="100%" />
+            <col width="0%" />
+        </colgroup>
         <thead>
             <th>Key</th>
             <th>Value</th>
         </thead>
         {% for key in keys %}
         <tr>
-            <td>{{ key }}</td>
             <td>
+                {{ key }}
+            </td>
+            <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:1px;">
                 {% if not env.get(key) %}
                 {{ icon('xmark') }}
                 {% elif 'SECRET' in key %}
@@ -28,6 +35,9 @@
                 {% else %}
                 {{ env.get(key) }}
                 {% endif %}
+            </td>
+            <td>
+                <a style="w3-btn w3-red">{{ icon('pen-to-square') }}</a>
             </td>
         </tr>
         {% endfor %}
