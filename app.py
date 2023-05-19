@@ -1021,7 +1021,16 @@ class ProtectedAuditModelView(ProtectedModelView):
         "creation_date",
     )
     column_searchable_list = ("action", "state")
-    column_filters = ("action", "state")
+    column_filters = (
+        "sesh_id",
+        "user",
+        "remote_ip",
+        "action",
+        "state",
+        "machine",
+        "data_transfer_job",
+        "creation_date",
+    )
     column_auto_select_related = True
     form_columns = (
         "user",
