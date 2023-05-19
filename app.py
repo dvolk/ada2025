@@ -2973,7 +2973,7 @@ def create_initial_db():
             )
 
             # docker test
-            test_machine_template2 = MachineTemplate(
+            test_machine_template1 = MachineTemplate(
                 name="Docker bare demo",
                 type="docker",
                 memory_limit_gb=16,
@@ -2988,7 +2988,7 @@ def create_initial_db():
                 },
             )
             # libvirt test
-            test_machine_template1 = MachineTemplate(
+            test_machine_template2 = MachineTemplate(
                 name="Libvirt bare demo",
                 type="libvirt",
                 memory_limit_gb=16,
@@ -3018,7 +3018,6 @@ def create_initial_db():
                 extra_data={
                     "flavor_name": "l3.tiny",
                     "network_uuid": "5be315b7-7ebd-4254-97fe-18c1df501538",
-                    "vol_size": "200",
                     "has_https": True,
                     "security_groups": [
                         {"name": "HTTP"},
@@ -3034,6 +3033,7 @@ def create_initial_db():
                 type="openstack",
                 memory_limit_gb=32,
                 cpu_limit_cores=8,
+                disk_size_gb=200,
                 image="rfi_demo_20230517",
                 os_username="ubuntu",
                 group=tester_group,
@@ -3041,6 +3041,31 @@ def create_initial_db():
                 description="RFI demo is a prototype image that includes Fiji (with plugins TrackEM2, SIFT, BDV, MoBIE), Ilastik, napari, ICY (ec-CLEM) and MIB",
                 extra_data={
                     "flavor_name": "l3.tiny",
+                    "network_uuid": "5be315b7-7ebd-4254-97fe-18c1df501538",
+                    "vol_size": None,
+                    "has_https": True,
+                    "security_groups": [
+                        {"name": "HTTP"},
+                        {"name": "HTTPS"},
+                        {"name": "SSH"},
+                    ],
+                    "quota": 4,
+                },
+            )
+            # stfc rfi case test
+            test_machine_template5 = MachineTemplate(
+                name="STFC RFI demo GPU",
+                type="openstack",
+                memory_limit_gb=90,
+                cpu_limit_cores=12,
+                disk_size_gb=700,
+                image="rfi_demo_20230517",
+                os_username="ubuntu",
+                group=tester_group,
+                machine_provider=stfc_os_machine_provider,
+                description="RFI demo is a prototype image that includes Fiji (with plugins TrackEM2, SIFT, BDV, MoBIE), Ilastik, napari, ICY (ec-CLEM) and MIB. This template has a nvidia GPU",
+                extra_data={
+                    "flavor_name": "g-rtx4000.x1",
                     "network_uuid": "5be315b7-7ebd-4254-97fe-18c1df501538",
                     "vol_size": None,
                     "has_https": True,
@@ -3064,6 +3089,7 @@ def create_initial_db():
             db.session.add(test_machine_template2)
             db.session.add(test_machine_template3)
             db.session.add(test_machine_template4)
+            db.session.add(test_machine_template5)
             db.session.commit()
 
 
