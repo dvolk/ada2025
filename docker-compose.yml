@@ -36,6 +36,7 @@ services:
         target: /root/.ssh
     environment:
       - ADA2025_SQLALCHEMY_URL=postgresql://postgres:postgres@db:5432/postgres
+      - ADA2025_FLASK_SECRET_KEY=${ADA2025_FLASK_SECRET_KEY}
       - GOOGLE_OAUTH2_CLIENT_ID=${GOOGLE_OAUTH2_CLIENT_ID}
       - GOOGLE_OAUTH2_CLIENT_SECRET=${GOOGLE_OAUTH2_CLIENT_SECRET}
       - LOGIN_RECAPTCHA=${LOGIN_RECAPTCHA}
