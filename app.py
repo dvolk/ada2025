@@ -2408,6 +2408,7 @@ class OpenStackService(VirtService):
 
     @staticmethod
     def wait_for_vm_state(env, server_id, state, timeout=300):
+        # TODO stop looping if we get to an error state
         start_time = time.time()
 
         while (duration := time.time() - start_time) < timeout:
