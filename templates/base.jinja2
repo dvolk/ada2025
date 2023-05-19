@@ -80,7 +80,10 @@
               <div class="w3-hide-large" style="width: 100%; cursor: pointer; padding-right: 6px;" onclick="w3_open()">
                 <h1 style="display: flex; justify-content: space-between;">
                   <span>{{ icon('bars') }} {{ gettext('Menu') }}</span>
-                  <span>{{ title }}</span>
+                  {% if gettext(title) == menu_item["name"] %}
+                    {% set ico = icon(menu_item['icon']) %}
+                  {% endif %}
+                  <span>{{ ico }} {{ title }}</span>
                 </h1>
               </div>
               <h1 class="w3-hide-medium w3-hide-small">{{ icon(menu_item["icon"]) }} {{ title }}</h1>
@@ -106,7 +109,7 @@
         </div>
 
         <div class="w3-container w3-panel w3-white">
-          <p>ADA {{ version }} on {{ hostname }} - <a href="/about">About</a></p>
+            <p style="color: #333;">Ada &nbsp; {{ icon('code-commit') }} {{ version }} <small>on</small> <i class="fa-brands fa-fw fa-docker"></i> {{ hostname }}</p>
         </div>
       </div>
     </div>
