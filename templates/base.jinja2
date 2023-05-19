@@ -109,8 +109,14 @@
         </div>
 
         <div class="w3-container w3-panel w3-white">
-            <p style="color: #333;">Ada &nbsp; {{ icon('code-commit') }} {{ version }} <small>on</small> <i class="fa-brands fa-fw fa-docker"></i> {{ hostname }}</p>
+            <p style="color: #555;">
+                Ada
+                {% if version and hostname %}
+                &nbsp; {{ icon('code-commit') }} {{ version }} &nbsp; on &nbsp; <i class="fa-brands fa-fw fa-docker"></i> {{ hostname }}
+            {% endif %}
+          </p>
         </div>
+
       </div>
     </div>
 

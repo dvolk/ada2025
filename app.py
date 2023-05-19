@@ -150,6 +150,7 @@ recaptcha.init_app(app)
 LOGIN_RECAPTCHA = os.environ.get("LOGIN_RECAPTCHA", False)
 
 
+# change the number of rows in flask-admin modelviews to 15
 class CustomTextAreaWidget(TextArea):
     def __call__(self, field, **kwargs):
         kwargs.setdefault("rows", 15)  # Change to the number of rows you want
@@ -217,7 +218,7 @@ class ProtectedModelView(ModelView):
     def _get_field_names(self):
         return self.model.__table__.columns.keys()
 
-    # since we're here, change the date fomat
+    # since we're here, change the date fomat to humanize naturaldelta
     column_type_formatters = dict(typefmt.BASE_FORMATTERS)
     column_type_formatters.update(
         {
@@ -235,6 +236,7 @@ socket.setdefaulttimeout(5)
 
 
 def get_hostname(ip):
+    # get the hostname of an ip
     try:
         hostname, _, _ = socket.gethostbyaddr(ip)
         return hostname
@@ -248,6 +250,7 @@ thread_id_counter = 0
 thread_id_lock = threading.Lock()
 
 
+# make a small thread id for logging
 def get_small_thread_id():
     global thread_id_counter, thread_id_map, thread_id_lock
     thread_id = threading.get_ident()
@@ -329,6 +332,7 @@ colors = [
 
 
 @cache
+# pick a bootstrap color for coloring flask-admin table cells
 def color(name):
     # Create a hash object
     h = hashlib.md5()
@@ -345,6 +349,8 @@ def color(name):
     return color_code
 
 
+# a formatter for flask-admin modelview cells that picks a background color
+# based on the name of the field. handles foreign keys too
 def _color_formatter(view, context, model, name):
     # Check if this is a field of a related model
     if "." in name:
@@ -412,6 +418,7 @@ class User(db.Model, UserMixin):
     )
     data_transfer_jobs = db.relationship("DataTransferJob", back_populates="user")
     problem_reports = db.relationship("ProblemReport", back_populates="user")
+    audit_events = db.relationship("Audit", back_populates="user")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -560,6 +567,7 @@ class DataTransferJob(db.Model):
     problem_reports = db.relationship(
         "ProblemReport", back_populates="data_transfer_job"
     )
+    audit_events = db.relationship("Audit", back_populates="data_transfer_job")
 
     def __repr__(self):
         return f"<Data {self.data_source_id}>"
@@ -832,6 +840,7 @@ class Machine(db.Model):
     machine_template = db.relationship("MachineTemplate", back_populates="machines")
     data_transfer_jobs = db.relationship("DataTransferJob", back_populates="machine")
     problem_reports = db.relationship("ProblemReport", back_populates="machine")
+    audit_events = db.relationship("Audit", back_populates="machine")
 
     def __repr__(self):
         return f"<{self.display_name}>"
@@ -931,6 +940,7 @@ class ProtectedProblemReportModelView(ProtectedModelView):
     )
 
 
+# log some stuff like logins and machine operations
 class Audit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     remote_ip = db.Column(db.String(16))
@@ -948,6 +958,8 @@ class Audit(db.Model):
 
 
 def create_audit(action, user=None, machine=None, data_transfer_job=None):
+    # to be called at the beginning of the function or block that
+    # is to be audited
     audit = Audit(
         user=user,
         sesh_id=user.sesh_id if user and user.is_authenticated else None,
@@ -983,6 +995,7 @@ def update_audit(
     db.session.commit()
 
 
+# the last audit update, sets the .finished_date
 def finish_audit(audit, state, user=None, machine=None, data_transfer_job=None):
     audit.state = state
     if machine:
@@ -1195,6 +1208,7 @@ def inject_globals():
     }
 
 
+# adds request logging to waitress
 class RequestLoggingMiddleware:
     def __init__(self, app):
         self.app = app
@@ -1225,6 +1239,7 @@ def load_user(user_id):
     return User.query.filter_by(id=int(user_id)).first()
 
 
+# get the user's language or pick it based on browser flags
 def get_locale():
     if current_user and current_user.is_authenticated:
         if current_user.language:
@@ -1276,12 +1291,15 @@ def google_login():
     # in, they're sent back to google_authorize, where we
     # make an account for them from the data that google
     # provided
+    audit = create_audit("google login")
     google = oauth.create_client("google")
     redirect_uri = url_for("google_authorize", _external=True)
+    update_audit(audit, state="ok")
     return google.authorize_redirect(redirect_uri)
 
 
 def gen_unique_username(email, max_attempts=1000):
+    # try really hard to generate a unique username from an email
     username = ""
     attempt = 0
     try:
@@ -1316,11 +1334,13 @@ def google_authorize():
     # google has authenticated the user and sent them back
     # here, make an account if they don't have one and log
     # them in
+    audit = create_audit("google auth")
     try:
         google = oauth.create_client("google")
         google.authorize_access_token()
         resp = google.get("userinfo")
         if resp.status_code != 200:
+            update_audit(audit, state="bad userinfo")
             raise Exception("Failed to get user info")
         user_info = resp.json()
 
@@ -1328,12 +1348,14 @@ def google_authorize():
 
         # Update or create the user
         if user:
+            update_audit(audit, "existing user", user=user)
             # Update user info if needed
             user.given_name = user_info.get("given_name", user.given_name)
             user.family_name = user_info.get("family_name", user.family_name)
             user.provider_id = user_info.get("id", user.provider_id)
         else:
             # Create a new user
+            update_audit(audit, "new user 1")
             user = User(
                 username=gen_unique_username(user_info.get("email", "")),
                 given_name=user_info.get("given_name", ""),
@@ -1345,6 +1367,7 @@ def google_authorize():
                 timezone="Europe/London",
             )
             db.session.add(user)
+            update_audit(audit, "new user 2", user=user)
 
         db.session.commit()
 
@@ -1352,6 +1375,7 @@ def google_authorize():
             # Log the user in
             user.sesh_id = gen_token(2)
             login_user(user)
+            update_audit(audit, "ok")
             return redirect(url_for("index"))
         else:
             # Show activation message
@@ -1360,9 +1384,11 @@ def google_authorize():
                     "Your account has been created, but it has to be activated by staff, which typically happens within 24 hours. When it's activated, you'll be able to log in using Google."
                 )
             )
+            update_audit(audit, "not activated")
             return redirect(url_for("login"))
 
     except Exception as e:
+        update_audit(audit, "error")
         # Log the error and show an error message
         app.logger.error(e)
         flash(
@@ -1378,6 +1404,7 @@ def google_authorize():
 @limiter.limit("60 per minute")
 @login_required
 def visit_machine(m_id):
+    # redirect the user to the machine
     audit = create_audit("visit machine", user=current_user)
     m = Machine.query.filter_by(id=m_id).first()
     if not m:
@@ -1420,7 +1447,9 @@ def login():
 
     # log out users who go to the login page
     if current_user.is_authenticated:
+        create_audit("logout", user=current_user)
         logout_user()
+        finish_audit(audit, state="ok")
         flash(gettext("You've been logged out."))
         return render_template(
             "login.jinja2",
@@ -1582,6 +1611,7 @@ class RegistrationForm(FlaskForm):
 @app.route("/register", methods=["GET", "POST"])
 @limiter.limit("60 per hour")
 def register():
+    # register a user account
     form = RegistrationForm()
 
     if request.method == "POST":
@@ -1680,7 +1710,9 @@ def index():
 @limiter.limit("60 per minute")
 @login_required
 def logout():
+    audit = create_audit("logout", user=current_user)
     logout_user()
+    finish_audit(audit, state="ok")
     return redirect(url_for("index"))
 
 
@@ -1764,7 +1796,7 @@ def machines():
 
 
 def contains_non_alphanumeric_chars(string):
-    # or -
+    # alphanum or -
     for char in string:
         if not char.isalnum() and char != "-":
             return True
@@ -1774,6 +1806,7 @@ def contains_non_alphanumeric_chars(string):
 @limiter.limit("60 per minute")
 @login_required
 def rename_machine():
+    # allow the user to rename a machine
     machine_id = request.form.get("machine_id")
     machine_new_display_name = request.form.get("machine_new_name")
 
@@ -2158,7 +2191,7 @@ def share_accept(machine_token):
 def share_revoke(machine_id):
     """
     The owner revokes all shares. We do this by removing shared_users
-    and resetting the machine token
+    and resetting the machine share token
     """
     machine = Machine.query.filter_by(id=machine_id).first_or_404()
     if current_user != machine.owner:
@@ -2460,6 +2493,7 @@ class OpenStackService(VirtService):
     @log_function_call
     @staticmethod
     def wait_for_vm_ip(conn, server_id, network_uuid, timeout=600):
+        # wait for the openstack vm to acquire an ip
         start_time = time.time()
         server = None
 
@@ -2487,6 +2521,7 @@ class OpenStackService(VirtService):
 
     @staticmethod
     def wait_for_volume(env, volume_id, timeout=1200):
+        # wait for the openstack volume to be available
         start_time = time.time()
 
         while (duration := time.time() - start_time) < timeout:
@@ -2512,6 +2547,7 @@ class OpenStackService(VirtService):
 
     @staticmethod
     def wait_for_vm_state(env, server_id, state, timeout=300):
+        # wait for the vm to be ready
         # TODO stop looping if we get to an error state
         start_time = time.time()
 
@@ -2539,6 +2575,7 @@ class OpenStackService(VirtService):
     @log_function_call
     @staticmethod
     def get_vm_by_ip(conn, target_ip):
+        # get the vm object from its ip
         servers = conn.compute.servers()
 
         for server in servers:
@@ -2650,6 +2687,7 @@ class DockerService(VirtService):
     @log_function_call
     @staticmethod
     def get_container_by_ip(client, ip_address, network):
+        # get the container object by its ip
         try:
             network = client.networks.get(network)
             containers = network.containers
@@ -2671,12 +2709,14 @@ class DockerService(VirtService):
     @log_function_call
     @staticmethod
     def get_ip(client, container_name, network):
+        # get the ip of the container
         container = client.containers.get(container_name)
         maybe_ip = container.attrs["NetworkSettings"]["Networks"][network]["IPAddress"]
         return maybe_ip
 
     @staticmethod
     def wait_for_ip(client, container_name, network, timeout=300):
+        # wait until the docker container has an ip
         start_time = time.time()
 
         while not (ip := DockerService.get_ip(client, container_name, network)):
@@ -2876,7 +2916,8 @@ class LibvirtService(VirtService):
 
 
 def create_initial_db():
-    # add an admin user and test machinetemplate and machine
+    # add initial data for testing
+    # this will also print the passwords so you can log in
     with app.app_context():
         if not User.query.filter_by(username="admin").first():
             logging.warning("Creating default data.")
