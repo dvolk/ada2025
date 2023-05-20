@@ -1456,7 +1456,7 @@ def login():
 
     # log out users who go to the login page
     if current_user.is_authenticated:
-        create_audit("logout", user=current_user)
+        audit = create_audit("logout", user=current_user)
         logout_user()
         finish_audit(audit, state="ok")
         flash(gettext("You've been logged out."))
@@ -2957,6 +2957,7 @@ def create_initial_db():
 
             admin_group = Group(name="admins")
             tester_group = Group(name="Testers")
+            localtester_group = Group(name="Local testers")
 
             admin_user = User(
                 is_enabled=True,
@@ -2987,6 +2988,22 @@ def create_initial_db():
             tester_user.set_password(tester_user_password)
             logging.info(
                 f"Created user: username: tester password: {tester_user_password}"
+            )
+            localtester_user = User(
+                is_enabled=True,
+                username="localtester",
+                given_name="NoName",
+                family_name="NoFamilyName",
+                group=localtester_group,
+                language="en",
+                is_admin=False,
+                email="local@example.com",
+                data_sources=[demo_source2, demo_source3],
+            )
+            localtester_user_password = gen_token(8)
+            localtester_user.set_password(localtester_user_password)
+            logging.info(
+                f"Created user: username: localtester password: {localtester_user_password}"
             )
 
             docker_machine_provider = MachineProvider(
@@ -3030,7 +3047,7 @@ def create_initial_db():
                 cpu_limit_cores=4,
                 image="workspace",
                 os_username="ubuntu",
-                group=admin_group,
+                group=localtester_group,
                 machine_provider=docker_machine_provider,
                 description="This is a docker machine template that's added by default when you're running in debug mode. It has a desktop but no special software installed. This is meant for development on a local pc.",
                 extra_data={
@@ -3046,7 +3063,7 @@ def create_initial_db():
                 disk_size_gb=20,
                 image="debian11-5",
                 os_username="ubuntu",
-                group=admin_group,
+                group=localtester_group,
                 machine_provider=libvirt_machine_provider,
                 description="This is a libvirt machine template that's added by default when you're running in debug mode. It has a desktop but no special software installed. This is meant for development on a local pc.",
                 extra_data={
@@ -3132,6 +3149,8 @@ def create_initial_db():
             db.session.add(admin_user)
             db.session.add(tester_group)
             db.session.add(tester_user)
+            db.session.add(localtester_group)
+            db.session.add(localtester_user)
             db.session.add(docker_machine_provider)
             db.session.add(libvirt_machine_provider)
             db.session.add(stfc_os_machine_provider)
