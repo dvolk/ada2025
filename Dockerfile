@@ -29,8 +29,7 @@ RUN pybabel compile -d translations
 # Expose the port the app runs on
 EXPOSE 5000
 
-# Define the command to run the app
-CMD flask db init && \
-    flask db migrate && \
-    flask db upgrade && \
-    python3 app.py
+# copy and define entrypoint
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+ENTRYPOINT ["./entrypoint.sh"]
