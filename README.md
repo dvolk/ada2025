@@ -30,6 +30,9 @@ Flask web app for desktop machines in the cloud
 - Upload and download files with integrated file browser
 - Internationalization: en, zh, sl
 - Login with a local account or Google, with optional reCaptcha
+- Integrated user problem reporting
+- Colorful admin interface and action auditing
+- Easy deployment bare on or docker
 
 ## Tech used
 
@@ -102,9 +105,10 @@ docker build . -f Dockerfile -t workspace
 You can set the following optional environment variables:
 
 ```
+ADA2025_FLASK_SECRET_KEY=(set to string or one will be randomly generated)
 ADA2025_SQLALCHEMY_URL=(set to database url if you don't want sqlite)
 LOGIN_RECAPTCHA=(set to 1 if you want recaptcha on login screen)
-RECAPTCHA_SITE_KEY=
+RECAPTCHA_SITE_KEY=(your recaptcha v2 site key)
 RECAPTCHA_SECRET_KEY=
 GOOGLE_OAUTH2_CLIENT_ID=
 GOOGLE_OAUTH2_CLIENT_SECRET=
