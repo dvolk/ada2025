@@ -1473,7 +1473,7 @@ def login():
         flash(gettext("You've been logged out."))
         return render_template(
             "login.jinja2",
-            title="Login",
+            title=gettext("Login"),
             form=form,
             show_google_button=show_google_button,
         )
@@ -1487,7 +1487,7 @@ def login():
                 flash(gettext("Could not verify captcha. Try again."), "danger")
                 return render_template(
                     "login.jinja2",
-                    title="Login",
+                    title=gettext("Login"),
                     form=form,
                     show_google_button=show_google_button,
                 )
@@ -1504,7 +1504,7 @@ def login():
                     flash(gettext("Invalid provider"), "danger")
                     return render_template(
                         "login.jinja2",
-                        title="Login",
+                        title=gettext("Login"),
                         form=form,
                         show_google_button=show_google_button,
                     )
@@ -1520,7 +1520,7 @@ def login():
                 )
                 return render_template(
                     "login.jinja2",
-                    title="Login",
+                    title=gettext("Login"),
                     form=form,
                     show_google_button=show_google_button,
                 )
@@ -1538,7 +1538,7 @@ def login():
                     )
                     return render_template(
                         "login.jinja2",
-                        title="Login",
+                        title=gettext("Login"),
                         form=form,
                         show_google_button=show_google_button,
                     )
@@ -1561,7 +1561,7 @@ def login():
     # GET path
     return render_template(
         "login.jinja2",
-        title="Login",
+        title=gettext("Login"),
         form=form,
         show_google_button=show_google_button,
     )
