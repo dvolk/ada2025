@@ -55,7 +55,7 @@ If you are using Ubuntu 23.04, you should also install some additional packages:
 
 ```bash
 apt update
-apt -y install --no-install-recommends build-essential python3-openstackclient libpq-dev
+apt -y install --no-install-recommends build-essential libvirt-daemon-system libvirt-clients virtinst libvirt-dev python3-openstackclient libpq-dev
 ```
 
 Please note, these instructions are specifically for Ubuntu 23.04. If you are using a different operating system, please adjust the commands accordingly.
@@ -76,7 +76,7 @@ For Docker and libvirt setup, ensure that Docker and libvirt are installed on yo
 - libvirt: On Ubuntu, you can install libvirt using the package `libvirt-daemon-system` which provides the necessary tools and systems daemons for running libvirt:
 
   ```bash
-  sudo apt install libvirt-daemon-system libvirt-clients
+  sudo apt install libvirt-daemon-system
   ```
 
 After installing these packages, make sure to add your user to the `docker` and `libvirt` groups:
