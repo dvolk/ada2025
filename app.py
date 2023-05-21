@@ -1314,7 +1314,7 @@ def google_login():
     audit = create_audit("google login")
     google = oauth.create_client("google")
     redirect_uri = url_for("google_authorize", _external=True)
-    update_audit(audit, state="ok")
+    finish_audit(audit, state="ok")
     return google.authorize_redirect(redirect_uri)
 
 
@@ -1395,7 +1395,7 @@ def google_authorize():
             # Log the user in
             user.sesh_id = gen_token(2)
             login_user(user)
-            update_audit(audit, "ok")
+            finish_audit(audit, "ok")
             return redirect(url_for("index"))
         else:
             # Show activation message
@@ -1404,11 +1404,11 @@ def google_authorize():
                     "Your account has been created, but it has to be activated by staff, which typically happens within 24 hours. When it's activated, you'll be able to log in using Google."
                 )
             )
-            update_audit(audit, "not activated")
+            finish_audit(audit, "not activated")
             return redirect(url_for("login"))
 
     except Exception as e:
-        update_audit(audit, "error")
+        finish_audit(audit, "error")
         # Log the error and show an error message
         app.logger.error(e)
         flash(
@@ -2200,24 +2200,24 @@ def share_accept(machine_share_token):
     machine = Machine.query.filter_by(share_token=machine_share_token).first()
 
     if not machine:
-        update_audit(audit, "bad token")
+        finish_audit(audit, "bad token")
         flash(gettext("Machine not found."))
         return redirect(url_for("machines"))
     else:
         update_audit(audit, state="running", machine=machine)
 
     if current_user == machine.owner:
-        update_audit(audit, "is owner")
+        finish_audit(audit, "is owner")
         flash(gettext("You own that machine."))
         return redirect(url_for("machines"))
     if current_user in machine.shared_users:
-        update_audit(audit, "already shared")
+        finish_audit(audit, "already shared")
         flash(gettext("You already have that machine."))
         return redirect(url_for("machines"))
 
     machine.shared_users.append(current_user)
     db.session.commit()
-    update_audit(audit, "ok")
+    finish_audit(audit, "ok")
     flash(gettext("Shared machine has been added to your account."))
     return redirect(url_for("machines"))
 
@@ -2233,20 +2233,20 @@ def share_revoke(machine_id):
     audit = create_audit("share revoke", user=current_user)
     machine = Machine.query.filter_by(id=machine_id).first()
     if not machine:
-        update_audit(audit, "no machine")
+        finish_audit(audit, "no machine")
         flash(gettext("That machine could not be found", "danger"))
         return redirect(url_for("machines"))
 
     update_audit(audit, machine=machine)
 
     if current_user != machine.owner:
-        update_audit(audit, "not owner")
+        finish_audit(audit, "not owner")
         flash(gettext("You can't revoke shares on a machine you don't own.", "danger"))
         return redirect(url_for("machines"))
 
     machine.share_token = gen_token(16)
     machine.shared_users = []
-    update_audit(audit, "ok")
+    finish_audit(audit, "ok")
     db.session.commit()
     flash(
         gettext(
