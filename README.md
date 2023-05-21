@@ -41,27 +41,59 @@ The following technologies were used to build Ada2025:
 
 Follow these steps to get Ada2025 running on your machine:
 
+Sure, here's how you could restructure your Prerequisites section:
+
 ## Prerequisites
 
-Before proceeding with the installation, ensure that you have the following prerequisites:
+### Web App Prerequisites
+
+Before proceeding with the installation of the web application, ensure that you have the following prerequisites:
 
 - Python 3.11 or later (earlier versions are not tested)
 
-Additionally, if you are using Ubuntu 23.04, you should also install some additional packages:
+If you are using Ubuntu 23.04, you should also install some additional packages:
 
-```
+```bash
 apt update
-apt -y install --no-install-recommends build-essential libvirt-clients virtinst libvirt-dev python3-openstackclient libpq-dev
+apt -y install --no-install-recommends build-essential python3-openstackclient libpq-dev
 ```
 
 Please note, these instructions are specifically for Ubuntu 23.04. If you are using a different operating system, please adjust the commands accordingly.
+
+### Docker and libvirt Prerequisites
+
+For Docker and libvirt setup, ensure that Docker and libvirt are installed on your system:
+
+- Docker: Docker can be installed using the official package available in Ubuntu repositories:
+
+  ```bash
+  sudo apt update
+  sudo apt install docker.io
+  ```
+
+  For detailed instructions, follow the official [Docker installation guide](https://docs.docker.com/get-docker/).
+
+- libvirt: On Ubuntu, you can install libvirt using the package `libvirt-daemon-system` which provides the necessary tools and systems daemons for running libvirt:
+
+  ```bash
+  sudo apt install libvirt-daemon-system libvirt-clients
+  ```
+
+After installing these packages, make sure to add your user to the `docker` and `libvirt` groups:
+
+```bash
+sudo usermod -aG docker $USER
+sudo usermod -aG libvirt $USER
+```
+
+Remember to log out and back in for these changes to take effect.
 
 ## Web app setup
 
 Clone the repository and install the required Python packages:
 
 
-```
+```bash
 git clone https://github.com/dvolk/ada2025
 cd ada2025
 python3 -m venv env
@@ -76,7 +108,7 @@ At this phase of the project's lifecycle, the database is initialized and migrat
 
 Here's how to set up the database:
 
-```
+```bash
 flask db init
 flask db migrate
 flask db upgrade
@@ -94,7 +126,7 @@ Remember to backup your data frequently during the development phase to avoid an
 
 Create a Docker bridge network and build the example Docker desktop container:
 
-```
+```bash
 docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.1 adanet
 cd machines/docker_example
 docker build . -f Dockerfile -t workspace
@@ -113,7 +145,7 @@ Follow these steps to prepare a libvirt virtual machine:
 
 You can also set the following optional environment variables to further configure Ada2025:
 
-```
+```bash
 ADA2025_FLASK_SECRET_KEY  # set to string or one will be randomly generated
 ADA2025_SQLALCHEMY_URL  # set to database URL if you don't want SQLite
 LOGIN_RECAPTCHA  # set to 1 if you want reCaptcha on the login screen
@@ -127,7 +159,7 @@ GOOGLE_OAUTH2_CLIENT_SECRET  # your Google OAuth2 client secret
 
 To run the web app:
 
-```
+```bash
 python3 app.py
 ```
 
@@ -147,14 +179,14 @@ Before proceeding, ensure that you have installed:
 
 Clone the repository:
 
-```
+```bash
 git clone https://github.com/dvolk/ada2025
 cd ada2025
 ```
 
 Build and start the Docker containers:
 
-```
+```bash
 docker-compose up -d --build
 ```
 
@@ -162,7 +194,7 @@ Your Ada2025 app should now be up and running at http://localhost:5000.
 
 Remember to stop the services once you're done:
 
-```
+```bash
 docker-compose down
 ```
 
@@ -172,7 +204,7 @@ docker-compose down
 
 To update the translation files, use the following commands:
 
-```
+```bash
 pybabel -v extract  -F babel.cfg -o translations/messages.pot .
 pybabel update -N -i translations/messages.pot -d translations
 ```
