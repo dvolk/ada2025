@@ -29,6 +29,7 @@ from flask import (
     flash,
     request,
     abort,
+    has_request_context,
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
@@ -83,7 +84,11 @@ import argh
 import humanize
 import pytz
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(
+    level=logging.DEBUG,
+    datefmt="%Y-%m-%d/%H:%M:%S",
+    format="%(asctime)s %(message)s",
+)
 
 try:
     cmd = "git describe --tags --always --dirty"
@@ -956,21 +961,25 @@ class Audit(db.Model):
     data_transfer_job_id = db.Column(db.Integer, db.ForeignKey("data_transfer_job.id"))
     data_transfer_job = db.relationship("DataTransferJob")
 
+    def __repr__(self):
+        return f"<////{self.id}//// {self.action} -> {self.state}>"
 
-def create_audit(action, user=None, machine=None, data_transfer_job=None):
+
+def create_audit(action, state=None, user=None, machine=None, data_transfer_job=None):
     # to be called at the beginning of the function or block that
     # is to be audited
     audit = Audit(
         user=user,
         sesh_id=user.sesh_id if user and user.is_authenticated else None,
         action=action,
-        state="running",
-        remote_ip=get_remote_address(),
+        state=state if state else "running",
+        remote_ip=get_remote_address() if has_request_context() else None,
         machine=machine,
         data_transfer_job=data_transfer_job,
     )
     db.session.add(audit)
     db.session.commit()
+    logging.info(f"Created audit: {audit}")
     return audit
 
 
@@ -993,6 +1002,7 @@ def update_audit(
     if data_transfer_job:
         audit.data_transfer_job = data_transfer_job
     db.session.commit()
+    logging.info(f"Updated audit: {audit}")
 
 
 # the last audit update, sets the .finished_date
@@ -1007,6 +1017,7 @@ def finish_audit(audit, state, user=None, machine=None, data_transfer_job=None):
         audit.data_transfer_job = data_transfer_job
     audit.finished_date = datetime.datetime.utcnow()
     db.session.commit()
+    logging.info(f"Finished audit: {audit}")
 
 
 class ProtectedAuditModelView(ProtectedModelView):
@@ -1837,6 +1848,9 @@ def rename_machine():
         return redirect(url_for("machines"))
 
     machine = Machine.query.filter_by(id=machine_id).first()
+    if not machine:
+        flash(gettext("Machine to rename not found"), "danger")
+        return redirect(url_for("machines"))
 
     # TODO: check if the new name includes a username other than CU.name
 
@@ -1911,6 +1925,7 @@ def report_problem():
             machine_id = form.machine_id.data
             data_transfer_job_id = form.data_transfer_job_id.data
 
+            # no checking - these can be null
             machine = Machine.query.filter_by(id=machine_id).first()
             data_transfer_job = DataTransferJob.query.filter_by(
                 id=data_transfer_job_id
@@ -2138,18 +2153,19 @@ def start_data_transfer(job_id, audit_id):
     """
     with app.app_context():
         audit = get_audit(audit_id)
+        result = None
         job = DataTransferJob.query.filter_by(id=job_id).first()
         if not job:
             finish_audit(audit, "bad job id")
             logging.error(f"job {job_id} not found!")
-
-        result = do_rsync(
-            source_host=f"{job.data_source.source_username}@{job.data_source.source_host}",
-            source_port=job.data_source.source_port,
-            source_dir=job.data_source.source_dir,
-            dest_host=f"{job.machine.machine_template.os_username}@{job.machine.ip}",
-            dest_dir="",
-        )
+        else:
+            result = do_rsync(
+                source_host=f"{job.data_source.source_username}@{job.data_source.source_host}",
+                source_port=job.data_source.source_port,
+                source_dir=job.data_source.source_dir,
+                dest_host=f"{job.machine.machine_template.os_username}@{job.machine.ip}",
+                dest_dir="",
+            )
 
         if result:
             finish_audit(audit, "ok")
@@ -2173,23 +2189,35 @@ def share_machine(machine_id):
     return render_template("share.jinja2", title=gettext("Machines"), machine=machine)
 
 
-@app.route("/share_accept/<machine_token>")
+@app.route("/share_accept/<machine_share_token>")
 @limiter.limit("60 per hour")
 @login_required
-def share_accept(machine_token):
+def share_accept(machine_share_token):
     """
     This is the endpoint hit by the user accepting a share
     """
-    machine = Machine.query.filter_by(share_token=machine_token).first_or_404()
+    audit = create_audit("share accept", user=current_user)
+    machine = Machine.query.filter_by(share_token=machine_share_token).first()
+
+    if not machine:
+        update_audit(audit, "bad token")
+        flash(gettext("Machine not found."))
+        return redirect(url_for("machines"))
+    else:
+        update_audit(audit, state="running", machine=machine)
+
     if current_user == machine.owner:
+        update_audit(audit, "is owner")
         flash(gettext("You own that machine."))
         return redirect(url_for("machines"))
     if current_user in machine.shared_users:
+        update_audit(audit, "already shared")
         flash(gettext("You already have that machine."))
         return redirect(url_for("machines"))
 
     machine.shared_users.append(current_user)
     db.session.commit()
+    update_audit(audit, "ok")
     flash(gettext("Shared machine has been added to your account."))
     return redirect(url_for("machines"))
 
@@ -2202,13 +2230,23 @@ def share_revoke(machine_id):
     The owner revokes all shares. We do this by removing shared_users
     and resetting the machine share token
     """
-    machine = Machine.query.filter_by(id=machine_id).first_or_404()
+    audit = create_audit("share revoke", user=current_user)
+    machine = Machine.query.filter_by(id=machine_id).first()
+    if not machine:
+        update_audit(audit, "no machine")
+        flash(gettext("That machine could not be found", "danger"))
+        return redirect(url_for("machines"))
+
+    update_audit(audit, machine=machine)
+
     if current_user != machine.owner:
+        update_audit(audit, "not owner")
         flash(gettext("You can't revoke shares on a machine you don't own.", "danger"))
         return redirect(url_for("machines"))
 
     machine.share_token = gen_token(16)
     machine.shared_users = []
+    update_audit(audit, "ok")
     db.session.commit()
     flash(
         gettext(
@@ -2230,7 +2268,11 @@ def new_machine():
     machine_template_name = request.form.get("machine_template_name", "")
     audit = create_audit("create machine", user=current_user)
 
-    mt = MachineTemplate.query.filter_by(name=machine_template_name).first_or_404()
+    mt = MachineTemplate.query.filter_by(name=machine_template_name).first()
+    if not mt:
+        finish_audit(audit, "bad mt")
+        flash("You can't launch that machine template")
+        return redirect(url_for("machines"))
 
     if quota := mt.extra_data.get("quota"):
         if count_machines(mt) >= quota:
@@ -2251,7 +2293,7 @@ def new_machine():
     )
     update_audit(audit, machine=m)
 
-    logging.warning("starting new machine thread")
+    logging.info("starting new machine thread")
 
     if mt.type == "docker":
         target = DockerService.start
@@ -2299,12 +2341,16 @@ def stop_machine():
         logging.warning(f"machine_id not int: {machine_id}")
         abort(404)
 
-    m = Machine.query.filter_by(id=machine_id).first_or_404()
+    m = Machine.query.filter_by(id=machine_id).first()
+    if not m:
+        finish_audit(audit, "machine not found")
+        abort(404)
+
     update_audit(audit, machine=m)
 
     if not current_user.is_admin and not current_user == m.owner:
         finish_audit(audit, "bad user")
-        logging.error(
+        logging.warning(
             f"user {current_user.id} is not the owner of machine {machine_id} nor admin"
         )
         abort(403)
@@ -2602,7 +2648,7 @@ class DockerService(VirtService):
     @log_function_call
     @staticmethod
     def start(m_id: int, audit_id: int):
-        logging.warning("entered docker_start_container thread")
+        logging.info("entered DockerService.start thread")
         with DockerService.app.app_context():
             audit = get_audit(audit_id)
             try:
@@ -2743,7 +2789,7 @@ class LibvirtService(VirtService):
         """
         Start a vm and wait for it to have an ip
         """
-        logging.info("entered start_libvirt_vm thread")
+        logging.info("entered LibvirtService.start thread")
         with LibvirtService.app.app_context():
             audit = get_audit(audit_id)
             try:
@@ -2971,8 +3017,8 @@ def create_initial_db():
                 data_sources=[demo_source1, demo_source2],
             )
             admin_password = gen_token(8)
-            logging.info(f"Created user: username: admin password: {admin_password}")
             admin_user.set_password(admin_password)
+
             tester_user = User(
                 is_enabled=True,
                 username="tester",
@@ -2986,9 +3032,7 @@ def create_initial_db():
             )
             tester_user_password = gen_token(8)
             tester_user.set_password(tester_user_password)
-            logging.info(
-                f"Created user: username: tester password: {tester_user_password}"
-            )
+
             localtester_user = User(
                 is_enabled=True,
                 username="localtester",
@@ -3002,6 +3046,11 @@ def create_initial_db():
             )
             localtester_user_password = gen_token(8)
             localtester_user.set_password(localtester_user_password)
+
+            logging.info(f"Created user: username: admin password: {admin_password}")
+            logging.info(
+                f"Created user: username: tester password: {tester_user_password}"
+            )
             logging.info(
                 f"Created user: username: localtester password: {localtester_user_password}"
             )
@@ -3187,6 +3236,9 @@ def clean_up_db():
 
 
 def main(debug=False):
+    with app.app_context():
+        audit = create_audit("app", state="started")
+
     create_initial_db()
     clean_up_db()
 
