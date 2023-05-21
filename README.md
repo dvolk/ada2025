@@ -54,8 +54,8 @@ Before proceeding with the installation of the web application, ensure that you 
 If you are using Ubuntu 23.04, you should also install some additional packages:
 
 ```bash
-apt update
-apt -y install --no-install-recommends build-essential libvirt-daemon-system libvirt-clients virtinst libvirt-dev python3-openstackclient libpq-dev
+sudo apt update
+sudo apt -y install --no-install-recommends build-essential libvirt-daemon-system libvirt-clients virtinst libvirt-dev python3-openstackclient libpq-dev
 ```
 
 Please note, these instructions are specifically for Ubuntu 23.04. If you are using a different operating system, please adjust the commands accordingly.
