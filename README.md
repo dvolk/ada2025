@@ -3,8 +3,8 @@
 Flask web app to manage cloud-based desktop machines
 
 <p align="center">
-  <img src="https://i.postimg.cc/v88QT879/localhost-5000-machines-18.png" width="45%" alt="Machine Page"/>
-  <img src="https://i.postimg.cc/38F830GY/localhost-5000-data-3.png" width="45%" alt="Data Page"/>
+  <img src="https://i.postimg.cc/v88QT879/localhost-5000-machines-18.png" width="46%" alt="Machine Page"/>
+  <img src="https://i.postimg.cc/38F830GY/localhost-5000-data-3.png" width="46%" alt="Data Page"/>
 </p>
 
 # Overview
@@ -12,6 +12,7 @@ Flask web app to manage cloud-based desktop machines
 Ada2025 allows you to create, run, and share machines from various templates, all through a single, unified interface. This interface can also be used to manipulate data sources, use a desktop in a web browser, manage files through an integrated file browser, and much more.
 
 # Key Features
+
 - Create machines from pre-defined templates
 - Manage machines across various platforms:
   - Docker containers
@@ -40,8 +41,6 @@ The following technologies were used to build Ada2025:
 # Installation and Setup
 
 Follow these steps to get Ada2025 running on your machine:
-
-Sure, here's how you could restructure your Prerequisites section:
 
 ## Prerequisites
 
@@ -91,7 +90,6 @@ Remember to log out and back in for these changes to take effect.
 ## Web app setup
 
 Clone the repository and install the required Python packages:
-
 
 ```bash
 git clone https://github.com/dvolk/ada2025
@@ -174,6 +172,13 @@ Before proceeding, ensure that you have installed:
 
 - Docker
 - Docker Compose
+
+please also see the sections above:
+
+- Docker setup (for docker-based machines)
+- libvirt setup (for libvirt-based machines)
+
+docker-compose.yml mounts the docker and libvirt sockets in the container, allowing you to launch docker and libvirt machines on the host.
 
 ## Steps
 
