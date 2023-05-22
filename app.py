@@ -43,12 +43,14 @@ from flask_login import (
     login_required,
     current_user,
 )
-from flask_admin import Admin
+from flask_admin import Admin, BaseView, expose
 from flask_admin.actions import action
+from flask_admin.form import Select2Field
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.model import typefmt
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
+from wtforms_sqlalchemy.fields import QuerySelectMultipleField
 from wtforms.widgets import TextArea
 from wtforms import (
     StringField,
@@ -57,6 +59,7 @@ from wtforms import (
     TextAreaField,
     SubmitField,
     HiddenField,
+    Form,
 )
 from wtforms.validators import DataRequired, Email, Length, Regexp
 from flask_babel import Babel, gettext
@@ -83,6 +86,7 @@ from cinderclient import client as cinderclient
 import argh
 import humanize
 import pytz
+import requests
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -136,12 +140,20 @@ admin = Admin(
 )
 admin.init_app(app)
 
+
+def get_limiter_key():
+    if current_user.is_authenticated:
+        return current_user.username
+    else:
+        return request.remote_addr
+
+
 limiter = Limiter(
     # no default limit because flask-admin trips it up
     # instead we put 60 per minute on all requests, except
     # /login and /register, which have 60 per hour
-    get_remote_address,
     app=app,
+    key_func=get_limiter_key,
     storage_uri="memory://",
     strategy="moving-window",
 )
@@ -382,6 +394,35 @@ def _color_formatter(view, context, model, name):
     )
 
 
+class Group(db.Model):
+    """
+    A group that users belong to. A user can belong to a single group
+
+    The group determines which MachineTemplates a user can see.
+    """
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    creation_date = db.Column(
+        db.DateTime, default=datetime.datetime.utcnow, nullable=False
+    )
+
+    users = db.relationship("User", back_populates="group")
+    machine_templates = db.relationship("MachineTemplate", back_populates="group")
+
+    def __repr__(self):
+        return f"<{self.name}>"
+
+
+class ProtectedGroupModelView(ProtectedModelView):
+    column_list = ("id", "name", "creation_date", "users", "machine_templates")
+    form_columns = ("name", "users", "machine_templates")
+    column_searchable_list = ("name",)
+    column_sortable_list = ("id", "name", "creation_date")
+    column_filters = ("name",)
+    column_auto_select_related = True
+
+
 class User(db.Model, UserMixin):
     """
     User model, also used for flask-login
@@ -435,6 +476,136 @@ class User(db.Model, UserMixin):
         return f"<{self.username}>"
 
 
+class AssignDataSourcesForm(FlaskForm):
+    data_sources = QuerySelectMultipleField(
+        "Data Sources", query_factory=lambda: DataSource.query.all()
+    )
+    submit = SubmitField("Assign Data Sources")
+
+
+class ProtectedAssignDataSourcesView(BaseView):
+    def is_visible(self):
+        return False
+
+    @expose("/", methods=("GET", "POST"))
+    def index(self):
+        if not current_user or not current_user.is_admin:
+            return redirect("/")
+        user_ids = request.args.getlist("id")
+        users = User.query.filter(User.id.in_(user_ids)).all()
+
+        form = AssignDataSourcesForm(request.form)
+
+        if request.method == "GET":
+            # Pre-select the existing data sources only if a single user is selected
+            if len(users) == 1:
+                form.data_sources.data = users[0].data_sources
+
+        if request.method == "POST" and form.validate():
+            for user in users:
+                user.data_sources = form.data_sources.data
+            db.session.commit()
+            flash(f"Data sources were successfully assigned to the selected users.")
+            return redirect(url_for("user.index_view"))
+        return self.render("admin/assignDS.html", form=form)
+
+
+class AddUserToGroupForm(Form):
+    group = SelectField("Group", validators=[DataRequired()])
+    submit = SubmitField("Add Users to Group")
+
+
+class SetupUserForm(Form):
+    group = SelectField("Group", validators=[DataRequired()])
+    data_sources = QuerySelectMultipleField(
+        "Data Sources", query_factory=lambda: DataSource.query.all()
+    )
+    submit = SubmitField("Setup User")
+
+
+class ProtectedSetupUserView(BaseView):
+    def is_visible(self):
+        return False
+
+    @expose("/", methods=("GET", "POST"))
+    def index(self):
+        if not current_user or not current_user.is_admin:
+            return redirect("/")
+        user_ids = request.args.getlist("id")
+        users = User.query.filter(User.id.in_(user_ids)).all()
+
+        form = SetupUserForm(request.form)
+        form.group.choices = [(g.id, g.name) for g in Group.query.all()]
+
+        if request.method == "GET":
+            # Pre-select the existing data sources only if a single user is selected
+            if len(users) == 1:
+                form.data_sources.data = users[0].data_sources
+
+        if request.method == "POST" and form.validate():
+            group_id = form.group.data
+            group = Group.query.get(group_id)
+            for user in users:
+                user.is_enabled = True
+                user.group = group
+                user.data_sources = form.data_sources.data
+            db.session.commit()
+            flash(f"User setup was successful.")
+            return redirect(url_for("user.index_view"))
+
+        return self.render("admin/setupuser.html", form=form)
+
+
+class ProtectedAddUserToGroupView(BaseView):
+    def is_visible(self):
+        return False
+
+    @expose("/", methods=("GET", "POST"))
+    def index(self):
+        if not current_user or not current_user.is_admin:
+            return redirect("/")
+        form = AddUserToGroupForm(request.form)
+        form.group.choices = [(g.id, g.name) for g in Group.query.all()]
+
+        if request.method == "POST" and form.validate():
+            group_id = form.group.data
+            user_ids = request.args.getlist("id")
+            group = Group.query.get(group_id)
+            users = User.query.filter(User.id.in_(user_ids)).all()
+            for user in users:
+                user.group = group
+            db.session.commit()
+            flash(f"Users were successfully added to the group {group.name}.")
+            return redirect(url_for("user.index_view"))
+        return self.render("admin/setgroup.html", form=form)
+
+
+class ProtectedEnableAndAddUserToGroupView(BaseView):
+    def is_visible(self):
+        return False
+
+    @expose("/", methods=("GET", "POST"))
+    def index(self):
+        if not current_user or not current_user.is_admin:
+            return redirect("/")
+        form = AddUserToGroupForm(request.form)
+        form.group.choices = [(g.id, g.name) for g in Group.query.all()]
+        if request.method == "POST" and form.validate():
+            group_id = form.group.data
+            user_ids = request.args.getlist("id")
+            group = Group.query.get(group_id)
+            users = User.query.filter(User.id.in_(user_ids)).all()
+            for user in users:
+                user.group = group
+                user.is_enabled = True
+            db.session.commit()
+            flash(
+                f"Users were successfully enabled and added to the group {group.name}."
+            )
+            return redirect(url_for("user.index_view"))
+        return self.render("admin/setupuser.html", form=form)
+
+
 class ProtectedUserModelView(ProtectedModelView):
     column_list = (
         "id",
@@ -481,6 +652,84 @@ class ProtectedUserModelView(ProtectedModelView):
     column_formatters = {
         "group": _color_formatter,
     }
+
+    @action(
+        "enable_user",
+        "Enable User",
+        "Are you sure you want to enable the selected users?",
+    )
+    def action_enable_user(self, ids):
+        try:
+            query = User.query.filter(User.id.in_(ids))
+
+            count = 0
+            for user in query.all():
+                if not user.is_enabled:
+                    user.is_enabled = True
+                    count += 1
+
+            self.session.commit()
+
+            flash(f"{count} users were successfully enabled.")
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                raise
+
+            flash(f"Failed to enable users. {str(ex)}", "error")
+
+    @action(
+        "disable_user",
+        "Disable User",
+        "Are you sure you want to disable the selected users?",
+    )
+    def action_disable_user(self, ids):
+        try:
+            query = User.query.filter(User.id.in_(ids))
+
+            count = 0
+            for user in query.all():
+                if user.is_enabled:
+                    user.is_enabled = False
+                    count += 1
+
+            self.session.commit()
+
+            flash(f"{count} users were successfully disabled.")
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                raise
+
+            flash(f"Failed to disable users. {str(ex)}", "error")
+
+    @action(
+        "add_to_group",
+        "Add to Group",
+        "Are you sure you want to add the selected users to a group?",
+    )
+    def action_add_to_group(self, ids):
+        return redirect(url_for("addusertogroup.index", id=ids))
+
+    @action(
+        "enable_and_add_to_group",
+        "Enable and add to Group",
+        "Are you sure you want to enable the selected users and add them to a group?",
+    )
+    def action_enable_and_add_to_group(self, ids):
+        return redirect(url_for("enableandaddusertogroup.index", id=ids))
+
+    @action(
+        "assign_data_sources",
+        "Assign Data Sources",
+        "Are you sure you want to assign data sources to the selected users?",
+    )
+    def action_assign_data_sources(self, ids):
+        return redirect(url_for("assigndatasources.index", id=ids))
+
+    @action(
+        "setup_user", "Setup User", "Are you sure you want to setup the selected users?"
+    )
+    def action_setup_user(self, ids):
+        return redirect(url_for("setupuser.index", id=ids))
 
 
 class DataSource(db.Model):
@@ -598,35 +847,6 @@ class ProtectedDataTransferJobModelView(ProtectedModelView):
         "machine": _color_formatter,
         "data_source": _color_formatter,
     }
-
-
-class Group(db.Model):
-    """
-    A group that users belong to. A user can belong to a single group
-
-    The group determines which MachineTemplates a user can see.
-    """
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
-    creation_date = db.Column(
-        db.DateTime, default=datetime.datetime.utcnow, nullable=False
-    )
-
-    users = db.relationship("User", back_populates="group")
-    machine_templates = db.relationship("MachineTemplate", back_populates="group")
-
-    def __repr__(self):
-        return f"<{self.name}>"
-
-
-class ProtectedGroupModelView(ProtectedModelView):
-    column_list = ("id", "name", "creation_date", "users", "machine_templates")
-    form_columns = ("name", "users", "machine_templates")
-    column_searchable_list = ("name",)
-    column_sortable_list = ("id", "name", "creation_date")
-    column_filters = ("name",)
-    column_auto_select_related = True
 
 
 class MachineProvider(db.Model):
@@ -896,6 +1116,19 @@ class ProtectedMachineModelView(ProtectedModelView):
         "machine_template": _color_formatter,
     }
 
+    @action(
+        "stop_machine",
+        "Stop Machine",
+        "Are you sure you want to stop the selected machines?",
+    )
+    def action_stop_machine(self, ids):
+        for id in ids:
+            try:
+                stop_machine2(id)
+            except Exception:
+                logging.exception("Error: ")
+                flash(f"Failed to stop machine with id {id}", "danger")
+
 
 class ProblemReport(db.Model):
     """
@@ -1075,6 +1308,20 @@ admin.add_view(ProtectedMachineTemplateModelView(MachineTemplate, db.session))
 admin.add_view(ProtectedMachineModelView(Machine, db.session))
 admin.add_view(ProtectedProblemReportModelView(ProblemReport, db.session))
 admin.add_view(ProtectedAuditModelView(Audit, db.session))
+admin.add_view(
+    ProtectedAddUserToGroupView(name="Add Users to Group", endpoint="addusertogroup")
+)
+admin.add_view(
+    ProtectedEnableAndAddUserToGroupView(
+        name="Enable Users and add to Group", endpoint="enableandaddusertogroup"
+    )
+)
+admin.add_view(
+    ProtectedAssignDataSourcesView(
+        name="Assign Data Sources", endpoint="assigndatasources"
+    )
+)
+admin.add_view(ProtectedSetupUserView(name="Setup User", endpoint="setupuser"))
 
 
 # This is used in base.jinja2 to build the side bar menu
@@ -2257,9 +2504,7 @@ def share_revoke(machine_id):
 
 
 @app.route("/new_machine", methods=["POST"])
-@limiter.limit(
-    "100 per day, 10 per minute, 1/3 seconds", key_func=lambda: current_user.username
-)
+@limiter.limit("100 per day, 10 per minute, 1/3 seconds")
 @login_required
 def new_machine():
     """
@@ -2316,9 +2561,7 @@ def new_machine():
 
 
 @app.route("/stop_machine", methods=["POST"])
-@limiter.limit(
-    "100 per day, 10 per minute, 1/3 seconds", key_func=lambda: current_user.username
-)
+@limiter.limit("100 per day, 10 per minute, 1/3 seconds")
 @login_required
 def stop_machine():
     """
@@ -2341,46 +2584,63 @@ def stop_machine():
         logging.warning(f"machine_id not int: {machine_id}")
         abort(404)
 
-    m = Machine.query.filter_by(id=machine_id).first()
-    if not m:
+    machine = Machine.query.filter_by(id=machine_id).first()
+    if not machine:
         finish_audit(audit, "machine not found")
         abort(404)
 
-    update_audit(audit, machine=m)
+    update_audit(audit, machine=machine)
 
-    if not current_user.is_admin and not current_user == m.owner:
+    if not current_user.is_admin and not current_user == machine.owner:
         finish_audit(audit, "bad user")
         logging.warning(
             f"user {current_user.id} is not the owner of machine {machine_id} nor admin"
         )
         abort(403)
-    if m.state in [
+    if machine.state in [
         MachineState.PROVISIONING,
         MachineState.DELETED,
         MachineState.DELETING,
     ]:
         logging.warning(
-            f"machine {machine_id} is not in correct state for deletion: {m.state}"
+            f"machine {machine_id} is not in correct state for deletion: {machine.state}"
         )
 
-    if m.machine_template.type == "docker":
-        target = DockerService.stop
-    elif m.machine_template.type == "libvirt":
-        target = LibvirtService.stop
-    elif m.machine_template.type == "openstack":
-        target = OpenStackService.stop
-    else:
-        raise RuntimeError(m.machine_template.type)
-
-    # good to go
-    logging.info(f"deleting machine with machine id {machine_id}")
-    m.state = MachineState.DELETING
-    db.session.commit()
-
-    threading.Thread(target=target, args=(m.id, audit.id)).start()
+    # let's go
+    stop_machine2(machine.id, audit.id)
 
     flash(gettext("Deleting machine"), category="success")
     return redirect(url_for("machines"))
+
+
+def stop_machine2(machine_id, audit_id=None):
+    # we split this off into a separate function so it can be called
+    # in flask-admin actions
+
+    if not audit_id:
+        audit = create_audit("stop machine", user=current_user)
+    else:
+        audit = Audit.query.filter_by(id=audit_id).first()
+
+    machine = Machine.query.filter_by(id=machine_id).first()
+
+    update_audit(audit, machine=machine)
+
+    if machine.machine_template.type == "docker":
+        target = DockerService.stop
+    elif machine.machine_template.type == "libvirt":
+        target = LibvirtService.stop
+    elif machine.machine_template.type == "openstack":
+        target = OpenStackService.stop
+    else:
+        raise RuntimeError(machine.machine_template.type)
+
+    # good to go
+    logging.info(f"deleting machine with machine id {machine_id}")
+    machine.state = MachineState.DELETING
+    db.session.commit()
+
+    threading.Thread(target=target, args=(machine.id, audit.id)).start()
 
 
 class VirtService(ABC):
@@ -3002,8 +3262,8 @@ def create_initial_db():
             )
 
             admin_group = Group(name="admins")
-            tester_group = Group(name="Testers")
-            localtester_group = Group(name="Local testers")
+            localtester_group = Group(name="Local test users")
+            stfctester_group = Group(name="STFC test users")
 
             admin_user = User(
                 is_enabled=True,
@@ -3019,19 +3279,19 @@ def create_initial_db():
             admin_password = gen_token(8)
             admin_user.set_password(admin_password)
 
-            tester_user = User(
+            stfctester_user = User(
                 is_enabled=True,
-                username="tester",
+                username="stfctester",
                 given_name="NoName",
                 family_name="NoFamilyName",
-                group=tester_group,
+                group=stfctester_group,
                 language="en",
                 is_admin=False,
                 email="noname@example.com",
                 data_sources=[demo_source2, demo_source3],
             )
-            tester_user_password = gen_token(8)
-            tester_user.set_password(tester_user_password)
+            stfctester_user_password = gen_token(8)
+            stfctester_user.set_password(stfctester_user_password)
 
             localtester_user = User(
                 is_enabled=True,
@@ -3049,7 +3309,7 @@ def create_initial_db():
 
             logging.info(f"Created user: username: admin password: {admin_password}")
             logging.info(
-                f"Created user: username: tester password: {tester_user_password}"
+                f"Created user: username: stfctester password: {stfctester_user_password}"
             )
             logging.info(
                 f"Created user: username: localtester password: {localtester_user_password}"
@@ -3098,7 +3358,7 @@ def create_initial_db():
                 os_username="ubuntu",
                 group=localtester_group,
                 machine_provider=docker_machine_provider,
-                description="This is a docker machine template that's added by default when you're running in debug mode. It has a desktop but no special software installed. This is meant for development on a local pc.",
+                description="This is a docker machine template. It has a desktop but no special software installed. This is meant for development on a local pc.",
                 extra_data={
                     "quota": 2,
                 },
@@ -3114,7 +3374,7 @@ def create_initial_db():
                 os_username="ubuntu",
                 group=localtester_group,
                 machine_provider=libvirt_machine_provider,
-                description="This is a libvirt machine template that's added by default when you're running in debug mode. It has a desktop but no special software installed. This is meant for development on a local pc.",
+                description="This is a libvirt machine template. It has a desktop but no special software installed. This is meant for development on a local pc.",
                 extra_data={
                     "quota": 3,
                 },
@@ -3128,9 +3388,9 @@ def create_initial_db():
                 cpu_limit_cores=8,
                 image="denis_dev_20230511",
                 os_username="ubuntu",
-                group=tester_group,
+                group=stfctester_group,
                 machine_provider=stfc_os_machine_provider,
-                description="This is a STFC openstack template that's added by default when you're running in debug mode. It has a desktop but no special software installed. ",
+                description="This is a STFC openstack template. It has a desktop but no special software installed. ",
                 extra_data={
                     "flavor_name": "l3.tiny",
                     "network_uuid": "5be315b7-7ebd-4254-97fe-18c1df501538",
@@ -3152,7 +3412,7 @@ def create_initial_db():
                 disk_size_gb=200,
                 image="rfi_demo_20230517",
                 os_username="ubuntu",
-                group=tester_group,
+                group=stfctester_group,
                 machine_provider=stfc_os_machine_provider,
                 description="RFI demo is a prototype image that includes Fiji (with plugins TrackEM2, SIFT, BDV, MoBIE), Ilastik, napari, ICY (ec-CLEM) and MIB",
                 extra_data={
@@ -3170,16 +3430,16 @@ def create_initial_db():
             )
             # stfc rfi case test
             test_machine_template5 = MachineTemplate(
-                name="STFC RFI demo GPU",
+                name="STFC RFI GPU demo",
                 type="openstack",
                 memory_limit_gb=90,
                 cpu_limit_cores=12,
                 disk_size_gb=700,
                 image="rfi_demo_20230517",
                 os_username="ubuntu",
-                group=tester_group,
+                group=stfctester_group,
                 machine_provider=stfc_os_machine_provider,
-                description="RFI demo is a prototype image that includes Fiji (with plugins TrackEM2, SIFT, BDV, MoBIE), Ilastik, napari, ICY (ec-CLEM) and MIB. This template has a nvidia GPU",
+                description="RFI GPU demo is a prototype image that includes Fiji (with plugins TrackEM2, SIFT, BDV, MoBIE), Ilastik, napari, ICY (ec-CLEM) and MIB. This template has a nvidia GPU",
                 extra_data={
                     "flavor_name": "g-rtx4000.x1",
                     "network_uuid": "5be315b7-7ebd-4254-97fe-18c1df501538",
@@ -3196,8 +3456,8 @@ def create_initial_db():
 
             db.session.add(admin_group)
             db.session.add(admin_user)
-            db.session.add(tester_group)
-            db.session.add(tester_user)
+            db.session.add(stfctester_group)
+            db.session.add(stfctester_user)
             db.session.add(localtester_group)
             db.session.add(localtester_user)
             db.session.add(docker_machine_provider)

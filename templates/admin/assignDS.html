@@ -1,0 +1,28 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 offset-md-3">
+                <h1 class="text-center">Assign Data Sources</h1>
+                <form method="POST">
+                    {{ form.csrf_token }}
+                    <div class="form-group">
+                        {{ form.data_sources.label(class="form-control-label") }}
+                        <ul class="list-unstyled">
+                            {% for choice in form.data_sources.iter_choices() %}
+                                <li>
+                                    <input type="checkbox" name="data_sources" value="{{ choice[0] }}" id="data_sources-{{ loop.index0 }}" {% if choice[2] %}checked{% endif %}>
+                                    <label for="data_sources-{{ loop.index0 }}">{{ choice[1] }}</label>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="form-group">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
