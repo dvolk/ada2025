@@ -6,6 +6,25 @@
             <div class="col-md-6 offset-md-3">
                 <h1 class="text-center">Setup User</h1>
                 <p>This form enables users, adds them to the group, and assigns selected data sources</p>
+
+                <h2>You're setting up the following users</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Name</th>
+                    </thead>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.given_name }} {{ user.family_name }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+                    </ul>
+                </p>
+
                 <form method="POST">
                     {{ form.csrf_token }}
                     <div class="form-group">

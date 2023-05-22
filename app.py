@@ -553,7 +553,7 @@ class ProtectedSetupUserView(BaseView):
             flash(f"User setup was successful.")
             return redirect(url_for("user.index_view"))
 
-        return self.render("admin/setupuser.html", form=form)
+        return self.render("admin/setupuser.html", users=users, form=form)
 
 
 class ProtectedAddUserToGroupView(BaseView):
