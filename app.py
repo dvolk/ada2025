@@ -2736,13 +2736,25 @@ class OpenStackService(VirtService):
                     env, server.id, "ACTIVE", timeout=2400
                 )
 
-                # wait for ip
+                # wait for an ip
                 m.ip = OpenStackService.wait_for_vm_ip(conn, server.id, network.id)
+
+                time.sleep(2)
+
+                # assign floating ip if configured
+                if mt.extra_data.get("assign_floating_ip"):
+                    m.ip = OpenStackService.assign_floating_ip(env, server.id)
+
+                # try to get the hostname, if the ip has one
                 try:
                     m.hostname = get_hostname(m.ip)
                 except:
                     logging.exception(f"Couldn't get openstack hostname for {m.ip}")
                     m.hostname = ""
+
+                if hostname_postfix := mt.extra_data.get("hostname_postfix"):
+                    m.hostname = m.ip.replace(".", "-") + hostname_postfix
+
                 m.state = MachineState.READY
                 finish_audit(audit, "ok")
                 db.session.commit()
@@ -2772,9 +2784,46 @@ class OpenStackService(VirtService):
 
             except Exception:
                 finish_audit(audit, "error")
-                logging.exception(f"Couldn't stop openstack vm: ")
+                logging.exception("Couldn't stop openstack vm: ")
             m.state = MachineState.DELETED
             db.session.commit()
+
+    @log_function_call
+    @staticmethod
+    def assign_floating_ip(env, server_id):
+        # Get the list of all floating IPs
+        get_ips_command = ["openstack", "floating ip", "list", "-f", "json"]
+        result = subprocess.run(
+            get_ips_command,
+            check=True,
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+        ips = json.loads(result.stdout)
+
+        # Filter the list to only include IPs that are not associated with any server
+        available_ips = [ip for ip in ips if ip["Port"] is None]
+
+        if not available_ips:
+            raise Exception("No available floating IPs.")
+
+        # Choose a random IP from the list of available IPs
+        chosen_ip = secrets.choice(available_ips)
+
+        # Add the chosen floating IP to the server
+        add_ip_command = [
+            "openstack",
+            "server",
+            "add",
+            "floating",
+            "ip",
+            server_id,
+            chosen_ip["Floating IP Address"],
+        ]
+        subprocess.run(add_ip_command, check=True, env=env)
+
+        return chosen_ip["Floating IP Address"]
 
     @log_function_call
     @staticmethod
@@ -3263,7 +3312,8 @@ def create_initial_db():
 
             admin_group = Group(name="admins")
             localtester_group = Group(name="Local test users")
-            stfctester_group = Group(name="STFC test users")
+            stfctester_group = Group(name="STFC Cloud test users")
+            imperialtester_group = Group(name="Imperial Cloud test users")
 
             admin_user = User(
                 is_enabled=True,
@@ -3293,6 +3343,19 @@ def create_initial_db():
             stfctester_user_password = gen_token(8)
             stfctester_user.set_password(stfctester_user_password)
 
+            imperialtester_user = User(
+                is_enabled=True,
+                username="imperialtester",
+                given_name="NoName",
+                family_name="NoFamilyName",
+                group=imperialtester_group,
+                language="en",
+                is_admin=False,
+                email="imperium@example.com",
+                data_sources=[demo_source2, demo_source3],
+            )
+            imperialtester_user_password = gen_token(8)
+            imperialtester_user.set_password(imperialtester_user_password)
             localtester_user = User(
                 is_enabled=True,
                 username="localtester",
@@ -3310,6 +3373,9 @@ def create_initial_db():
             logging.info(f"Created user: username: admin password: {admin_password}")
             logging.info(
                 f"Created user: username: stfctester password: {stfctester_user_password}"
+            )
+            logging.info(
+                f"Created user: username: imperialtester password: {imperialtester_user_password}"
             )
             logging.info(
                 f"Created user: username: localtester password: {localtester_user_password}"
@@ -3347,6 +3413,19 @@ def create_initial_db():
                     "project_name": "IDAaaS-Dev",
                 },
             )
+            imperial_os_machine_provider = MachineProvider(
+                name="Imperial OpenStack",
+                type="openstack",
+                customer="unknown",
+                provider_data={
+                    "auth_url": "https://oskeystone.grid.hep.ph.ic.ac.uk:5000/v3/",
+                    "user_domain_name": "Default",
+                    "project_domain_name": "default",
+                    "username": "fyangturner",
+                    "password": "",
+                    "project_name": "daaas",
+                },
+            )
 
             # docker test
             test_machine_template1 = MachineTemplate(
@@ -3363,6 +3442,7 @@ def create_initial_db():
                     "quota": 2,
                 },
             )
+
             # libvirt test
             test_machine_template2 = MachineTemplate(
                 name="Libvirt bare demo",
@@ -3379,6 +3459,7 @@ def create_initial_db():
                     "quota": 3,
                 },
             )
+
             # stfc base image test
             test_machine_template3 = MachineTemplate(
                 name="STFC bare demo",
@@ -3394,6 +3475,7 @@ def create_initial_db():
                 extra_data={
                     "flavor_name": "l3.tiny",
                     "network_uuid": "5be315b7-7ebd-4254-97fe-18c1df501538",
+                    "vol_size": None,
                     "has_https": True,
                     "security_groups": [
                         {"name": "HTTP"},
@@ -3403,6 +3485,7 @@ def create_initial_db():
                     "quota": 4,
                 },
             )
+
             # stfc rfi case test
             test_machine_template4 = MachineTemplate(
                 name="STFC RFI demo",
@@ -3428,7 +3511,8 @@ def create_initial_db():
                     "quota": 4,
                 },
             )
-            # stfc rfi case test
+
+            # stfc rfi gpu case test
             test_machine_template5 = MachineTemplate(
                 name="STFC RFI GPU demo",
                 type="openstack",
@@ -3454,6 +3538,31 @@ def create_initial_db():
                 },
             )
 
+            # imperial base image test
+            test_machine_template6 = MachineTemplate(
+                name="Imperial bare demo",
+                type="openstack",
+                memory_limit_gb=64,
+                disk_size_gb=400,
+                cpu_limit_cores=16,
+                image="denis_dev_20230522",
+                os_username="ubuntu",
+                group=imperialtester_group,
+                machine_provider=imperial_os_machine_provider,
+                description="This is a Imperial openstack demo. It has a desktop but no special software installed.",
+                extra_data={
+                    "assign_floating_ip": True,
+                    "hostname_postfix": ".machine.ada.oxfordfun.com",
+                    "has_https": True,
+                    "flavor_name": "daaas.xsmall",
+                    "network_uuid": "91d10ac1-989c-42d0-a67f-e64dd6c04dc3",
+                    "security_groups": [
+                        {"name": "DAaaS_DMZ_policy_custom"},
+                    ],
+                    "quota": 4,
+                },
+            )
+
             db.session.add(admin_group)
             db.session.add(admin_user)
             db.session.add(stfctester_group)
@@ -3468,6 +3577,7 @@ def create_initial_db():
             db.session.add(test_machine_template3)
             db.session.add(test_machine_template4)
             db.session.add(test_machine_template5)
+            db.session.add(test_machine_template6)
             db.session.commit()
 
 
