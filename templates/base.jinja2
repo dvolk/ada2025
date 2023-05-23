@@ -113,11 +113,12 @@
             Ada
             {% if version and hostname %}
               &nbsp; {{ icon('code-commit') }} {{ version }} &nbsp; <i class="fa-brands fa-fw fa-docker"></i> {{ hostname }}
+            {% endif %}
               <span style="float:right">
                 <a target="_blank" href="https://debian.org">
                   <img class="lighten-on-hover"
                        style="height: 21.5px; width: 61px;"
-                       src="/static/powered_debian.png">
+                       src="/static/powered_debian.gif">
                 </a>
                 <a target="_blank" href="https://www.gnu.org/software/emacs/">
                   <img class="lighten-on-hover"
@@ -125,7 +126,6 @@
                        src="/static/powered_emacs.png">
                 </a>
               </span>
-            {% endif %}
           </p>
         </div>
 
