@@ -2,113 +2,45 @@
 
 {% block content %}
 
-<br>
-<div class="w3-container w3-green">
-    {{ idea("<a target='_blank' href='/flaskyadmin'>Click here to access the flask-admin interface</a>.") }}
-</div>
-<br>
+  <h2>Flask-admin interface</h2>
+  <a class="w3-button w3-round w3-green" target='_blank' href='/flaskyadmin'>
+    {{ icon('unlock') }}
+    Click here to access the flask-admin interface
+  </a>
 
-<div class="w3-container">
-    {% set keys = ["ADA2025_FLASK_SECRET_KEY", "ADA2025_SQLALCHEMY_URL", "LOGIN_RECAPTCHA", "RECAPTCHA_SITE_KEY", "RECAPTCHA_SECRET_KEY", "GOOGLE_OAUTH2_CLIENT_ID",
-"GOOGLE_OAUTH2_CLIENT_SECRET"] %}
-    <h3>Config</h3>
-    <table class="w3-table-all">
-        <colgroup>
-            <col width="0%" />
-            <col width="100%" />
-            <col width="0%" />
-        </colgroup>
-        <thead>
-            <th>Key</th>
-            <th>Value</th>
-        </thead>
-        {% for key in keys %}
-        <tr>
-            <td>
-                {{ key }}
-            </td>
-            <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:1px;">
-                {% if not env.get(key) %}
-                {{ icon('xmark') }}
-                {% elif 'SECRET' in key %}
-                {{ icon('key') }}
-                {% else %}
-                {{ env.get(key) }}
-                {% endif %}
-            </td>
-            <td>
-                <a style="w3-btn w3-red">{{ icon('pen-to-square') }}</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
-</div>
-<br/>
-<div class="w3-container w3-yellow">
-    <h3>Users</h3>
-</div>
-<div class="w3-container w3-pale-yellow">
-    <p>
-        <table class="w3-table-all">
-            <thead>
-                <th>Username</th>
-                <th>Properties</th>
-                <th>Actions</th>
-            </thead>
-            {% for u in User.query.all() %}
-            <tr>
-                <td>{{ u.username }}</td>
-                <td>
-                    Real name: {{ u.given_name }} {{ u.family_name }}<br/>
-                    Email: {{ u.email }}<br/>
-                    Organization: {{ u.organization }}<br/>
-                    Group: {{ u.group.name }}<br/>
-                    Job title: {{ u.job_title }}<br/>
-                </td>
-                <td>
-                    {% if u.is_enabled %}
-                    <a class="w3-button w3-round w3-red">Disable</a>
-                    {% else %}
-                    <a class="w3-button w3-round w3-blue">Enable</a>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-    </p>
-</div>
-<br/>
-<div class="w3-container w3-blue">
-    <h3>Machines</h3>
-</div>
-<div class="w3-container w3-pale-blue">
-    <p>
-        <table class="w3-table-all">
-            <thead>
-                <th>Name</th>
-                <th>Properties</th>
-                <th>Actions</th>
-            </thead>
-            {% for m in Machine.query.all() %}
-            <tr>
-                <td>{{ m.name }}</td>
-                <td>
-                    Template: {{ m.machine_template.name }}<br/>
-                    IP: {{ m.ip }}<br/>
-                    State: {{ m.state.name }}<br/>
-                    Creation_date: {{ m.creation_date }}<br/>
-                    Owner username: {{ m.owner.username }}<br/>
-                    Shared with: {{ m.shared_users|join(", ", attribute=username) }}
-                    <br/>
-                </td>
-                <td>
-                    <a class="w3-button w3-round w3-red">Delete</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
-    </p>
-</div>
-<br/>
+  {% set keys = ["ADA2025_FLASK_SECRET_KEY", "ADA2025_SQLALCHEMY_URL", "LOGIN_RECAPTCHA", "RECAPTCHA_SITE_KEY", "RECAPTCHA_SECRET_KEY", "GOOGLE_OAUTH2_CLIENT_ID",
+  "GOOGLE_OAUTH2_CLIENT_SECRET"] %}
+  <h2>App configuration</h2>
+  <table class="w3-table-all">
+    <colgroup>
+      <col width="0%" />
+      <col width="100%" />
+      <col width="0%" />
+    </colgroup>
+    <thead>
+      <th>Env variable</th>
+      <th>Value</th>
+    </thead>
+    {% for key in keys %}
+      <tr>
+        <td>
+          {{ key }}
+        </td>
+        <td style="white-space: nowrap; text-overflow:ellipsis; overflow: hidden; max-width:1px;">
+          {% if not env.get(key) %}
+            {{ icon('xmark') }}
+          {% elif 'SECRET' in key %}
+            {{ icon('key') }}
+          {% else %}
+            {{ env.get(key) }}
+          {% endif %}
+        </td>
+        <td>
+          <a style="w3-btn w3-red">{{ icon('pen-to-square') }}</a>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+  <br/>
 
 {% endblock %}

@@ -1468,7 +1468,7 @@ def inject_globals():
         "idea": idea,
         "main_menu": get_main_menu(),
         "humanize": humanize,
-        "time_now": int(time.time()),
+        "time_now": datetime.datetime.utcnow(),
         "version": version,
         "hostname": hostname,
         "LOGIN_RECAPTCHA": LOGIN_RECAPTCHA,
@@ -1987,10 +1987,24 @@ def logout():
 @limiter.limit("60 per minute")
 @login_required
 def welcome():
+    not_activated_users = (
+        db.session.query(User)
+        .filter(or_(User.is_enabled == False, User.group_id.is_(None)))
+        .order_by(desc(User.id))
+        .all()
+    )
+    unresolved_problem_reports = (
+        db.session.query(ProblemReport)
+        .filter(ProblemReport.is_hidden == False)
+        .order_by(desc(ProblemReport.id))
+        .all()
+    )
+
     return render_template(
         "welcome.jinja2",
         title=gettext("Welcome page"),
-        ProblemReport=ProblemReport,
+        not_activated_users=not_activated_users,
+        unresolved_problem_reports=unresolved_problem_reports,
         now=datetime.datetime.utcnow(),
     )
 
@@ -3356,6 +3370,7 @@ def create_initial_db():
             )
             imperialtester_user_password = gen_token(8)
             imperialtester_user.set_password(imperialtester_user_password)
+
             localtester_user = User(
                 is_enabled=True,
                 username="localtester",
@@ -3369,6 +3384,26 @@ def create_initial_db():
             )
             localtester_user_password = gen_token(8)
             localtester_user.set_password(localtester_user_password)
+
+            notactivated1_user = User(
+                username="notactivated1",
+                given_name="NoName",
+                family_name="NoFamilyName",
+                language="en",
+                email="local1@example.com",
+            )
+            notactivated1_user_password = gen_token(8)
+            notactivated1_user.set_password(notactivated1_user_password)
+
+            notactivated2_user = User(
+                username="notactivated2",
+                given_name="NoName",
+                family_name="NoFamilyName",
+                language="en",
+                email="local2@example.com",
+            )
+            notactivated2_user_password = gen_token(8)
+            notactivated2_user.set_password(notactivated2_user_password)
 
             logging.info(f"Created user: username: admin password: {admin_password}")
             logging.info(
@@ -3569,6 +3604,8 @@ def create_initial_db():
             db.session.add(stfctester_user)
             db.session.add(localtester_group)
             db.session.add(localtester_user)
+            db.session.add(notactivated1_user)
+            db.session.add(notactivated2_user)
             db.session.add(docker_machine_provider)
             db.session.add(libvirt_machine_provider)
             db.session.add(stfc_os_machine_provider)
