@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2023-05-16 09:47+0100\n"
+"POT-Creation-Date: 2023-05-24 20:33+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -16,291 +16,259 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Generated-By: Babel 2.10.3\n"
+"Generated-By: Babel 2.12.1\n"
 
-#: app.py:135
+#: app.py:189
 msgid "Invalid JSON data."
-msgstr ""
+msgstr "无效的JSON数据。"
 
-#: app.py:804 app.py:1392
+#: app.py:1332 app.py:2123
 msgid "Welcome page"
 msgstr "欢迎页面"
 
-#: app.py:809 app.py:1454 app.py:1840
+#: app.py:1337 app.py:2186 app.py:2561
 msgid "Machines"
 msgstr "虚拟机"
 
-#: app.py:814 app.py:1770
+#: app.py:1342 app.py:2487
 msgid "Data"
 msgstr "数据"
 
-#: app.py:819 app.py:1551 templates/citations.jinja2:5
+#: app.py:1347 app.py:2263 templates/citations.jinja2:5
 msgid "Citations"
 msgstr "引用"
 
-#: app.py:824 app.py:1528
+#: app.py:1352 app.py:1808
 msgid "Settings"
 msgstr "设置"
 
-#: app.py:829 app.py:1565 app.py:1608
+#: app.py:1357 app.py:2277 app.py:2321
 msgid "Help"
 msgstr "帮助"
 
-#: app.py:834 app.py:1558
+#: app.py:1362 app.py:2270
 msgid "About"
 msgstr "关于"
 
-#: app.py:839 app.py:1540
+#: app.py:1367 app.py:2252
 msgid "Admin"
 msgstr "管理员"
 
-#: app.py:896
+#: app.py:1424
 msgid "Access denied"
 msgstr "访问被拒绝"
 
-#: app.py:897
+#: app.py:1425
 msgid "Sorry, you don't have access to that page or resource."
 msgstr "抱歉，您无权访问该页面或资源。"
 
-#: app.py:905
+#: app.py:1433
 msgid "Not found"
 msgstr "未找到"
 
-#: app.py:906
+#: app.py:1434
 msgid "Sorry, that page or resource could not be found."
 msgstr "抱歉，找不到该页面或资源。"
 
-#: app.py:914
+#: app.py:1442
 msgid "Too many requests"
 msgstr "请求过多"
 
-#: app.py:915
+#: app.py:1443
 msgid ""
 "Sorry, you're making too many requests. Please wait a while and then try "
 "again."
 msgstr "抱歉，您的请求过多。请稍等片刻后再试。"
 
-#: app.py:925
+#: app.py:1453
 msgid "Application error"
 msgstr "应用程序错误"
 
-#: app.py:926
+#: app.py:1454
 msgid "Sorry, the application encountered a problem."
 msgstr "抱歉，应用程序遇到了问题。"
 
-#: app.py:999 app.py:1237 templates/login.jinja2:17
-#: templates/register.jinja2:27
-msgid "Username"
-msgstr "用户名"
-
-#: app.py:1002 app.py:1252 templates/login.jinja2:20
-#: templates/register.jinja2:30
-msgid "Password"
-msgstr "密码"
-
-#: app.py:1110
+#: app.py:1650
 msgid ""
 "Your account has been created, but it has to be activated by staff, which"
 " typically happens within 24 hours. When it's activated, you'll be able "
 "to log in using Google."
-msgstr ""
+msgstr "您的账户已创建，但需要由工作人员激活，这通常会在24小时内发生。一旦激活，您将能够使用Google登录。"
 
-#: app.py:1120
+#: app.py:1662
 msgid "An error occurred while processing your Google login. Please try again."
-msgstr ""
+msgstr "处理您的Google登录时发生错误。请再试一次。"
 
-#: app.py:1145
+#: app.py:1749 app.py:2016
+msgid "Bad language specified"
+msgstr "指定的语言错误"
+
+#: app.py:1751 app.py:2018
+msgid "Bad timezone specified"
+msgstr "指定的时区错误"
+
+#: app.py:1753
+msgid "Sorry, that given name is not allowed."
+msgstr "抱歉，不允许使用该名字。"
+
+#: app.py:1755
+msgid "Sorry, that last name is not allowed."
+msgstr "抱歉，不允许使用该姓氏。"
+
+#: app.py:1757
+msgid "Sorry, that email is not allowed."
+msgstr "抱歉，不允许使用该电子邮件。"
+
+#: app.py:1760
+msgid ""
+"Sorry, that email can't be used. Please choose another or contact us for "
+"support."
+msgstr "抱歉，无法使用该电子邮件。请选择其他的或联系我们获取支持。"
+
+#: app.py:1765
+msgid "The passwords you entered don't match."
+msgstr "您输入的密码不匹配。"
+
+#: app.py:1767
+msgid "New password has to be at least 8 characters."
+msgstr "新密码必须至少包含8个字符。"
+
+#: app.py:1786
+msgid "Your changes have been saved."
+msgstr "您的更改已被保存。"
+
+#: app.py:1832
 msgid "You've been logged out."
-msgstr ""
+msgstr "您已注销。"
 
-#: app.py:1157
+#: app.py:1835 app.py:1849 app.py:1866 app.py:1882 app.py:1900 app.py:1923
+msgid "Login"
+msgstr "登录"
+
+#: app.py:1846
 msgid "Could not verify captcha. Try again."
-msgstr ""
+msgstr "无法验证验证码。请再试一次。"
 
-#: app.py:1173
+#: app.py:1863
 msgid "Invalid provider"
-msgstr ""
+msgstr "无效的提供者"
 
-#: app.py:1184
+#: app.py:1875
 msgid ""
 "Sorry, you can't use a local login. Try using the login method you signed"
 " in (eg. Google) with the first time, or contact support for help."
-msgstr ""
+msgstr "抱歉，您不能使用本地登录。请尝试使用您第一次登录时使用的登录方式（例如，Google），或者联系支持以获取帮助。"
 
-#: app.py:1201
+#: app.py:1893
 msgid ""
 "Account not activated. If it's been more than 24 hours please contact "
 "support."
-msgstr ""
+msgstr "账户未激活。如果已经超过24小时，请联系支持。"
 
-#: app.py:1215
+#: app.py:1909
 msgid "Logged in successfully."
 msgstr "登录成功。"
 
-#: app.py:1218 app.py:1222
+#: app.py:1913 app.py:1918
 msgid "Invalid username or password."
 msgstr "用户名或密码无效。"
 
-#: app.py:1243
+#: app.py:1939
 msgid "Sorry, username can only contain letters, numbers, and dots."
-msgstr ""
+msgstr "抱歉，用户名只能包含字母、数字和点。"
 
-#: app.py:1258 templates/register.jinja2:33
-msgid "Given Name"
-msgstr ""
-
-#: app.py:1264 templates/register.jinja2:36
-msgid "Family Name"
-msgstr ""
-
-#: app.py:1268 templates/register.jinja2:42
-msgid "Language"
-msgstr "语言"
-
-#: app.py:1271 templates/register.jinja2:46
-msgid "Timezone"
-msgstr "时区"
-
-#: app.py:1276 templates/register.jinja2:39
-msgid "Email"
-msgstr "电子邮件"
-
-#: app.py:1282 templates/register.jinja2:50
-msgid "Organization"
-msgstr "组织"
-
-#: app.py:1288 templates/register.jinja2:53
-msgid "Job Title"
-msgstr "职位"
-
-#: app.py:1291 templates/login.jinja2:28
-msgid "Register"
-msgstr "注册"
-
-#: app.py:1305 app.py:1332 app.py:1365
+#: app.py:2010 app.py:2046 app.py:2081
 msgid "Register account"
 msgstr "注册账户"
 
-#: app.py:1311
-msgid "Bad language specified"
-msgstr ""
-
-#: app.py:1313
-msgid "Bad timezone specified"
-msgstr ""
-
-#: app.py:1315
+#: app.py:2020
 msgid ""
 "Sorry, that username is invalid. The username can contain letters, "
 "numbers and ."
-msgstr ""
+msgstr "抱歉，该用户名无效。用户名可以包含字母、数字和点。"
 
-#: app.py:1319 app.py:1323
+#: app.py:2032 app.py:2036
 msgid "Sorry, that username or email is taken. Please choose another."
-msgstr ""
+msgstr "抱歉，该用户名或电子邮件已被占用。请选择其他的。"
 
-#: app.py:1356
+#: app.py:2072
 msgid ""
 "Thank you for registering. You will be emailed when your account is "
 "activated"
 msgstr "感谢您的注册。当您的帐户激活时，您将收到电子邮件。"
 
-#: app.py:1479 app.py:1504
+#: app.py:2213 app.py:2217 app.py:2222
 msgid "Invalid values for machine rename"
-msgstr ""
+msgstr "重命名机器的值无效"
 
-#: app.py:1485
-msgid ""
-"New name must be between 4 and 80 characters long, and can contain "
-"characters a-Z,0-9 and -"
-msgstr "新名称必须为 4 到 80 个字符长，并且可以包含字符 a-Z、0-9 和 -"
+#: app.py:2226
+msgid "New name must be between 4 and 99 characters long"
+msgstr "新名称必须在4到99个字符之间"
 
-#: app.py:1494
-msgid ""
-"New name contains non-alphanumeric characters. Characters that are "
-"allowed are a-Z,0-9 and -"
-msgstr "新名称包含非字母数字字符。允许的字符为 a-Z、0-9 和 -"
+#: app.py:2231
+msgid "Machine to rename not found"
+msgstr "未找到要重命名的机器"
 
-#: app.py:1510
-msgid "The requested machine name is already taken"
-msgstr "请求的机器名称已被占用"
-
-#: app.py:1600
+#: app.py:2313
 msgid "Problem report submitted successfully."
-msgstr ""
+msgstr "问题报告提交成功。"
 
-#: app.py:1652 templates/data.jinja2:71
-msgid "Data Source"
-msgstr "数据源"
-
-#: app.py:1654 templates/data.jinja2:75
-msgid "Machine"
-msgstr "机器"
-
-#: app.py:1655 templates/register.jinja2:58
-msgid "Submit"
-msgstr "提交"
-
-#: app.py:1668
-msgid "No data transfer job id given."
-msgstr ""
-
-#: app.py:1674
-msgid "Data transfer job doesn't exist."
-msgstr ""
-
-#: app.py:1678
-msgid "You don't own that data transfer job."
-msgstr ""
-
-#: app.py:1753
+#: app.py:2469
 msgid "Starting data transfer. Refresh page to update status."
 msgstr "开始数据传输。刷新页面以更新状态。"
 
-#: app.py:1757
+#: app.py:2474
 msgid "The data transfer job submission could not be validated."
 msgstr "无法验证数据传输任务提交。"
 
-#: app.py:1852
+#: app.py:2576
+msgid "Machine not found."
+msgstr "未找到机器。"
+
+#: app.py:2583
 msgid "You own that machine."
 msgstr "您拥有该机器。"
 
-#: app.py:1855
+#: app.py:2587
 msgid "You already have that machine."
 msgstr "您已经拥有了该机器。"
 
-#: app.py:1860
+#: app.py:2593
 msgid "Shared machine has been added to your account."
 msgstr "共享的机器已添加到您的帐户。"
 
-#: app.py:1874
+#: app.py:2609
+msgid "That machine could not be found"
+msgstr "找不到那台机器"
+
+#: app.py:2616
 msgid "You can't revoke shares on a machine you don't own."
 msgstr "您不能撤销您不拥有的机器上的共享。"
 
-#: app.py:1881
+#: app.py:2624
 msgid ""
 "Shares for machine have been removed and a new share link has been "
 "generated"
 msgstr "已移除机器的共享，并已生成新的共享链接"
 
-#: app.py:1933
+#: app.py:2682
 msgid "Creating machine in the background. Refresh page to update status."
 msgstr "在后台创建机器。刷新页面以更新状态。"
 
-#: app.py:1984
+#: app.py:2737
 msgid "Deleting machine"
 msgstr "删除机器"
 
 #: templates/about.jinja2:5
 msgid "About ADA Data Analysis 2025"
-msgstr ""
+msgstr "关于ADA数据分析2025"
 
 #: templates/about.jinja2:7
 msgid ""
 "Welcome to ADA Data Analysis 2025, the cutting-edge data analysis service"
 " designed to empower professionals like you with advanced tools and "
 "resources for efficient data exploration and insights generation."
-msgstr ""
+msgstr "欢迎来到ADA数据分析2025，这是一款尖端的数据分析服务，旨在为您这样的专业人士提供先进的工具和资源，以便有效地探索数据并产生洞见。"
 
 #: templates/about.jinja2:9
 msgid ""
@@ -310,11 +278,11 @@ msgid ""
 "success. With that in mind, ADA offers a comprehensive suite of features "
 "and functionalities to meet the diverse needs of data scientists, "
 "researchers, analysts, and beyond."
-msgstr ""
+msgstr "在ADA，我们的使命是改变您分析和解释数据的方式。我们理解在今天这个以数据驱动的世界中，能够访问可靠、安全、灵活的数据分析平台对于成功至关重要。因此，ADA提供了一套全面的功能和功能，以满足数据科学家、研究人员、分析师等多元化的需求。"
 
 #: templates/about.jinja2:11
 msgid "Key Features:"
-msgstr ""
+msgstr "主要功能："
 
 #: templates/about.jinja2:15
 msgid ""
@@ -322,7 +290,7 @@ msgid ""
 "with your data from anywhere, at any time. No longer confined to a "
 "specific physical location, you can now explore and analyze your data on "
 "the go, whether you're in the office, at home, or traveling."
-msgstr ""
+msgstr "<b>远程数据访问</b>：ADA让您可以随时随地安全访问和处理您的数据。您不再受特定物理位置的限制，无论您在办公室、在家还是在旅行，都可以随时探索和分析您的数据。"
 
 #: templates/about.jinja2:17
 msgid ""
@@ -331,7 +299,7 @@ msgid ""
 "configured with the essential software, data, and computing resources. "
 "This allows you to seamlessly transition from your local machine to ADA, "
 "without the hassle of installing and configuring numerous tools."
-msgstr ""
+msgstr "<b>虚拟化的Linux桌面环境</b>：我们的虚拟机提供了一个强大的基于Linux的桌面环境，预装了必要的软件、数据和计算资源。这使您可以无缝从本地机器切换到ADA，无需安装和配置大量工具。"
 
 #: templates/about.jinja2:19
 msgid ""
@@ -340,7 +308,7 @@ msgid ""
 "allowing you to tailor your virtualized environment to suit your specific"
 " analysis needs. Install additional software packages, define preferred "
 "settings, and personalize your workspace to maximize productivity."
-msgstr ""
+msgstr "<b>可定制性</b>：ADA理解每个用户都有独特的需求。这就是为什么我们提供高度可定制的体验，允许您根据特定的分析需求定制您的虚拟环境。安装额外的软件包，定义首选设置，个性化您的工作空间以最大化生产力。"
 
 #: templates/about.jinja2:21
 msgid ""
@@ -349,7 +317,7 @@ msgid ""
 " by providing isolated workspaces, protecting your valuable information "
 "from unauthorized access. Rest assured that your data and computations "
 "are kept confidential and protected."
-msgstr ""
+msgstr "<b>安全且隔离的工作空间</b>：您的数据和分析活动对我们至关重要。ADA通过提供隔离的工作空间确保最高级别的安全性，保护您的宝贵信息免受未经授权的访问。请放心，您的数据和计算过程将被保密和保护。"
 
 #: templates/about.jinja2:23
 msgid ""
@@ -357,24 +325,52 @@ msgid ""
 "customer service. Our dedicated support team is available to address your"
 " inquiries, provide assistance, and resolve any issues you may encounter "
 "during your data analysis journey with ADA."
-msgstr ""
+msgstr "<b>专属支持</b>：我们以提供出色的客户服务为荣。我们的专属支持团队随时准备解答您的疑问，提供帮助，解决您在使用ADA进行数据分析过程中遇到的任何问题。"
 
 #: templates/about.jinja2:26
 msgid ""
 "For any inquiries, questions, or feedback, please don't hesitate to reach"
 " out to our support team at contact@ada-science.io. We are here to assist"
 " you every step of the way."
-msgstr ""
+msgstr "如有任何疑问、问题或反馈，请随时通过contact@ada-science.io联系我们的支持团队。我们会全程为您提供帮助。"
 
 #: templates/about.jinja2:28
 msgid ""
 "Thank you for choosing ADA Data Analysis 2025. We look forward to being "
 "your trusted partner in your data analysis endeavors."
-msgstr ""
+msgstr "感谢您选择ADA数据分析2025。我们期待成为您在数据分析事业中的可信赖伙伴。"
+
+#: templates/admin.jinja2:5
+msgid "Flask-admin interface"
+msgstr "Flask-admin界面"
+
+#: templates/admin.jinja2:8
+msgid "Click here to access the flask-admin interface."
+msgstr "点击这里访问flask-admin界面。"
+
+#: templates/admin.jinja2:13
+msgid "App configuration"
+msgstr "应用配置"
+
+#: templates/admin.jinja2:21
+msgid "Env variable"
+msgstr "环境变量"
+
+#: templates/admin.jinja2:22
+msgid "Value"
+msgstr "值"
+
+#: templates/admin.jinja2:23
+msgid "Edit"
+msgstr "编辑"
 
 #: templates/base-bare.jinja2:57 templates/base.jinja2:55
 msgid "Data Analysis"
 msgstr "数据分析"
+
+#: templates/base.jinja2:52
+msgid "Close"
+msgstr "关闭"
 
 #: templates/base.jinja2:58
 msgid "Hey"
@@ -383,6 +379,10 @@ msgstr "嘿"
 #: templates/base.jinja2:72
 msgid "Sign out"
 msgstr "登出"
+
+#: templates/base.jinja2:82
+msgid "Menu"
+msgstr "菜单"
 
 #: templates/citations.jinja2:7
 msgid "This page lists citations for Ada and the software that is deployed."
@@ -418,7 +418,7 @@ msgstr "状态"
 
 #: templates/data.jinja2:21
 msgid "Actions"
-msgstr ""
+msgstr "操作"
 
 #: templates/data.jinja2:42
 msgid "Problem with data transfer from "
@@ -453,11 +453,15 @@ msgstr "数据源大小不是实时更新的，可能已经过时。"
 msgid "New Data Transfer"
 msgstr "新数据传输"
 
-#: templates/login.jinja2:27
+#: templates/login.jinja2:32
 msgid "Log In"
 msgstr "登录"
 
-#: templates/login.jinja2:31
+#: templates/login.jinja2:33
+msgid "Register"
+msgstr "注册"
+
+#: templates/login.jinja2:37
 msgid "Google Login"
 msgstr "谷歌登录"
 
@@ -476,6 +480,10 @@ msgstr "启动实例"
 #: templates/machines.jinja2:43 templates/machines.jinja2:172
 msgid "Created:"
 msgstr "已创建："
+
+#: templates/machines.jinja2:43
+msgid "ago"
+msgstr "前"
 
 #: templates/machines.jinja2:47
 msgid "Group:"
@@ -561,6 +569,46 @@ msgid ""
 "following form and you will be emailed once your account is activated."
 msgstr "感谢您对使用 Ada 2025 的兴趣。请填写以下表格，一旦您的帐户激活，您将收到电子邮件通知。"
 
+#: templates/register.jinja2:30
+msgid "Given Name"
+msgstr "名字"
+
+#: templates/register.jinja2:34
+msgid "Family Name"
+msgstr "姓氏"
+
+#: templates/register.jinja2:41 templates/welcome.jinja2:44
+msgid "Username"
+msgstr "用户名"
+
+#: templates/register.jinja2:47 templates/register.jinja2:51
+msgid "Password"
+msgstr "密码"
+
+#: templates/register.jinja2:59 templates/welcome.jinja2:46
+msgid "Email"
+msgstr "电子邮件"
+
+#: templates/register.jinja2:65
+msgid "Language"
+msgstr "语言"
+
+#: templates/register.jinja2:69
+msgid "Timezone"
+msgstr "时区"
+
+#: templates/register.jinja2:76
+msgid "Organization"
+msgstr "组织"
+
+#: templates/register.jinja2:81
+msgid "Job Title"
+msgstr "职位"
+
+#: templates/register.jinja2:89
+msgid "Submit"
+msgstr "提交"
+
 #: templates/report_problem.jinja2:5
 msgid ""
 "We're sorry that there's a problem with the service, please fill in this "
@@ -571,43 +619,119 @@ msgstr "很抱歉服务出现了问题，请填写此表单，我们将进行调
 msgid "Report a Problem"
 msgstr "报告问题"
 
-#: templates/report_problem.jinja2:15
+#: templates/report_problem.jinja2:14
 msgid "Title"
 msgstr "标题"
 
-#: templates/report_problem.jinja2:20
+#: templates/report_problem.jinja2:19
 msgid "Description"
 msgstr "描述"
 
-#: templates/report_problem.jinja2:25
-msgid "Machine (optional)"
-msgstr "机器（可选）"
+#: templates/settings.jinja2:5
+msgid ""
+"Your username is '{username}'. If you'd like to change it, please let us "
+"know."
+msgstr "您的用户名是 '{username}'。如果您想更改它，请告诉我们。"
 
-#: templates/report_problem.jinja2:30
-msgid "Data transfer job (optional)"
-msgstr "数据传输任务（可选）"
+#: templates/settings.jinja2:6
+msgid ""
+"If you log in with a third party provider like Google, you should change "
+"your given name, family name and email on the provider, and it will be "
+"updated here next time you log in."
+msgstr "如果您使用Google等第三方提供商登录，您应在提供商那里更改您的名字、姓氏和电子邮件，它将在您下次登录时在这里更新。"
 
-#: templates/welcome.jinja2:8
-msgid "Problem Reports"
-msgstr "问题报告"
+#: templates/settings.jinja2:7
+msgid ""
+"If you log in with a third party provider, you can set a password here. "
+"That will allow you to use either the local login form or the provider "
+"login method."
+msgstr "如果您使用第三方提供商登录，您可以在这里设置密码。这将允许您使用本地登录表单或提供商登录方法。"
 
-#: templates/welcome.jinja2:14
-msgid "User"
-msgstr "用户"
+#: templates/settings.jinja2:10
+msgid "User Settings"
+msgstr "用户设置"
 
-#: templates/welcome.jinja2:15
-msgid "Report title"
-msgstr "报告标题"
+#: templates/share.jinja2:4
+msgid "Sharing machine"
+msgstr "共享机器"
 
-#: templates/welcome.jinja2:16
-msgid "Created ago"
-msgstr "创建于"
+#: templates/share.jinja2:6
+msgid ""
+"Users with the share link will have the same level of access to the "
+"machine as you do, including full desktop access and file browser access."
+msgstr "拥有共享链接的用户将拥有与您相同的机器访问权限，包括完全的桌面访问和文件浏览器访问。"
 
-#: templates/welcome.jinja2:30
+#: templates/share.jinja2:8
+msgid ""
+"The user must have an account and be logged into the service when they "
+"visit the link."
+msgstr "用户在访问链接时必须有一个帐户并已登录到服务。"
+
+#: templates/share.jinja2:11
+msgid "You can share this link with users to give them access to the machine:"
+msgstr "您可以与用户分享此链接，以便他们访问机器："
+
+#: templates/share.jinja2:13
+msgid "Share link"
+msgstr "分享链接"
+
+#: templates/share.jinja2:14
+msgid "Right click on the link and select <i>copy link address.</i>"
+msgstr "在链接上右键单击并选择复制链接地址。"
+
+#: templates/share.jinja2:19
+msgid "As the owner you can revoke all shares and generate a new share link:"
+msgstr "作为所有者，您可以撤销所有分享并生成新的分享链接："
+
+#: templates/share.jinja2:21
+msgid "Revoke share"
+msgstr "撤销分享"
+
+#: templates/welcome.jinja2:5
 msgid "Welcome to ADA Data Analysis 2025"
 msgstr "欢迎使用ADA数据分析2025"
 
-#: templates/welcome.jinja2:32
+#: templates/welcome.jinja2:9
+msgid "Problem Reports"
+msgstr "问题报告"
+
+#: templates/welcome.jinja2:16
+msgid "User"
+msgstr "用户"
+
+#: templates/welcome.jinja2:17
+msgid "Report title"
+msgstr "报告标题"
+
+#: templates/welcome.jinja2:18
+msgid "Created ago"
+msgstr "创建于"
+
+#: templates/welcome.jinja2:29
+msgid "No unresolved problems."
+msgstr "没有未解决的问题。"
+
+#: templates/welcome.jinja2:36
+msgid "Users Awaiting Activation"
+msgstr "等待激活的用户"
+
+#: templates/welcome.jinja2:39
+msgid "Use the flask-admin User view action 'Setup user' to activate users."
+msgstr "使用flask-admin User视图操作'设置用户'来激活用户。"
+
+#: templates/welcome.jinja2:45
+msgid "Real name"
+msgstr "真实姓名"
+
+#: templates/welcome.jinja2:47
+msgid "Registered"
+msgstr "已注册"
+
+#: templates/welcome.jinja2:59
+msgid "All users are activated."
+msgstr "所有用户都已激活。"
+
+#: templates/welcome.jinja2:66
 msgid ""
 "Thank you for choosing ADA Data Analysis, the next-generation platform "
 "for data analysis and machine learning. We are thrilled to have you "
@@ -615,11 +739,11 @@ msgid ""
 "capabilities of our newly improved service."
 msgstr "感谢您选择 ADA 数据分析，这是下一代的数据分析和机器学习平台。我们很高兴您加入我们，我们相信您会喜欢我们新改进服务的变革能力。"
 
-#: templates/welcome.jinja2:34
+#: templates/welcome.jinja2:68
 msgid "Understanding ADA: Your Personal Data Analysis Platform"
 msgstr "了解 ADA：您的个人数据分析平台"
 
-#: templates/welcome.jinja2:36
+#: templates/welcome.jinja2:70
 msgid ""
 "ADA is a new data analysis service that offers you the flexibility to "
 "access your data remotely, from anywhere at any time. With ADA, you can "
@@ -633,11 +757,11 @@ msgstr ""
 "ADA 是一项新的数据分析服务，提供给您灵活的远程访问数据的能力，无论何时何地。使用 ADA，您可以创建虚拟机，这些实际上是基于云的 Linux "
 "桌面环境。这些环境配备了所有必要的软件、数据存储和您需要无缝进行分析的计算能力。不再担心硬件限制、软件不兼容或数据安全；我们为您提供了覆盖。"
 
-#: templates/welcome.jinja2:38
+#: templates/welcome.jinja2:72
 msgid "Help & Information"
 msgstr "帮助与信息"
 
-#: templates/welcome.jinja2:40
+#: templates/welcome.jinja2:74
 msgid ""
 "To ensure your experience is as smooth as possible, we've integrated a "
 "dedicated 'Help' button on the side bar menu. Simply click on this button"
@@ -649,11 +773,11 @@ msgstr ""
 "为了确保您的体验尽可能顺畅，我们在侧边栏菜单中集成了一个专用的 '帮助' "
 "按钮。只需点击此按钮即可访问我们平台各个方面的大量信息。从操作指南和教程到故障排除提示和常见问题解答，这些页面旨在帮助您充分利用 ADA 平台。"
 
-#: templates/welcome.jinja2:42
+#: templates/welcome.jinja2:76
 msgid "We're Here to Help: Feedback and Support"
 msgstr "我们在这里提供帮助：反馈与支持"
 
-#: templates/welcome.jinja2:44
+#: templates/welcome.jinja2:78
 msgid ""
 "Your input is invaluable to us. If you have a question, a request, or "
 "encounter an issue, we encourage you to reach out to us. We're here to "
@@ -662,101 +786,149 @@ msgid ""
 "to continually improve our service."
 msgstr "您的反馈对我们非常宝贵。如果您有任何问题、请求或遇到问题，我们鼓励您联系我们。我们将全程为您提供支持。我们的专家团队始终准备提供帮助，回答您的问题，并根据您的建议不断改进我们的服务。"
 
-#: templates/welcome.jinja2:46
+#: templates/welcome.jinja2:80
 msgid "Contact us at:"
 msgstr "联系我们："
 
-#: templates/welcome.jinja2:48
+#: templates/welcome.jinja2:82
 msgid ""
 "Your journey into the future of data analysis begins with ADA. Thank you "
 "for choosing us as your partner in this exciting endeavor. Enjoy your "
 "exploration!"
 msgstr "您探索数据分析未来的旅程从 ADA 开始。感谢您选择我们作为这一激动人心事业的合作伙伴。祝您探索愉快！"
 
-#~ msgid ""
-#~ "Your account hasn't been activated yet."
-#~ " If it's been more than 24 "
-#~ "hours please contact support."
-#~ msgstr "您的帐户尚未激活。如果已超过 24 小时，请联系支持。"
+msgid ""
+"Your account hasn't been activated yet."
+" If it's been more than 24 "
+"hours please contact support."
+msgstr "您的帐户尚未激活。如果已超过 24 小时，请联系支持。"
 
-#~ msgid "Name"
-#~ msgstr "名称"
+msgid "Name"
+msgstr "名称"
 
-#~ msgid "Real Name"
-#~ msgstr "真实姓名"
+msgid "Real Name"
+msgstr "真实姓名"
 
-#~ msgid "Group"
-#~ msgstr "群组"
+msgid "Group"
+msgstr "群组"
 
-#~ msgid "Sorry, the form could not be validated."
-#~ msgstr "抱歉，无法验证表单。"
+msgid "Sorry, the form could not be validated."
+msgstr "抱歉，无法验证表单。"
 
-#~ msgid "Dismiss"
-#~ msgstr "取消"
+msgid "Dismiss"
+msgstr "取消"
 
-#~ msgid "We hope you'll enjoy your stay with our new greatly improved service."
-#~ msgstr "我们希望您能喜欢我们全新升级的服务。"
+msgid "We hope you'll enjoy your stay with our new greatly improved service."
+msgstr "我们希望您能喜欢我们全新升级的服务。"
 
-#~ msgid "What is Ada?"
-#~ msgstr "什么是Ada？"
+msgid "What is Ada?"
+msgstr "什么是Ada？"
 
-#~ msgid ""
-#~ "This service allows you to remotely "
-#~ "access your data and create machines "
-#~ "(virtualized linux desktop environments), "
-#~ "which contain all the software, data "
-#~ "and compute resources you will need "
-#~ "to perform your work."
-#~ msgstr "本服务允许您远程访问您的数据并创建机器（虚拟化的Linux桌面环境），其中包含您执行工作所需的所有软件、数据和计算资源。"
+msgid ""
+"This service allows you to remotely "
+"access your data and create machines "
+"(virtualized linux desktop environments), "
+"which contain all the software, data "
+"and compute resources you will need "
+"to perform your work."
+msgstr "本服务允许您远程访问您的数据并创建机器（虚拟化的Linux桌面环境），其中包含您执行工作所需的所有软件、数据和计算资源。"
 
-#~ msgid ""
-#~ "For help and info, find the help"
-#~ " button on the side bar menu. "
-#~ "These pages have specifc information for"
-#~ " each area of the site."
-#~ msgstr "帮助和信息请在侧边栏菜单中找到帮助按钮。这些页面包含有关网站各个区域的具体信息。"
+msgid ""
+"For help and info, find the help"
+" button on the side bar menu. "
+"These pages have specifc information for"
+" each area of the site."
+msgstr "帮助和信息请在侧边栏菜单中找到帮助按钮。这些页面包含有关网站各个区域的具体信息。"
 
-#~ msgid "Feedback and help"
-#~ msgstr "反馈和帮助"
+msgid "Feedback and help"
+msgstr "反馈和帮助"
 
-#~ msgid "Have a question, request or an issue to report?"
-#~ msgstr "有问题、请求或需要报告的问题吗？"
+msgid "Have a question, request or an issue to report?"
+msgstr "有问题、请求或需要报告的问题吗？"
 
-#~ msgid "Let us know at:"
-#~ msgstr "请通过以下方式联系我们："
+msgid "Let us know at:"
+msgstr "请通过以下方式联系我们："
 
-#~ msgid "Create new machine"
-#~ msgstr "创建新的机器"
+msgid "Create new machine"
+msgstr "创建新的机器"
 
-#~ msgid ""
-#~ "This lists all templates that are "
-#~ "available to the group you are in:"
-#~ " {g}"
-#~ msgstr "这列出了您所在组可用的所有模板：{g}"
+msgid ""
+"This lists all templates that are "
+"available to the group you are in:"
+" {g}"
+msgstr "这列出了您所在组可用的所有模板：{g}"
 
-#~ msgid "Launch instance"
-#~ msgstr "启动实例"
+msgid "Launch instance"
+msgstr "启动实例"
 
-#~ msgid "List of machines"
-#~ msgstr "机器列表"
+msgid "List of machines"
+msgstr "机器列表"
 
-#~ msgid ""
-#~ "This lists all machines you have "
-#~ "access to, both your own and those"
-#~ " shared with you by other users."
-#~ msgstr "这列出了您可以访问的所有机器，包括您自己的和其他用户共享给您的机器。"
+msgid ""
+"This lists all machines you have "
+"access to, both your own and those"
+" shared with you by other users."
+msgstr "这列出了您可以访问的所有机器，包括您自己的和其他用户共享给您的机器。"
 
-#~ msgid "Open"
-#~ msgstr "打开"
+msgid "Open"
+msgstr "打开"
 
-#~ msgid "Preparing"
-#~ msgstr ""
+msgid "Preparing"
+msgstr "准备中"
 
-#~ msgid "Problem with machine "
-#~ msgstr ""
+msgid "Problem with machine "
+msgstr "机器出现问题 "
 
-#~ msgid "Report problem"
-#~ msgstr ""
+msgid "Report problem"
+msgstr "报告问题"
 
-#~ msgid "Stop and remove machine"
-#~ msgstr ""
+msgid "Stop and remove machine"
+msgstr "停止并移除机器"
+
+msgid ""
+"New name must be between 4 and "
+"80 characters long, and can contain "
+"characters a-Z,0-9 and -"
+msgstr "新名称必须为 4 到 80 个字符长，并且可以包含字符 a-Z、0-9 和 -"
+
+msgid ""
+"New name contains non-alphanumeric "
+"characters. Characters that are allowed "
+"are a-Z,0-9 and -"
+msgstr "新名称包含非字母数字字符。允许的字符为 a-Z、0-9 和 -"
+
+msgid "The requested machine name is already taken"
+msgstr "请求的机器名称已被占用"
+
+msgid "No data transfer job id given."
+msgstr "未给出数据传输作业ID。"
+
+msgid "Data transfer job doesn't exist."
+msgstr "数据传输作业不存在。"
+
+msgid "You don't own that data transfer job."
+msgstr "您不拥有那个数据传输作业。"
+
+msgid "Machine (optional)"
+msgstr "机器（可选）"
+
+msgid "Data transfer job (optional)"
+msgstr "数据传输任务（可选）"
+
+msgid "Update"
+msgstr "更新"
+
+msgid "Data Source"
+msgstr "数据源"
+
+msgid "Machine"
+msgstr "机器"
+
+msgid "New Password"
+msgstr "新密码"
+
+msgid "Confirm New Password"
+msgstr "确认新密码"
+
+msgid "Passwords must match."
+msgstr "密码必须匹配。"

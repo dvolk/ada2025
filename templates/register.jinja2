@@ -13,49 +13,116 @@
     {% endif %}
   {% endwith %}
   {% if form.username.errors %}
-      {% for error in form.username.errors %}
-        <p class="w3-red w3-padding-large w3-round">{{ error }}</li>
-      {% endfor %}
+    {% for error in form.username.errors %}
+      <p class="w3-red w3-padding-large w3-round">{{ error }}</li>
+    {% endfor %}
   {% endif %}
 
 
 </form>
-  <p>{{ gettext("Thank you for your interest in using Ada 2025. Please fill in the following form and you will be emailed once your account is activated.") }}</p>
+<p>{{ icon('hand-spock') }} {{ gettext("Thank you for your interest in using Ada 2025. Please fill in the following form and you will be emailed once your account is activated.") }}</p>
 
-  <form method="POST" action="{{ url_for('register') }}">
-    {{ form.hidden_tag() }}
-      <label class="w3-text-black">{{ gettext("Username") }}* (character length min: {{ form.username_min }}, max: {{ form.username_max }})</label>
-      {{ form.username(class="w3-input w3-round w3-border w3-light-grey") }}
-    <br>
-    <label class="w3-text-black">{{ gettext("Password") }}* (min: {{ form.password_min }}, max: {{ form.password_max }})</label>
-    {{ form.password(class="w3-input w3-round w3-border w3-light-grey") }}
-    <br>
-    <label class="w3-text-black">{{ gettext("Given Name") }}* (min: {{ form.given_name_min }}, max: {{ form.given_name_max }})</label>
-    {{ form.given_name(class="w3-input w3-round w3-border w3-light-grey") }}
-    <br>
-    <label class="w3-text-black">{{ gettext("Family Name") }}* (min: {{ form.family_name_min }}, max: {{ form.family_name_max }})</label>
-    {{ form.family_name(class="w3-input w3-round w3-border w3-light-grey") }}
-    <br>
+<form method="POST" action="{{ url_for('register') }}">
+  {{ form.hidden_tag() }}
+
+  <p>
+    <div class="w3-half" style="padding-right: 5px;">
+      <label>{{ gettext("Given Name") }}* (min: {{ form.given_name_min }}, max: {{ form.given_name_max }})</label>
+      {{ form.given_name(class="w3-input w3-round w3-border w3-light-grey") }}
+    </div>
+    <div class="w3-half" style="padding-left: 5px;">
+      <label>{{ gettext("Family Name") }}* (min: {{ form.family_name_min }}, max: {{ form.family_name_max }})</label>
+      {{ form.family_name(class="w3-input w3-round w3-border w3-light-grey") }}
+    </div>
+  </p>
+  <br/><br/><br/>
+
+  <p>
+    <label>{{ gettext("Username") }}* (character length min: {{ form.username_min }}, max: {{ form.username_max }})</label>
+    {{ form.username(class="w3-input w3-round w3-border w3-light-grey") }}
+  </p>
+
+  <p>
+    <div class="w3-half" style="padding-right: 5px;">
+      <label>{{ gettext("Password") }}* (min: {{ form.password_min }}, max: {{ form.password_max }})</label>
+      {{ form.password(class="w3-input w3-round w3-border w3-light-grey") }}
+    </div>
+    <div class="w3-half" style="padding-left: 5px;">
+      <label>{{ gettext("Confirm Password") }}*</label>
+      {{ form.confirm_password(class="w3-input w3-round w3-border w3-light-grey") }}
+    </div>
+  </p>
+
+  <br/><br/><br/>
+
+  <p>
     <label class="w3-text-black">{{ gettext("Email") }}* (min: {{ form.email_min }}, max: {{ form.email_max }})</label>
     {{ form.email(class="w3-input w3-round w3-border w3-light-grey") }}
-    <br>
-    <label class="w3-text-black">{{ gettext("Language") }}*</label>
-    {{ form.language(class="w3-select w3-round w3-border w3-light-grey") }}
-    <br>
-    <br>
-    <label class="w3-text-black">{{ gettext("Timezone") }}*</label>
-    {{ form.timezone(class="w3-select w3-round w3-border w3-light-grey") }}
-    <br>
-    <br>
-    <label class="w3-text-black">{{ gettext("Organization") }}* (min: {{ form.organization_min }}, max: {{ form.organization_max }})</label>
+  </p>
+
+  <p>
+    <div class="w3-half" style="padding-right: 5px;">
+      <label>{{ gettext("Language") }}*</label>
+      {{ form.language(class="w3-select w3-round w3-border w3-light-grey") }}
+    </div>
+    <div class="w3-half" style="padding-left: 5px;">
+      <label>{{ gettext("Timezone") }}*</label>
+      {{ form.timezone(class="w3-select w3-round w3-border w3-light-grey") }}
+    </div>
+  </p>
+  <br/><br/><br/>
+
+  <p>
+    <label>{{ gettext("Organization") }}* (min: {{ form.organization_min }}, max: {{ form.organization_max }})</label>
     {{ form.organization(class="w3-input w3-round w3-border w3-light-grey") }}
-    <br>
-    <label class="w3-text-black">{{ gettext("Job Title") }}* (min: {{ form.job_title_min }}, max: {{ form.job_title_max }})</label>
+  </p>
+
+  <p>
+    <label>{{ gettext("Job Title") }}* (min: {{ form.job_title_min }}, max: {{ form.job_title_max }})</label>
     {{ form.job_title(class="w3-input w3-round w3-border w3-light-grey") }}
-    <br>
+  </p>
+
+  <p>
     {{ recaptcha }}
-    <br/>
-    <button class="w3-btn ada-blue w3-round" type="submit">{{ gettext("Submit") }}</button>
-  </form>
+  </p>
+
+  <button class="w3-btn ada-blue w3-round" type="submit">{{ gettext("Submit") }}</button>
+</form>
+
+<script type="text/javascript">
+ window.onload = function() {
+     var timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+     var select = document.getElementById('timezone'); // adjust this to match the actual ID of your select field
+
+     for (var i = 0; i < select.options.length; i++) {
+         if (select.options[i].value === timezone) {
+             select.options[i].selected = true;
+             break;
+         }
+     }
+
+     // Detect the language
+     var language = navigator.language || navigator.userLanguage;
+     language = language.split('-')[0];  // Extract the language code
+
+     // Check if the detected language is in the list of available languages
+     var availableLanguages = ['en', 'zh', 'sl'];
+     if (!availableLanguages.includes(language)) {
+         language = 'en';  // Default to English if the detected language is not available
+     }
+
+     // Set the default language in the form
+     var select = document.getElementById('language');  // adjust this to match the actual ID of your select field
+
+     for (var i = 0; i < select.options.length; i++) {
+         if (select.options[i].value === language) {
+             select.options[i].selected = true;
+             break;
+         }
+     }
+
+
+ }
+</script>
 
 {% endblock %}

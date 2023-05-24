@@ -14,13 +14,16 @@
     <form method="POST">
       {{ form.hidden_tag() }}
       <p>
-        {{ form.given_name.label() }}
-        {{ form.given_name(class="w3-input w3-round w3-border") }}
+        <div class="w3-half" style="padding-right: 5px;">
+          {{ form.given_name.label() }}
+          {{ form.given_name(class="w3-input w3-round w3-border") }}
+        </div>
+        <div class="w3-half" style="padding-left: 5px;">
+          {{ form.family_name.label() }}
+          {{ form.family_name(class="w3-input w3-round w3-border") }}
+        </div>
       </p>
-      <p>
-        {{ form.family_name.label() }}
-        {{ form.family_name(class="w3-input w3-round w3-border") }}
-      </p>
+      <br/><br/><br/> {# what? why? #}
       <p>
         {{ form.organization.label() }}
         {{ form.organization(class="w3-input w3-round w3-border") }}
@@ -34,13 +37,16 @@
         {{ form.email(class="w3-input w3-round w3-border") }}
       </p>
       <p>
-        {{ form.language.label() }}
-        {{ form.language(class="w3-input w3-round w3-border") }}
+        <div class="w3-half" style="padding-right: 5px;">
+          {{ form.language.label() }}
+          {{ form.language(class="w3-input w3-round w3-white w3-border") }}
+        </div>
+        <div class="w3-half" style="padding-left: 5px;">
+          {{ form.timezone.label() }}
+          {{ form.timezone(class="w3-input w3-round w3-white w3-border") }}
+        </div>
       </p>
-      <p>
-        {{ form.timezone.label() }}
-        {{ form.timezone(class="w3-input w3-round w3-border") }}
-      </p>
+      <br/><br/><br/> {# what? why? #}
 
       <p>
         <div class="w3-half" style="padding-right: 5px;">

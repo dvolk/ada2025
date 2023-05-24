@@ -14,18 +14,24 @@
 
   <form method="POST" action="{{ url_for('login') }}">
     {{ form.hidden_tag() }}
-    <label class="w3-text-black">{{ gettext("Username") }}</label>
-    <input class="w3-input w3-border w3-round w3-light-grey" type="text" name="username" required>
-    <br>
-    <label class="w3-text-black">{{ gettext("Password") }}</label>
-    <input class="w3-input w3-border w3-round w3-light-grey" type="password" name="password" required>
-    <br>
+
+    <p>
+      {{ form.username.label() }}
+      {{ form.username(class="w3-input w3-round w3-border w3-light-grey") }}
+    </p>
+    <p>
+      {{ form.password.label() }}
+      {{ form.password(class="w3-input w3-round w3-border w3-light-grey") }}
+    </p>
+
     {% if LOGIN_RECAPTCHA %}
       {{ recaptcha }}
       <br>
     {% endif %}
+
     <button class="w3-btn w3-round ada-blue" type="submit">{{ gettext("Log In") }}</button>
     <a class="w3-btn w3-round ada-blue" href="/register">{{ gettext("Register") }}</a>
+
     {% if show_google_button %}
       <a class="w3-btn w3-round w3-green" href="/google_login">
         <i class="fa-brands fa-fw fa-google"></i> {{ gettext("Google Login") }}

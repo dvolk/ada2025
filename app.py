@@ -62,7 +62,7 @@ from wtforms import (
     Form,
 )
 from wtforms.validators import DataRequired, Email, Length, Regexp, EqualTo
-from flask_babel import Babel, gettext
+from flask_babel import Babel, gettext, lazy_gettext, _, Locale
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from markupsafe import Markup
@@ -1526,10 +1526,10 @@ babel = Babel(app, locale_selector=get_locale, timezone_selector=get_timezone)
 
 class LoginForm(FlaskForm):
     username = StringField(
-        gettext("Username"), validators=[DataRequired(), Length(min=2, max=32)]
+        lazy_gettext("Username"), validators=[DataRequired(), Length(min=2, max=32)]
     )
     password = PasswordField(
-        gettext("Password"), validators=[DataRequired(), Length(min=8, max=100)]
+        lazy_gettext("Password"), validators=[DataRequired(), Length(min=8, max=100)]
     )
     submit = SubmitField("Sign In")
 
@@ -1700,32 +1700,40 @@ def visit_machine(m_id):
 
 class UserInfoForm(FlaskForm):
     given_name = StringField(
-        gettext("Given Name"), validators=[DataRequired(), Length(max=100)]
+        lazy_gettext("Given Name"), validators=[DataRequired(), Length(max=100)]
     )
     family_name = StringField(
-        gettext("Family Name"), validators=[DataRequired(), Length(max=100)]
+        lazy_gettext("Family Name"), validators=[DataRequired(), Length(max=100)]
     )
-    organization = StringField(gettext("Organization"), validators=[Length(max=200)])
-    job_title = StringField(gettext("Job Title"), validators=[Length(max=200)])
+    organization = StringField(
+        lazy_gettext("Organization"), validators=[Length(max=200)]
+    )
+    job_title = StringField(lazy_gettext("Job Title"), validators=[Length(max=200)])
     email = StringField(
-        gettext("Email"), validators=[DataRequired(), Email(), Length(max=200)]
+        lazy_gettext("Email"), validators=[DataRequired(), Email(), Length(max=200)]
     )
     language = SelectField(
-        gettext("Language"), validators=[DataRequired()], choices=["en", "zh", "sl"]
+        lazy_gettext("Language"),
+        validators=[DataRequired()],
+        choices=[
+            (code, Locale.parse(code).get_display_name()) for code in ["en", "zh", "sl"]
+        ],
     )
     timezone = SelectField(
-        gettext("Timezone"), validators=[DataRequired()], choices=pytz.all_timezones
+        lazy_gettext("Timezone"),
+        validators=[DataRequired()],
+        choices=pytz.all_timezones,
     )
-    password = PasswordField("New Password", validators=[Length(max=200)])
+    password = PasswordField(lazy_gettext("New Password"), validators=[Length(max=200)])
     password_confirm = PasswordField(
-        "Confirm New Password",
+        lazy_gettext("Confirm New Password"),
         validators=[
             Length(max=200),
-            EqualTo("password", message="Passwords must match."),
+            EqualTo("password", message=lazy_gettext("Passwords must match.")),
         ],
     )
 
-    submit = SubmitField(gettext("Update"))
+    submit = SubmitField(lazy_gettext("Update"))
 
 
 @app.route("/settings", methods=["GET", "POST"])
@@ -1737,7 +1745,7 @@ def settings():
     if request.method == "POST":
         if form.validate_on_submit():
             error_msg = ""
-            if form.language.data not in form.language.choices:
+            if form.language.data not in [x[0] for x in form.language.choices]:
                 error_msg = gettext("Bad language specified")
             if form.timezone.data not in form.timezone.choices:
                 error_msg = gettext("Bad timezone specified")
@@ -1775,7 +1783,7 @@ def settings():
 
             db.session.commit()
 
-            flash("Your changes have been saved.")
+            flash(gettext("Your changes have been saved."))
             return redirect(url_for("settings"))
         else:
             error_msg = ""
@@ -1783,7 +1791,7 @@ def settings():
                 for error in errors:
                     error_msg += f"{field}: {error}<br/>"
 
-            flash(f"Sorry, the form could not be validated:<br/> {error_msg}", "danger")
+            flash("Sorry, the form could not be validated:<br/> {error_msg}", "danger")
             return redirect(url_for("settings"))
 
     elif request.method == "GET":
@@ -1922,7 +1930,7 @@ class RegistrationForm(FlaskForm):
     username_min = 2
     username_max = 32
     username = StringField(
-        gettext("Username"),
+        lazy_gettext("Username"),
         validators=[
             DataRequired(),
             Length(min=username_min, max=username_max),
@@ -1937,46 +1945,60 @@ class RegistrationForm(FlaskForm):
     password_min = 8
     password_max = 100
     password = PasswordField(
-        gettext("Password"),
+        lazy_gettext("Password"),
         validators=[DataRequired(), Length(min=password_min, max=password_max)],
+    )
+    confirm_password = PasswordField(
+        lazy_gettext("Confirm Password"),
+        validators=[
+            DataRequired(),
+            Length(min=password_min, max=password_max),
+            EqualTo("password", message=lazy_gettext("Passwords must match.")),
+        ],
     )
     given_name_min = 2
     given_name_max = 100
     given_name = StringField(
-        gettext("Given Name"),
+        lazy_gettext("Given Name"),
         validators=[DataRequired(), Length(min=given_name_min, max=given_name_max)],
     )
     family_name_min = 2
     family_name_max = 100
     family_name = StringField(
-        gettext("Family Name"),
+        lazy_gettext("Family Name"),
         validators=[DataRequired(), Length(min=family_name_min, max=family_name_max)],
     )
     language = SelectField(
-        gettext("Language"), validators=[DataRequired()], choices=["en", "zh", "sl"]
+        lazy_gettext("Language"),
+        validators=[DataRequired()],
+        choices=[
+            (code, Locale.parse(code).get_display_name()) for code in ["en", "zh", "sl"]
+        ],
     )
     timezone = SelectField(
-        gettext("Timezone"), validators=[DataRequired()], choices=pytz.all_timezones
+        lazy_gettext("Timezone"),
+        validators=[DataRequired()],
+        choices=pytz.all_timezones,
     )
     email_min = 4
     email_max = 200
     email = StringField(
-        gettext("Email"),
+        lazy_gettext("Email"),
         validators=[DataRequired(), Email(), Length(min=email_min, max=email_max)],
     )
     organization_min = 2
     organization_max = 200
     organization = StringField(
-        gettext("Organization"),
+        lazy_gettext("Organization"),
         validators=[DataRequired(), Length(min=organization_min, max=organization_max)],
     )
     job_title_min = 2
     job_title_max = 200
     job_title = StringField(
-        gettext("Job Title"),
+        lazy_gettext("Job Title"),
         validators=[DataRequired(), Length(min=job_title_min, max=job_title_max)],
     )
-    submit = SubmitField(gettext("Register"))
+    submit = SubmitField(lazy_gettext("Register"))
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -1984,6 +2006,7 @@ class RegistrationForm(FlaskForm):
 def register():
     # register a user account
     form = RegistrationForm()
+    form.timezone.default = request.cookies.get("timezone", "UTC")
 
     if request.method == "POST":
         audit = create_audit("registration")
@@ -1998,7 +2021,7 @@ def register():
 
         if form.validate_on_submit():
             error_msg = ""
-            if form.language.data not in form.language.choices:
+            if form.language.data not in [l[0] for l in form.language.choices]:
                 error_msg = gettext("Bad language specified")
             if form.timezone.data not in form.timezone.choices:
                 error_msg = gettext("Bad timezone specified")
@@ -2264,11 +2287,11 @@ def help():
 
 
 class ProblemReportForm(FlaskForm):
-    title = StringField("Title", validators=[DataRequired()])
-    description = TextAreaField("Description", validators=[])
+    title = StringField(lazy_gettext("Title"), validators=[DataRequired()])
+    description = TextAreaField(lazy_gettext("Description"), validators=[])
     machine_id = HiddenField("machine_id")
     data_transfer_job_id = HiddenField("data_transfer_job_id")
-    submit = SubmitField("Submit")
+    submit = SubmitField(lazy_gettext("Submit"))
 
 
 @app.route("/report_problem", methods=["GET", "POST"])
@@ -2348,10 +2371,12 @@ def mk_safe_machine_name(username):
 
 class DataTransferForm(FlaskForm):
     data_source = SelectField(
-        gettext("Data Source"), validators=[DataRequired()], coerce=int
+        lazy_gettext("Data Source"), validators=[DataRequired()], coerce=int
     )
-    machine = SelectField(gettext("Machine"), validators=[DataRequired()], coerce=int)
-    submit = SubmitField(gettext("Submit"))
+    machine = SelectField(
+        lazy_gettext("Machine"), validators=[DataRequired()], coerce=int
+    )
+    submit = SubmitField(lazy_gettext("Submit"))
 
 
 @app.route("/dismiss_datatransferjob", methods=["POST"])
