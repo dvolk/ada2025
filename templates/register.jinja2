@@ -83,16 +83,20 @@
   </p>
 
   <p>
-    {{ recaptcha }}
+    <div class="w3-half" style="padding-right: 5px;">
+      {{ recaptcha }}
+    </div>
+    <div class="w3-half" style="padding-left: 5px;">
+      <button style="float:right" class="w3-btn ada-blue w3-round" type="submit">{{ gettext("Submit") }}</button>
+    </div>
   </p>
-
-  <button class="w3-btn ada-blue w3-round" type="submit">{{ gettext("Submit") }}</button>
 </form>
 
 <script type="text/javascript">
  window.onload = function() {
+     // set the form default timezone based on browser timezone
      var timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-     var select = document.getElementById('timezone'); // adjust this to match the actual ID of your select field
+     var select = document.getElementById('timezone');
 
      for (var i = 0; i < select.options.length; i++) {
          if (select.options[i].value === timezone) {
@@ -112,7 +116,7 @@
      }
 
      // Set the default language in the form
-     var select = document.getElementById('language');  // adjust this to match the actual ID of your select field
+     var select = document.getElementById('language');
 
      for (var i = 0; i < select.options.length; i++) {
          if (select.options[i].value === language) {

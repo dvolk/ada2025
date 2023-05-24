@@ -1791,7 +1791,7 @@ def settings():
                 for error in errors:
                     error_msg += f"{field}: {error}<br/>"
 
-            flash("Sorry, the form could not be validated:<br/> {error_msg}", "danger")
+            flash(f"Sorry, the form could not be validated:<br/> {error_msg}", "danger")
             return redirect(url_for("settings"))
 
     elif request.method == "GET":
@@ -2006,7 +2006,6 @@ class RegistrationForm(FlaskForm):
 def register():
     # register a user account
     form = RegistrationForm()
-    form.timezone.default = request.cookies.get("timezone", "UTC")
 
     if request.method == "POST":
         audit = create_audit("registration")
@@ -2029,6 +2028,8 @@ def register():
                 error_msg = gettext(
                     "Sorry, that username is invalid. The username can contain letters, numbers and ."
                 )
+            if form.password.data != form.password_confirm.data:
+                error_msg = gettext("The passwords you entered don't match.")
             if not is_name_safe(form.given_name.data):
                 error_msg = "Sorry, that given name is not allowed."
             if not is_name_safe(form.family_name.data):
@@ -2083,6 +2084,14 @@ def register():
                 )
             )
             return redirect(url_for("login"))
+        else:
+            error_msg = ""
+            for field, errors in form.errors.items():
+                for error in errors:
+                    error_msg += f"{field}: {error}<br/>"
+
+            flash(f"Sorry, the form could not be validated:<br/> {error_msg}", "danger")
+            return redirect(url_for("register"))
 
     return render_template(
         "register.jinja2",
