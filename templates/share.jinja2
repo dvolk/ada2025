@@ -1,23 +1,23 @@
 {% extends 'base.jinja2' %}
 
 {% block content %}
-  <h2>Sharing machine</h2>
+  <h2>{{ gettext("Sharing machine") }}</h2>
 
-  {{ info("Users with the share link will have the same level of access to the machine as you do, including full desktop access and file browser access.") }}
+  {{ info(gettext("Users with the share link will have the same level of access to the machine as you do, including full desktop access and file browser access.")) }}
 
-  {{ info("The user must have an account and be logged into the service when they visit the link.") }}
+  {{ info(gettext("The user must have an account and be logged into the service when they visit the link.")) }}
 
   <div class="w3-container w3-pale-yellow">
-  <p class="w3-large">You can share this link with users to give them access to the machine:</p>
+  <p class="w3-large">{{ gettext("You can share this link with users to give them access to the machine:") }}</p>
 
-  <h2>{{ icon('link') }} <a style="text-decoration: underline;" href="/share_accept/{{ machine.share_token }}">Share link</a></h2>
-  {{ idea("Right click on the link and select <i>copy link address.</i>") }}
+  <h2>{{ icon('link') }} <a style="text-decoration: underline;" href="/share_accept/{{ machine.share_token }}">{{ gettext("Share link") }}</a></h2>
+  {{ idea(gettext("Right click on the link and select <i>copy link address.</i>")) }}
   </div>
 
 
   {% if current_user == machine.owner %}
-    <p>As the owner you can revoke all shares and generate a new share link:</p>
+    <p>{{ gettext("As the owner you can revoke all shares and generate a new share link:") }}</p>
 
-    <p><a class="w3-btn w3-red w3-round" href="/share_revoke/{{ machine.id }}">{{ icon('link-slash') }} Revoke share</a></p>
+    <p><a class="w3-btn w3-red w3-round" href="/share_revoke/{{ machine.id }}">{{ icon('link-slash') }} {{ gettext("Revoke share") }}</a></p>
   {% endif %}
 {% endblock %}

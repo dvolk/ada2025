@@ -2,55 +2,64 @@
 
 {% block content %}
 
-  <h2>ADA Data Analysis 2025 Settings</h2>
+  {{ info(gettext("Your username is '{username}'. If you'd like to change it, please let us know."), username=current_user.username) }}
+  {{ info(gettext("If you log in with a third party provider like Google, you should change your given name, family name and email on the provider, and it will be updated here next time you log in.")) }}
+  {{ idea(gettext("If you log in with a third party provider, you can set a password here. That will allow you to use either the local login form or the provider login method.")) }}
 
-  <form>
+  <div class="w3-container w3-yellow">
+    <h2>{{ gettext("User Settings") }}</h2>
+  </div>
 
-    <h2>General Settings</h2>
+  <div class="w3-container w3-pale-yellow">
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      <p>
+        {{ form.given_name.label() }}
+        {{ form.given_name(class="w3-input w3-round w3-border") }}
+      </p>
+      <p>
+        {{ form.family_name.label() }}
+        {{ form.family_name(class="w3-input w3-round w3-border") }}
+      </p>
+      <p>
+        {{ form.organization.label() }}
+        {{ form.organization(class="w3-input w3-round w3-border") }}
+      </p>
+      <p>
+        {{ form.job_title.label() }}
+        {{ form.job_title(class="w3-input w3-round w3-border") }}
+      </p>
+      <p>
+        {{ form.email.label() }}
+        {{ form.email(class="w3-input w3-round w3-border") }}
+      </p>
+      <p>
+        {{ form.language.label() }}
+        {{ form.language(class="w3-input w3-round w3-border") }}
+      </p>
+      <p>
+        {{ form.timezone.label() }}
+        {{ form.timezone(class="w3-input w3-round w3-border") }}
+      </p>
 
-    <div class="w3-row w3-section">
-      <label>Language:</label>
-      <select class="w3-select" name="language">
-        <option value="" disabled selected>Select your language</option>
-        <option value="english">English</option>
-        <option value="spanish">Spanish</option>
-        <!-- Add more languages here -->
-      </select>
-    </div>
+      <p>
+        <div class="w3-half" style="padding-right: 5px;">
+          {{ form.password.label() }}
+          {{ form.password(class="w3-input w3-round w3-border") }}
+        </div>
+        <div class="w3-half" style="padding-left: 5px;">
+          {{ form.password_confirm.label() }}
+          {{ form.password_confirm(class="w3-input w3-round w3-border") }}
+        </div>
+      </p>
 
-    <div class="w3-row w3-section">
-      <label>Timezone:</label>
-      <input class="w3-input w3-border" name="timezone" type="text" placeholder="Enter your timezone">
-    </div>
+      <br/><br/><br/> {# what? why? #}
 
-    <div class="w3-row w3-section">
-      <label>Email Notifications:</label>
-      <input class="w3-check" type="checkbox" checked="checked">
-      <label>Receive email notifications for completed computations or important updates</label>
-    </div>
-
-    <h2>Appearance Settings</h2>
-
-    <div class="w3-row w3-section">
-      <label>Theme:</label>
-      <select class="w3-select" name="theme">
-        <option value="" disabled selected>Select your theme</option>
-        <option value="light">Light</option>
-        <option value="dark">Dark</option>
-        <!-- Add more themes here -->
-      </select>
-    </div>
-
-    <div class="w3-row w3-section">
-      <label>Font Size:</label>
-      <input class="w3-input w3-border" name="font-size" type="number" placeholder="Enter font size">
-    </div>
-
-    <!-- Add remaining categories and input fields in a similar manner -->
-
-    <p>
-      <button class="w3-button w3-section w3-blue w3-ripple"> Save </button>
-    </p>
-  </form>
+      <p>
+        {{ form.submit(class="w3-button w3-round w3-blue") }}
+      </p>
+    </form>
+  </div>
+  <br/>
 
 {% endblock %}

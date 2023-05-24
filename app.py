@@ -61,7 +61,7 @@ from wtforms import (
     HiddenField,
     Form,
 )
-from wtforms.validators import DataRequired, Email, Length, Regexp
+from wtforms.validators import DataRequired, Email, Length, Regexp, EqualTo
 from flask_babel import Babel, gettext
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -1698,6 +1698,110 @@ def visit_machine(m_id):
     return redirect(machine_url)
 
 
+class UserInfoForm(FlaskForm):
+    given_name = StringField(
+        gettext("Given Name"), validators=[DataRequired(), Length(max=100)]
+    )
+    family_name = StringField(
+        gettext("Family Name"), validators=[DataRequired(), Length(max=100)]
+    )
+    organization = StringField(gettext("Organization"), validators=[Length(max=200)])
+    job_title = StringField(gettext("Job Title"), validators=[Length(max=200)])
+    email = StringField(
+        gettext("Email"), validators=[DataRequired(), Email(), Length(max=200)]
+    )
+    language = SelectField(
+        gettext("Language"), validators=[DataRequired()], choices=["en", "zh", "sl"]
+    )
+    timezone = SelectField(
+        gettext("Timezone"), validators=[DataRequired()], choices=pytz.all_timezones
+    )
+    password = PasswordField("New Password", validators=[Length(max=200)])
+    password_confirm = PasswordField(
+        "Confirm New Password",
+        validators=[
+            Length(max=200),
+            EqualTo("password", message="Passwords must match."),
+        ],
+    )
+
+    submit = SubmitField(gettext("Update"))
+
+
+@app.route("/settings", methods=["GET", "POST"])
+@limiter.limit("60 per minute")
+@login_required
+def settings():
+    form = UserInfoForm()
+
+    if request.method == "POST":
+        if form.validate_on_submit():
+            error_msg = ""
+            if form.language.data not in form.language.choices:
+                error_msg = gettext("Bad language specified")
+            if form.timezone.data not in form.timezone.choices:
+                error_msg = gettext("Bad timezone specified")
+            if not is_name_safe(form.given_name.data):
+                error_msg = gettext("Sorry, that given name is not allowed.")
+            if not is_name_safe(form.family_name.data):
+                error_msg = gettext("Sorry, that last name is not allowed.")
+            if not is_name_safe(form.email.data):
+                error_msg = gettext("Sorry, that email is not allowed.")
+            if u := User.query.filter_by(email=form.email.data).first():
+                if u != current_user:
+                    error_msg = gettext(
+                        "Sorry, that email can't be used. Please choose another or contact us for support."
+                    )
+            if form.password.data:
+                if form.password.data != form.password_confirm.data:
+                    error_msg = gettext("The passwords you entered don't match.")
+                if len(form.password.data) < 8:
+                    error_msg = gettext("New password has to be at least 8 characters.")
+
+            logging.warning(f"user settings change failed: {error_msg}")
+            if error_msg:
+                flash(error_msg, "danger")
+                return redirect(url_for("settings"))
+
+            current_user.given_name = form.given_name.data
+            current_user.family_name = form.family_name.data
+            current_user.organization = form.organization.data
+            current_user.job_title = form.job_title.data
+            current_user.email = form.email.data
+            current_user.language = form.language.data
+            current_user.timezone = form.timezone.data
+            if form.password.data:
+                current_user.set_password(form.password.data)
+
+            db.session.commit()
+
+            flash("Your changes have been saved.")
+            return redirect(url_for("settings"))
+        else:
+            error_msg = ""
+            for field, errors in form.errors.items():
+                for error in errors:
+                    error_msg += f"{field}: {error}<br/>"
+
+            flash(f"Sorry, the form could not be validated:<br/> {error_msg}", "danger")
+            return redirect(url_for("settings"))
+
+    elif request.method == "GET":
+        form.given_name.data = current_user.given_name
+        form.family_name.data = current_user.family_name
+        form.organization.data = current_user.organization
+        form.job_title.data = current_user.job_title
+        form.email.data = current_user.email
+        form.language.data = current_user.language
+        form.timezone.data = current_user.timezone
+
+    return render_template(
+        "settings.jinja2",
+        title=gettext("Settings"),
+        form=form,
+    )
+
+
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("60 per hour")
 def login():
@@ -2121,15 +2225,6 @@ def rename_machine():
 
     flash(f"Machine {old_display_name} renamed to {machine_new_display_name}")
     return redirect(url_for("machines"))
-
-
-@app.route("/settings")
-@limiter.limit("60 per minute")
-@login_required
-def settings():
-    return render_template(
-        "settings.jinja2", title=gettext("Settings"), threading=threading
-    )
 
 
 @app.route("/admin")

@@ -2,13 +2,15 @@
 
 {% block content %}
 
+  <h2>{{ _("Welcome to ADA Data Analysis 2025") }}</h2>
+
   {% if current_user.is_admin %}
-    <br/>
     <div class="w3-container w3-red">
       <h2>{{ gettext("Problem Reports") }}</h2>
     </div>
     <div class="w3-container w3-pale-red">
       <p>
+        {% if unresolved_problem_reports %}
         <table class="w3-table-all">
           <thead>
             <th>{{ gettext("User") }}</th>
@@ -23,9 +25,13 @@
             </tr>
           {% endfor %}
         </table>
+      {% else %}
+        {{ gettext("No unresolved problems.") }}
+      {% endif %}
       </p>
     </div>
 
+    <br/>
     <div class="w3-container w3-yellow">
       <h3>{{ gettext('Users Awaiting Activation') }}</h3>
     </div>
@@ -56,8 +62,6 @@
     </div>
   {% endif %}
 
-
-  <h2>{{ _("Welcome to ADA Data Analysis 2025") }}</h2>
 
   <p>{{ _("Thank you for choosing ADA Data Analysis, the next-generation platform for data analysis and machine learning. We are thrilled to have you onboard and we are certain that you will appreciate the transformative capabilities of our newly improved service.") }}</p>
 
