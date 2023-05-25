@@ -1948,7 +1948,7 @@ class RegistrationForm(FlaskForm):
         lazy_gettext("Password"),
         validators=[DataRequired(), Length(min=password_min, max=password_max)],
     )
-    confirm_password = PasswordField(
+    password_confirm = PasswordField(
         lazy_gettext("Confirm Password"),
         validators=[
             DataRequired(),
