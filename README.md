@@ -54,7 +54,7 @@ If you are using Ubuntu 23.04, you should also install some additional packages:
 
 ```bash
 sudo apt update
-sudo apt -y install --no-install-recommends build-essential libvirt-clients virtinst libvirt-dev python3-openstackclient libpq-dev
+sudo apt -y install --no-install-recommends pkg-config build-essential libvirt-clients virtinst libvirt-dev python3-openstackclient libpq-dev
 ```
 
 Please note, these instructions are specifically for Ubuntu 23.04. If you are using a different operating system, please adjust the commands accordingly.
@@ -144,6 +144,7 @@ Follow these steps to prepare a libvirt virtual machine:
 You can also set the following optional environment variables to further configure Ada2025:
 
 ```bash
+ADA2025_SENTRY_DSN  # set to DSN to have sentry.io integration
 ADA2025_FLASK_SECRET_KEY  # set to string or one will be randomly generated
 ADA2025_SQLALCHEMY_URL  # set to database URL if you don't want SQLite
 LOGIN_RECAPTCHA  # set to 1 if you want reCaptcha on the login screen

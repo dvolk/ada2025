@@ -89,11 +89,35 @@ import humanize
 import pytz
 import requests
 
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
+
 logging.basicConfig(
     level=logging.DEBUG,
     datefmt="%Y-%m-%d/%H:%M:%S",
     format="%(asctime)s %(message)s",
 )
+
+
+# Only initialize Sentry if the DSN is present
+if os.getenv("ADA2025_SENTRY_DSN"):
+    sentry_logging = LoggingIntegration(
+        level=logging.INFO,  # Capture info and above as breadcrumbs
+        event_level=logging.ERROR,  # Send errors as events
+    )
+
+    sentry_sdk.init(
+        dsn=os.getenv("ADA2025_SENTRY_DSN"),
+        integrations=[
+            FlaskIntegration(),
+            SqlalchemyIntegration(),
+            sentry_logging,
+        ],
+        environment=os.getenv("ADA2025_SENTRY_ENVIRONMENT", "development"),
+        traces_sample_rate=0.01,
+    )
 
 try:
     cmd = "git describe --tags --always --dirty"
@@ -166,6 +190,21 @@ recaptcha = ReCaptcha(
 )
 recaptcha.init_app(app)
 LOGIN_RECAPTCHA = os.environ.get("LOGIN_RECAPTCHA", False)
+
+
+@app.before_request
+def before_request():
+    if current_user.is_authenticated:
+        # send to sentry.io on captured errors
+        sentry_sdk.set_user(
+            {
+                "id": current_user.id,
+                "sesh_id": current_user.sesh_id,
+            }
+        )
+    else:
+        # no user is logged in
+        sentry_sdk.set_user(None)
 
 
 # change the number of rows in flask-admin modelviews to 15
@@ -1559,6 +1598,17 @@ if os.environ.get("GOOGLE_OAUTH2_CLIENT_ID"):
         userinfo_endpoint="https://openidconnect.googleapis.com/v1/userinfo",
         client_kwargs={"scope": "email profile"},
     )
+
+
+@app.route("/error_test")
+@limiter.limit("60 per hour")
+@login_required
+def error_test():
+    # unhandled error, used for eg: testing sentry.io integration
+    if current_user.is_admin:
+        raise RuntimeError("This is a test error")
+    else:
+        abort(404)
 
 
 @app.route("/google_login")
