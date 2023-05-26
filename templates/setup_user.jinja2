@@ -1,0 +1,29 @@
+{% extends 'base.jinja2' %}
+
+{% block content %}
+
+  {{ info("You're setting what data the user has access to.") }}
+
+  <div class="w3-container w3-yellow">
+    <h2>Set data sources for user</h2>
+  </div>
+
+  <div class="w3-container w3-pale-yellow">
+
+    <form method="POST">
+      {{ form.hidden_tag() }}
+      <p>
+        {% for subfield in form.data_sources %}
+          {{ subfield(class_="w3-check") }} {{ subfield.label() }}<br/>
+        {% endfor %}
+      </p>
+      <p>
+        {{ form.submit(class_="w3-btn w3-round w3-blue") }}
+      </p>
+    </form>
+
+  </div>
+
+  <br/>
+
+{% endblock %}

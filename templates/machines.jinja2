@@ -2,8 +2,14 @@
 
 {% block content %}
 
-  <h2>{{ gettext('Create new machine') }}</h2>
+<h2 id="toggleBtn">
+    {{ gettext('Create new machine') }}
+    <span style="" class="w3-button w3-padding-small w3-round">
+        {{ icon('star') }}
+    </span>
+</h2>
 
+<span id="contentSpan">
   {{ info(gettext("This lists all templates that are available to the group you are in: {g}"), g=current_user.group.name) }}
 
   <p>
@@ -69,7 +75,7 @@
       </p>
     {% endfor %}
   </p>
-
+</span>
 
   <h2>{{ gettext('List of machines') }}</h2>
   {{ info(gettext("This lists all machines you have access to, both your own and those shared with you by other users.")) }}
@@ -243,5 +249,30 @@
         })(i);
       }
     });
+
+    // Get the button and span elements
+    let toggleBtn = document.getElementById('toggleBtn');
+    let contentSpan = document.getElementById('contentSpan');
+
+    // Check if there is a saved visibility setting in localStorage
+    let isHidden = localStorage.getItem('isHidden');
+
+    // If there is a saved setting, apply it
+    if(isHidden !== null) {
+        contentSpan.style.display = isHidden === 'true' ? 'none' : 'block';
+    }
+
+    // Add a click event listener to the button
+    toggleBtn.addEventListener('click', function() {
+        // Toggle visibility of the span
+        if(contentSpan.style.display === 'none') {
+            contentSpan.style.display = 'block';
+            localStorage.setItem('isHidden', 'false');
+        } else {
+            contentSpan.style.display = 'none';
+            localStorage.setItem('isHidden', 'true');
+        }
+    });
+
   </script>
 {% endblock %}

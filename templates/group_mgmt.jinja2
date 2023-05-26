@@ -1,0 +1,124 @@
+{% extends 'base.jinja2' %}
+
+{% block content %}
+
+{{ info("You're the admin of the group: {group}. This page allows you to activate/deactive users and set other properties for the group.", group=current_user.group.name) }}
+
+<h2>{{ gettext("Group Management") }}</h2>
+
+<div class="w3-container w3-dark-gray">
+    <h3>Users</h3>
+</div>
+<div class="w3-container w3-light-gray">
+    {{ info("You can enable, disable, and remove users from the group, and set their data sources.") }}
+    <p>
+        <table class="w3-table-all">
+            <thead>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Account created</th>
+                <th>Actions</th>
+            </thead>
+            {% for u in group_users %}
+            <tr>
+                <td style="vertical-align: middle;">
+                    {% if u.is_enabled %}
+                    <span class="w3-green w3-round">{{ icon('check') }}</span>
+                    {% else %}
+                    <span class="w3-red w3-round">{{ icon('xmark') }}</span>
+                    {% endif %}
+                    &nbsp;
+                    {{ u.username }}
+                </td>
+                <td style="vertical-align: middle;">{{ u.email }}</td>
+                <td style="vertical-align: middle;">{{ humanize.naturaldelta(time_now - u.creation_date) }} ago</td>
+                <td style="vertical-align: middle;">
+                    {% if u.is_enabled %}
+                    <a href="#"
+                       title="Disable user account"
+                       class="w3-button w3-red w3-round user-disable"
+                       data-user-id="{{ u.id }}">
+                        {{ icon('user-xmark') }}
+                    </a>
+                    {% else %}
+                    <a href="#"
+                       title="Enable user account"
+                       class="w3-button w3-green w3-round user-enable"
+                       data-user-id="{{ u.id }}">
+                        {{ icon('user-check') }}
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('setup_user', user_id=u.id) }}"
+                       title="Set data sources"
+                       class="w3-button w3-yellow w3-round">
+                        {{ icon('user-cog') }}
+                    </a>
+                    <a href="#"
+                       title="Remove user"
+                       class="w3-button w3-red w3-round user-remove"
+                       data-user-id="{{ u.id }}">
+                        {{ icon('user-slash') }}
+                    </a>
+                </td>
+
+            </tr>
+            {% endfor %}
+        </table>
+    </p>
+</div>
+<br/>
+
+<div class="w3-container w3-dark-gray">
+    <h3>Welcome page</h3>
+</div>
+<div class="w3-container w3-light-gray">
+    <p>
+        {{ info("You can set the group welcome page content. The page is formatted in the Markdown format.") }}
+<textarea rows=15 class="w3-input w3-border w3-round">
+</textarea>
+    </p>
+    <p>
+        <button class="w3-button w3-round w3-blue">Update</button>
+    </p>
+</div>
+<br/>
+{% endblock %}
+
+{% block javascript %}
+
+<script type="text/javascript">
+ document.addEventListener('DOMContentLoaded', function() {
+     const sendPostRequest = (url, userId) => {
+         fetch(url, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ user_id: userId })
+         })
+             .then(response => location.reload())
+             .catch(error => console.error('Error:', error));
+     };
+
+     document.querySelectorAll('.user-enable').forEach(item => {
+         item.addEventListener('click', event => {
+             event.preventDefault();
+             sendPostRequest('/enable_user', item.dataset.userId);
+         });
+     });
+
+     document.querySelectorAll('.user-disable').forEach(item => {
+         item.addEventListener('click', event => {
+             event.preventDefault();
+             sendPostRequest('/disable_user', item.dataset.userId);
+         });
+     });
+
+     document.querySelectorAll('.user-remove').forEach(item => {
+         item.addEventListener('click', event => {
+             event.preventDefault();
+             sendPostRequest('/remove_user', item.dataset.userId);
+         });
+     });
+ });
+</script>
+
+{% endblock %}

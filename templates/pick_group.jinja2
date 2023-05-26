@@ -1,0 +1,25 @@
+{% extends 'base-bare.jinja2' %}
+
+{% block content %}
+
+  <h2>Thank you for signing up.</h2>
+
+  <p>We need some additional information.</p>
+
+  <form action="/pick_group" method="POST">
+    {{ form.hidden_tag() }}
+
+    <p>
+      {{ form.group.label() }}
+    </p>
+
+    <p>
+      {{ form.group(class="w3-input w3-round w3-border w3-light-grey") }}
+    </p>
+
+    <p>
+      {{ form.submit(class="w3-button ada-blue w3-round") }}
+    </p>
+  </form>
+
+{% endblock %}

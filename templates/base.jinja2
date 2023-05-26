@@ -59,7 +59,9 @@
       </p>
 
       {% for menu_item in main_menu %}
-        {% if not menu_item.get("admin_only") or (menu_item.get("admin_only") and current_user.is_admin) %}
+        {% set view_allowed = ((menu_item.get("admin_only") and current_user.is_admin) or (menu_item.get("group_admin_only") and current_user.is_group_admin)) %}
+        {% set admin_guard = (not menu_item.get("admin_only") and not menu_item.get("group_admin_only")) or view_allowed %}
+        {% if admin_guard %}
           {% if gettext(title) == menu_item["name"] %}
             {# this is the page we're on so highlight it in blue #}
             <a class="w3-bar-item w3-large w3-button ada-blue" href="{{ menu_item['href'] }}">{{ icon(menu_item['icon']) }} {{ menu_item['name'] }}</a>

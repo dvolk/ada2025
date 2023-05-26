@@ -33,7 +33,7 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
-from sqlalchemy import Index, JSON, desc, and_, or_, union
+from sqlalchemy import Index, JSON, desc, and_, or_, union, asc
 from flask_migrate import Migrate
 from flask_login import (
     LoginManager,
@@ -43,13 +43,14 @@ from flask_login import (
     login_required,
     current_user,
 )
-from flask_admin import Admin, BaseView, expose
+from flask_admin import Admin, BaseView, expose, AdminIndexView
 from flask_admin.actions import action
 from flask_admin.form import Select2Field
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.model import typefmt
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
+from wtforms.widgets import ListWidget, CheckboxInput
 from wtforms_sqlalchemy.fields import QuerySelectMultipleField
 from wtforms.widgets import TextArea
 from wtforms import (
@@ -432,7 +433,8 @@ class User(db.Model, UserMixin):
     # small token generated every time a User object is created
     sesh_id = db.Column(db.String(2), nullable=False, default=lambda: gen_token(2))
     is_enabled = db.Column(db.Boolean, nullable=False, default=False)
-    is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    is_group_admin = db.Column(db.Boolean, nullable=False, default=False)
+    is_admin = db.Column(db.Boolean, nullable=False, default=False)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(200))
     given_name = db.Column(db.String(100))
@@ -622,6 +624,8 @@ class ProtectedUserModelView(ProtectedModelView):
     )
     form_columns = (
         "is_enabled",
+        "is_group_admin",
+        "group",
         "username",
         "password",
         "given_name",
@@ -631,13 +635,12 @@ class ProtectedUserModelView(ProtectedModelView):
         "language",
         "timezone",
         "email",
-        "group",
-        "is_admin",
         "creation_date",
         "owned_machines",
         "shared_machines",
         "data_sources",
         "data_transfer_jobs",
+        "is_admin",
     )
     column_searchable_list = ("username", "email")
     column_sortable_list = ("id", "username", "email", "creation_date")
@@ -1353,6 +1356,13 @@ def get_main_menu():
             "href": "/settings",
         },
         {
+            "icon": "users-gear",
+            "name": gettext("Group"),
+            "href": "/group_mgmt",
+            "admin_only": True,
+            "group_admin_only": True,
+        },
+        {
             "icon": "lightbulb",
             "name": gettext("Help"),
             "href": "/help",
@@ -1595,6 +1605,65 @@ def gen_unique_username(email, max_attempts=1000):
         attempt = attempt + 1
 
 
+@app.route("/not_activated")
+@login_required
+@limiter.limit("60 per minute")
+def not_activated():
+    if not current_user.group:
+        return redirect(url_for("pick_group"))
+    if not current_user.is_enabled:
+        return render_template("not_activated.jinja2", title=gettext("Not activated"))
+    else:
+        return redirect("/welcome")
+
+
+class PickGroupForm(FlaskForm):
+    group = SelectField(
+        lazy_gettext("Please pick the group you want to join:"),
+        validators=[DataRequired()],
+    )
+    submit = SubmitField(lazy_gettext("Continue"))
+
+
+@app.route("/pick_group", methods=["GET", "POST"])
+@limiter.limit("60 per minute")
+@login_required
+def pick_group():
+    if current_user.group:
+        return redirect(url_for("welcome"))
+
+    form = PickGroupForm()
+    form.group.choices = [(g.id, g.name) for g in db.session.query(Group).all()]
+
+    if request.method == "POST":
+        if form.validate_on_submit():
+            group = Group.query.filter_by(id=form.group.data).first_or_404()
+            current_user.group = group
+            db.session.commit()
+            return redirect(url_for("welcome"))
+        else:
+            flash("There was an error picking the group. Please try again.")
+            return redirect(url_for("pick_group"))
+
+    return render_template(
+        "pick_group.jinja2",
+        form=form,
+        title=gettext("Setup"),
+    )
+
+
+def profile_complete_required(f):
+    @functools.wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.group:
+            return redirect(url_for("pick_group"))
+        if not current_user.is_enabled:
+            return redirect(url_for("not_activated"))
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
 @app.route("/google_authorize")
 @limiter.limit("60 per hour")
 def google_authorize():
@@ -1638,21 +1707,12 @@ def google_authorize():
 
         db.session.commit()
 
-        if user and user.is_enabled and user.group:
-            # Log the user in
-            user.sesh_id = gen_token(2)
-            login_user(user)
-            finish_audit(audit, "ok")
-            return redirect(url_for("index"))
-        else:
-            # Show activation message
-            flash(
-                gettext(
-                    "Your account has been created, but it has to be activated by staff, which typically happens within 24 hours. When it's activated, you'll be able to log in using Google."
-                )
-            )
-            finish_audit(audit, "not activated")
-            return redirect(url_for("login"))
+        # log the user in
+        user.sesh_id = gen_token(2)
+        login_user(user)
+        finish_audit(audit, "ok")
+
+        return redirect(url_for("welcome"))
 
     except Exception as e:
         finish_audit(audit, "error")
@@ -1670,6 +1730,7 @@ def google_authorize():
 @app.route("/visit_machine/<m_id>")
 @limiter.limit("60 per minute")
 @login_required
+@profile_complete_required
 def visit_machine(m_id):
     # redirect the user to the machine
     audit = create_audit("visit machine", user=current_user)
@@ -1739,6 +1800,7 @@ class UserInfoForm(FlaskForm):
 @app.route("/settings", methods=["GET", "POST"])
 @limiter.limit("60 per minute")
 @login_required
+@profile_complete_required
 def settings():
     form = UserInfoForm()
 
@@ -1886,27 +1948,10 @@ def login():
 
             # local users or oauth2 users who have set a password
             if user and user.check_password(form.password.data):
-                # pw ok but account not activated
-                if not user.is_enabled:
-                    finish_audit(audit, "acc not activated", user=user)
-                    flash(
-                        gettext(
-                            "Account not activated. If it's been more than 24 hours please contact support."
-                        ),
-                        "danger",
-                    )
-                    return render_template(
-                        "login.jinja2",
-                        title=gettext("Login"),
-                        form=form,
-                        show_google_button=show_google_button,
-                    )
-
                 # log user in
                 user.sesh_id = gen_token(2)
                 login_user(user)
                 finish_audit(audit, "ok", user=user)
-                flash(gettext("Logged in successfully."), "success")
                 return redirect(url_for("index"))
             else:
                 finish_audit(audit, "bad password")
@@ -2076,14 +2121,11 @@ def register():
             db.session.add(new_user)
             db.session.commit()
 
+            login_user(new_user)
+
             finish_audit(audit, "ok", user=new_user)
 
-            flash(
-                gettext(
-                    "Thank you for registering. You will be emailed when your account is activated"
-                )
-            )
-            return redirect(url_for("login"))
+            return redirect(url_for("welcome"))
         else:
             error_msg = ""
             for field, errors in form.errors.items():
@@ -2109,6 +2151,157 @@ def index():
         return redirect(url_for("login"))
 
 
+@app.route("/group_mgmt")
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def group_mgmt():
+    if not current_user.is_admin or not current_user.is_group_admin:
+        return redirect(url_for("welcome"))
+
+    group_users = (
+        db.session.query(User)
+        .filter(and_(User.group == current_user.group, User.id != current_user.id))
+        .order_by(asc(User.is_enabled), desc(User.creation_date))
+        .all()
+    )
+
+    return render_template(
+        "group_mgmt.jinja2",
+        group_users=group_users,
+        title=gettext("Group"),
+    )
+
+
+@app.route("/enable_user", methods=["POST"])
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def enable_user():
+    user_id = request.json.get("user_id")
+
+    if not user_id:
+        abort(404)
+
+    user = User.query.filter_by(id=user_id).first_or_404()
+
+    if not current_user.is_group_admin or user.group != current_user.group:
+        abort(403)
+
+    user.is_enabled = not user.is_enabled
+    db.session.commit()
+
+    return "OK"
+
+
+@app.route("/disable_user", methods=["POST"])
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def disable_user():
+    # disable user
+    user_id = request.json.get("user_id")
+
+    if not user_id:
+        abort(404)
+
+    user = User.query.filter_by(id=user_id).first_or_404()
+
+    if not current_user.is_group_admin or user.group != current_user.group:
+        abort(403)
+
+    user.is_enabled = not user.is_enabled
+    db.session.commit()
+
+    return "OK"
+
+
+@app.route("/remove_user", methods=["POST"])
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def remove_user():
+    # disable user and remove from group
+    user_id = request.json.get("user_id")
+
+    if not user_id:
+        abort(404)
+
+    user = User.query.filter_by(id=user_id).first_or_404()
+
+    if not current_user.is_group_admin or user.group != current_user.group:
+        abort(403)
+
+    user.group = None
+    user.is_enabled = False
+    db.session.commit()
+
+    return "OK"
+
+
+class MultiCheckboxField(QuerySelectMultipleField):
+    widget = ListWidget(prefix_label=False)
+    option_widget = CheckboxInput()
+
+
+class SetupUser2(FlaskForm):
+    data_sources = MultiCheckboxField("Data Sources", get_label="name")
+    submit = SubmitField("Setup User")
+
+
+@app.route("/setup_user/<user_id>", methods=["GET", "POST"])
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def setup_user(user_id):
+    # assign data sources to users. This version is for group admins.
+    user = User.query.filter_by(id=user_id).first_or_404()
+
+    # Check group access right
+    if user.group != current_user.group:
+        flash("Invalid user selected", "danger")
+        return redirect(url_for("welcome"))
+
+    form = SetupUser2()
+    form.data_sources.query_factory = (
+        lambda: db.session.query(DataSource)
+        .filter(
+            DataSource.id.in_(
+                [ds.id for ds in current_user.data_sources + user.data_sources]
+            )
+        )
+        .order_by(desc(DataSource.id))
+        .all()
+    )
+
+    if request.method == "POST":
+        if form.validate_on_submit():
+            # get allowed data sources by calling the query factory
+            allowed_data_sources = form.data_sources.query_factory()
+
+            # check that all submitted data sources are in the allowed data sources
+            for data_source in form.data_sources.data:
+                if data_source not in allowed_data_sources:
+                    flash("Invalid data source selected.", "danger")
+                    return redirect(url_for("welcome"))
+
+            user.data_sources = form.data_sources.data
+            db.session.commit()
+            flash("Data sources for user have been updated.")
+            return redirect(url_for("group_mgmt"))
+        else:
+            flash("Couldn't validate form")
+            return redirect(url_for("welcome"))
+
+    # GET
+    form.data_sources.data = user.data_sources
+    return render_template(
+        "setup_user.jinja2",
+        form=form,
+        title="Group",
+    )
+
+
 @app.route("/logout")
 @limiter.limit("60 per minute")
 @login_required
@@ -2122,6 +2315,7 @@ def logout():
 @app.route("/welcome")
 @limiter.limit("60 per minute")
 @login_required
+@profile_complete_required
 def welcome():
     not_activated_users = (
         db.session.query(User)
@@ -2167,6 +2361,7 @@ def count_machines(mt):
 @app.route("/machines")
 @limiter.limit("60 per minute")
 @login_required
+@profile_complete_required
 def machines():
     """
     The machine page displays and controls the user's machines
@@ -2222,6 +2417,7 @@ def contains_non_alphanumeric_chars(string):
 @app.route("/rename_machine", methods=["POST"])
 @limiter.limit("60 per minute")
 @login_required
+@profile_complete_required
 def rename_machine():
     # allow the user to rename a machine
     machine_id = request.form.get("machine_id")
@@ -2262,6 +2458,7 @@ def rename_machine():
 @app.route("/admin")
 @limiter.limit("60 per minute")
 @login_required
+@profile_complete_required
 def admin():
     if not current_user.is_admin:
         return redirect(url_for("login"))
@@ -2277,6 +2474,7 @@ def admin():
 @app.route("/citations")
 @limiter.limit("60 per minute")
 @login_required
+@profile_complete_required
 def citations():
     return render_template("citations.jinja2", title=gettext("Citations"))
 
@@ -2284,6 +2482,7 @@ def citations():
 @app.route("/about")
 @limiter.limit("60 per minute")
 @login_required
+@profile_complete_required
 def about():
     return render_template("about.jinja2", title=gettext("About"))
 
@@ -2291,6 +2490,7 @@ def about():
 @app.route("/help")
 @limiter.limit("60 per minute")
 @login_required
+@profile_complete_required
 def help():
     return render_template("help.jinja2", title=gettext("Help"))
 
@@ -2306,6 +2506,7 @@ class ProblemReportForm(FlaskForm):
 @app.route("/report_problem", methods=["GET", "POST"])
 @limiter.limit("60 per minute")
 @login_required
+@profile_complete_required
 def report_problem():
     form = ProblemReportForm()
     if request.method == "POST":
@@ -2391,6 +2592,7 @@ class DataTransferForm(FlaskForm):
 @app.route("/dismiss_datatransferjob", methods=["POST"])
 @limiter.limit("60 per minute")
 @login_required
+@profile_complete_required
 def dismiss_datatransferjob():
     """
     Endpoint for hiding the data transfer job from the data page
@@ -2436,6 +2638,7 @@ def machine_format_dtj(machine):
 @app.route("/data", methods=["GET", "POST"])
 @limiter.limit("60 per minute")
 @login_required
+@profile_complete_required
 def data():
     if current_user.is_admin:
         # the admin can see everything
@@ -2569,6 +2772,7 @@ def start_data_transfer(job_id, audit_id):
 @app.route("/share_machine/<machine_id>")
 @limiter.limit("60 per minute")
 @login_required
+@profile_complete_required
 def share_machine(machine_id):
     """
     Shows the share page
@@ -2582,6 +2786,7 @@ def share_machine(machine_id):
 @app.route("/share_accept/<machine_share_token>")
 @limiter.limit("60 per hour")
 @login_required
+@profile_complete_required
 def share_accept(machine_share_token):
     """
     This is the endpoint hit by the user accepting a share
@@ -2615,6 +2820,7 @@ def share_accept(machine_share_token):
 @app.route("/share_revoke/<machine_id>")
 @limiter.limit("60 per hour")
 @login_required
+@profile_complete_required
 def share_revoke(machine_id):
     """
     The owner revokes all shares. We do this by removing shared_users
@@ -2649,6 +2855,7 @@ def share_revoke(machine_id):
 @app.route("/new_machine", methods=["POST"])
 @limiter.limit("100 per day, 10 per minute, 1/3 seconds")
 @login_required
+@profile_complete_required
 def new_machine():
     """
     Launches thread to create the container/vm
@@ -2706,6 +2913,7 @@ def new_machine():
 @app.route("/stop_machine", methods=["POST"])
 @limiter.limit("100 per day, 10 per minute, 1/3 seconds")
 @login_required
+@profile_complete_required
 def stop_machine():
     """
     Start thread to stop machine
@@ -3453,7 +3661,6 @@ def create_initial_db():
                 data_size="432",
             )
 
-            admin_group = Group(name="admins")
             localtester_group = Group(name="Local test users")
             stfctester_group = Group(name="STFC Cloud test users")
             imperialtester_group = Group(name="Imperial Cloud test users")
@@ -3463,7 +3670,7 @@ def create_initial_db():
                 username="admin",
                 given_name="Admin",
                 family_name="Admin",
-                group=admin_group,
+                group=localtester_group,
                 language="en",
                 is_admin=True,
                 email="admin@ada.stfc.ac.uk",
@@ -3501,7 +3708,7 @@ def create_initial_db():
             imperialtester_user.set_password(imperialtester_user_password)
 
             localtester_user = User(
-                is_enabled=True,
+                is_enabled=False,
                 username="localtester",
                 given_name="NoName",
                 family_name="NoFamilyName",
@@ -3727,7 +3934,6 @@ def create_initial_db():
                 },
             )
 
-            db.session.add(admin_group)
             db.session.add(admin_user)
             db.session.add(stfctester_group)
             db.session.add(stfctester_user)
