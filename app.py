@@ -2548,12 +2548,20 @@ def logout():
 @login_required
 @profile_complete_required
 def welcome():
+    # not enabled and not banned and in no group
     not_activated_users = (
         db.session.query(User)
-        .filter(or_(User.is_enabled == False, User.group_id.is_(None)))
+        .filter(
+            and_(
+                ~User.is_enabled,
+                ~User.is_banned,
+                User.group_id.is_(None),
+            )
+        )
         .order_by(desc(User.id))
         .all()
     )
+
     unresolved_problem_reports = (
         db.session.query(ProblemReport)
         .filter(ProblemReport.is_hidden == False)
