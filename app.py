@@ -449,16 +449,6 @@ def _color_formatter(view, context, model, name):
     )
 
 
-class UserGroup(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), primary_key=True)
-    group_id = db.Column(db.Integer, db.ForeignKey("group.id"), primary_key=True)
-    role = db.Column(db.String(50))
-
-    users = db.relationship("User", back_populates="groups")
-    groups = db.relationship("Group", back_populates="users")
-
-
 class Group(db.Model):
     """
     A group that users belong to. A user can belong to a single group
@@ -477,24 +467,37 @@ class Group(db.Model):
     machine_templates = db.relationship("MachineTemplate", back_populates="group")
     welcome_page = db.relationship("GroupWelcomePage", backref="group", uselist=False)
 
-    users = db.relationship("UserGroup", back_populates="groups")
-
     def __repr__(self):
         return f"<{self.name}>"
 
 
 class ProtectedGroupModelView(ProtectedModelView):
-    column_list = ("id", "name", "creation_date", "users", "machine_templates")
-    form_columns = ("name", "users", "machine_templates")
+    column_list = (
+        "id",
+        "name",
+        "creation_date",
+        "is_public",
+        "users",
+        "machine_templates",
+        "welcome_page",
+    )
+    form_columns = (
+        "name",
+        "creation_date",
+        "is_public",
+        "users",
+        "machine_templates",
+        "welcome_page",
+    )
     column_searchable_list = ("name",)
     column_sortable_list = ("id", "name", "creation_date")
-    column_filters = ("name",)
+    column_filters = ("name", "is_public", "creation_date")
     column_auto_select_related = True
 
 
 class GroupWelcomePage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    format = db.Column(db.String(16), nullable=False, default="markdown")
+    format = db.Column(db.String(16), nullable=False, default="html")
     content = db.Column(db.Text)
     group_id = db.Column(db.Integer, db.ForeignKey("group.id"), nullable=False)
     updated_date = db.Column(
@@ -506,8 +509,8 @@ class GroupWelcomePage(db.Model):
 
 
 class ProtectedGroupWelcomePageModelView(ProtectedModelView):
-    column_list = ("id", "updated_date", "group_id")
-    form_columns = ("updated_date", "group_id", "content")
+    column_list = ("id", "updated_date", "format", "group_id")
+    form_columns = ("updated_date", "group_id", "format", "content")
     column_searchable_list = ("group_id",)
     column_sortable_list = ("id", "updated_date", "group_id")
     column_auto_select_related = True
@@ -549,8 +552,6 @@ class User(db.Model, UserMixin):
     group_id = db.Column(db.Integer, db.ForeignKey("group.id"))
     group = db.relationship("Group")
 
-    groups = db.relationship("UserGroup", back_populates="users")
-
     owned_machines = db.relationship(
         "Machine", back_populates="owner", foreign_keys="Machine.owner_id"
     )
@@ -560,6 +561,7 @@ class User(db.Model, UserMixin):
     data_sources = db.relationship(
         "DataSource", secondary=user_data_source_association, back_populates="users"
     )
+
     data_transfer_jobs = db.relationship("DataTransferJob", back_populates="user")
     problem_reports = db.relationship("ProblemReport", back_populates="user")
     audit_events = db.relationship("Audit", back_populates="user")
@@ -572,9 +574,6 @@ class User(db.Model, UserMixin):
 
     def __repr__(self):
         return f"<{self.username}>"
-
-    def add_to_group(self, group):
-        self.groups.append(group)
 
 
 class AssignDataSourcesForm(FlaskForm):
@@ -714,8 +713,6 @@ class ProtectedUserModelView(ProtectedModelView):
         "username",
         "given_name",
         "family_name",
-        "organization",
-        "job_title",
         "email",
         "group",
         "is_admin",
@@ -723,6 +720,7 @@ class ProtectedUserModelView(ProtectedModelView):
     )
     form_columns = (
         "is_enabled",
+        "is_banned",
         "is_group_admin",
         "group",
         "username",
@@ -743,7 +741,7 @@ class ProtectedUserModelView(ProtectedModelView):
     )
     column_searchable_list = ("username", "email")
     column_sortable_list = ("id", "username", "email", "creation_date")
-    column_filters = ("is_enabled", "is_admin", "group")
+    column_filters = ("is_enabled", "is_banned", "is_group_admin", "is_admin", "group")
     column_auto_select_related = True
     form_extra_fields = {"password": PasswordField("Password")}
 
@@ -881,6 +879,7 @@ class ProtectedDataSourceModelView(ProtectedModelView):
         "users",
     )
     form_columns = (
+        "name",
         "source_username",
         "source_host",
         "source_port",
@@ -891,7 +890,13 @@ class ProtectedDataSourceModelView(ProtectedModelView):
     )
     column_searchable_list = ("source_host", "source_dir")
     column_sortable_list = ("id", "source_host", "data_size", "creation_date")
-    column_filters = ("source_host", "source_dir", "data_size")
+    column_filters = (
+        "source_username",
+        "source_host",
+        "source_port",
+        "source_dir",
+        "data_size",
+    )
     column_auto_select_related = True
     column_formatters = {
         "source_host": _color_formatter,
@@ -1086,15 +1091,19 @@ class ProtectedMachineTemplateModelView(ProtectedModelView):
         "memory_limit_gb",
         "cpu_limit_cores",
         "group",
+        "machine_provider",
     )
     form_columns = (
         "name",
         "type",
         "image",
+        "os_username",
         "description",
         "cpu_limit_cores",
         "memory_limit_gb",
+        "disk_size_gb",
         "group",
+        "machine_provider",
         "machines",
         "extra_data",
     )
