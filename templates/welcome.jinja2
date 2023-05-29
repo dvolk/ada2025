@@ -2,9 +2,8 @@
 
 {% block content %}
 
-  <h2>{{ _("Welcome to ADA Data Analysis 2025") }}</h2>
-
   {% if current_user.is_admin %}
+    <br/>
     <div class="w3-container w3-red">
       <h2>{{ gettext("Problem Reports") }}</h2>
     </div>
@@ -62,23 +61,30 @@
     </div>
   {% endif %}
 
+  {% if current_user.group.welcome_page.content %}
+    {{ current_user.group.welcome_page.content }}
+  {% else %}
 
-  <p>{{ _("Thank you for choosing ADA Data Analysis, the next-generation platform for data analysis and machine learning. We are thrilled to have you onboard and we are certain that you will appreciate the transformative capabilities of our newly improved service.") }}</p>
+    <h2>{{ _("Welcome to ADA Data Analysis 2025") }}</h2>
 
-  <h3>{{ _("Understanding ADA: Your Personal Data Analysis Platform") }}</h3>
+    <p>{{ _("Thank you for choosing ADA Data Analysis, the next-generation platform for data analysis and machine learning. We are thrilled to have you onboard and we are certain that you will appreciate the transformative capabilities of our newly improved service.") }}</p>
 
-  <p>{{ _("ADA is a new data analysis service that offers you the flexibility to access your data remotely, from anywhere at any time. With ADA, you can create virtual machines, which are essentially cloud-based Linux desktop environments. These environments are fully equipped with all the necessary software, data storage, and computational power you need to perform your analysis seamlessly. No more worrying about hardware limitations, software incompatibility, or data security; we've got you covered.") }}</p>
+    <h3>{{ _("Understanding ADA: Your Personal Data Analysis Platform") }}</h3>
 
-  <h3>{{ _("Help & Information") }}</h3>
+    <p>{{ _("ADA is a new data analysis service that offers you the flexibility to access your data remotely, from anywhere at any time. With ADA, you can create virtual machines, which are essentially cloud-based Linux desktop environments. These environments are fully equipped with all the necessary software, data storage, and computational power you need to perform your analysis seamlessly. No more worrying about hardware limitations, software incompatibility, or data security; we've got you covered.") }}</p>
 
-  <p>{{ _("To ensure your experience is as smooth as possible, we've integrated a dedicated 'Help' button on the side bar menu. Simply click on this button to access a wide range of information related to each aspect of our platform. From how-to guides and tutorials to troubleshooting tips and FAQs, these pages are designed to help you make the most of the ADA platform.") }}</p>
+    <h3>{{ _("Help & Information") }}</h3>
 
-  <h3>{{ _("We're Here to Help: Feedback and Support") }}</h3>
+    <p>{{ _("To ensure your experience is as smooth as possible, we've integrated a dedicated 'Help' button on the side bar menu. Simply click on this button to access a wide range of information related to each aspect of our platform. From how-to guides and tutorials to troubleshooting tips and FAQs, these pages are designed to help you make the most of the ADA platform.") }}</p>
 
-  <p>{{ _("Your input is invaluable to us. If you have a question, a request, or encounter an issue, we encourage you to reach out to us. We're here to support you every step of the way. Our team of experts is always ready to provide assistance, answer your questions, and work on your suggestions to continually improve our service.") }}</p>
+    <h3>{{ _("We're Here to Help: Feedback and Support") }}</h3>
 
-  <p>{{ _("Contact us at:") }}</p> {{ email("contact@ada-science.io") }}
+    <p>{{ _("Your input is invaluable to us. If you have a question, a request, or encounter an issue, we encourage you to reach out to us. We're here to support you every step of the way. Our team of experts is always ready to provide assistance, answer your questions, and work on your suggestions to continually improve our service.") }}</p>
 
-  <p>{{ _("Your journey into the future of data analysis begins with ADA. Thank you for choosing us as your partner in this exciting endeavor. Enjoy your exploration!") }}</p>
+    <p>{{ _("Contact us at:") }}</p> {{ email("contact@ada-science.io") }}
+
+    <p>{{ _("Your journey into the future of data analysis begins with ADA. Thank you for choosing us as your partner in this exciting endeavor. Enjoy your exploration!") }}</p>
+
+{% endif %}
 
 {% endblock %}

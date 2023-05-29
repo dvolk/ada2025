@@ -58,6 +58,20 @@
         {{ gettext('Hey') }}, {{ current_user.given_name }}! {{ icon_regular("face-smile") }} {{ icon_regular('hand-spock') }}
       </p>
 
+      {% if switch_group_form.switch_group.choices %}
+        <form method="POST" action="/switch_group" class="w3-row w3-center w3-margin">
+          {{ switch_group_form.hidden_tag() }}
+          <div class="w3-col s9">
+            {{ switch_group_form.switch_group(class='w3-select w3-border') }}
+          </div>
+          <div class="w3-col s3">
+            <button type="submit" class="w3-btn w3-blue w3-100">
+              <i class="fa fa-fw fa-rotate"></i>
+            </button>
+          </div>
+        </form>
+      {% endif %}
+
       {% for menu_item in main_menu %}
         {% set view_allowed = ((menu_item.get("admin_only") and current_user.is_admin) or (menu_item.get("group_admin_only") and current_user.is_group_admin)) %}
         {% set admin_guard = (not menu_item.get("admin_only") and not menu_item.get("group_admin_only")) or view_allowed %}

@@ -32,7 +32,7 @@ Ada2025 allows you to create, run, and share machines from various templates, al
 
 The following technologies were used to build Ada2025:
 
-- Backend: Python 3.11+, Flask, Flask-SQLAlchemy, Flask-Migrate, Flask-WTForms, Flask-Login, Flask-Admin, Flask-Babel, Flask-Limiter, Flask-ReCaptcha, Authlib
+- Backend: Python 3.11+, Flask, Flask-SQLAlchemy, Flask-Migrate, Flask-WTForms, Flask-Login, Flask-Admin, Flask-Babel, Flask-Limiter, Flask-ReCaptcha, Authlib, sentry-sdk, paramiko
 - Infrastructure: Debian, Docker, libvirt, python-openstack
 - Frontend: TigerVNC, noVNC, filebrowser
 - Networking: Nginx

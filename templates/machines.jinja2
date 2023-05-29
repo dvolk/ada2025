@@ -13,11 +13,7 @@
   {{ info(gettext("This lists all templates that are available to the group you are in: {g}"), g=current_user.group.name) }}
 
   <p>
-    {% if current_user.is_admin %}
-      {% set mts = MachineTemplate.query.all() %}
-    {% else %}
-      {% set mts = current_user.group.machine_templates %}
-    {% endif %}
+    {% set mts = current_user.group.machine_templates %}
     {% for mt in mts %}
       {% set count = count_machines(mt) %}
       {% set quota = mt.extra_data.get("quota") %}

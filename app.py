@@ -88,7 +88,9 @@ import argh
 import humanize
 import pytz
 import requests
+import paramiko
 
+# sentry.io integration
 import sentry_sdk
 from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
@@ -207,16 +209,29 @@ def before_request():
         sentry_sdk.set_user(None)
 
 
-# change the number of rows in flask-admin modelviews to 15
+# change the number of rows in flask-admin modelviews textareas
 class CustomTextAreaWidget(TextArea):
+    def __init__(self, rows=15):
+        self.rows = rows
+
     def __call__(self, field, **kwargs):
-        kwargs.setdefault("rows", 15)  # Change to the number of rows you want
+        kwargs.setdefault("rows", self.rows)
         return super(CustomTextAreaWidget, self).__call__(field, **kwargs)
+
+
+class BigTextAreaField(TextAreaField):
+    def __init__(self, label=None, validators=None, rows=15, **kwargs):
+        super(BigTextAreaField, self).__init__(label, validators, **kwargs)
+        self.widget = CustomTextAreaWidget(rows)
 
 
 # for nicer formatting of json data in flask-admin forms
 class JsonTextAreaField(TextAreaField):
     widget = CustomTextAreaWidget()
+
+    def __init__(self, label=None, validators=None, rows=10, **kwargs):
+        super(JsonTextAreaField, self).__init__(label, validators, **kwargs)
+        self.widget = CustomTextAreaWidget(rows)
 
     def process_formdata(self, valuelist):
         if valuelist:
@@ -434,6 +449,16 @@ def _color_formatter(view, context, model, name):
     )
 
 
+class UserGroup(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), primary_key=True)
+    group_id = db.Column(db.Integer, db.ForeignKey("group.id"), primary_key=True)
+    role = db.Column(db.String(50))
+
+    users = db.relationship("User", back_populates="groups")
+    groups = db.relationship("Group", back_populates="users")
+
+
 class Group(db.Model):
     """
     A group that users belong to. A user can belong to a single group
@@ -446,9 +471,13 @@ class Group(db.Model):
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
+    is_public = db.Column(db.Boolean(), nullable=False, default=False)
 
     users = db.relationship("User", back_populates="group")
     machine_templates = db.relationship("MachineTemplate", back_populates="group")
+    welcome_page = db.relationship("GroupWelcomePage", backref="group", uselist=False)
+
+    users = db.relationship("UserGroup", back_populates="groups")
 
     def __repr__(self):
         return f"<{self.name}>"
@@ -463,6 +492,28 @@ class ProtectedGroupModelView(ProtectedModelView):
     column_auto_select_related = True
 
 
+class GroupWelcomePage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    format = db.Column(db.String(16), nullable=False, default="markdown")
+    content = db.Column(db.Text)
+    group_id = db.Column(db.Integer, db.ForeignKey("group.id"), nullable=False)
+    updated_date = db.Column(
+        db.DateTime, default=datetime.datetime.utcnow, nullable=False
+    )
+
+    def __repr__(self):
+        return f"<GWP {self.id}>"
+
+
+class ProtectedGroupWelcomePageModelView(ProtectedModelView):
+    column_list = ("id", "updated_date", "group_id")
+    form_columns = ("updated_date", "group_id", "content")
+    column_searchable_list = ("group_id",)
+    column_sortable_list = ("id", "updated_date", "group_id")
+    column_auto_select_related = True
+    form_extra_fields = {"content": BigTextAreaField("Content", rows=25)}
+
+
 class User(db.Model, UserMixin):
     """
     User model, also used for flask-login
@@ -472,6 +523,7 @@ class User(db.Model, UserMixin):
     # small token generated every time a User object is created
     sesh_id = db.Column(db.String(2), nullable=False, default=lambda: gen_token(2))
     is_enabled = db.Column(db.Boolean, nullable=False, default=False)
+    is_banned = db.Column(db.Boolean, nullable=False, default=False)
     is_group_admin = db.Column(db.Boolean, nullable=False, default=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
     username = db.Column(db.String(100), unique=True, nullable=False)
@@ -480,7 +532,7 @@ class User(db.Model, UserMixin):
     family_name = db.Column(db.String(100))
     organization = db.Column(db.String(200))
     job_title = db.Column(db.String(200))
-    email = db.Column(db.String(200), nullable=False)
+    email = db.Column(db.String(200), unique=True, nullable=False)
     language = db.Column(db.String(5), default="en", nullable=False)
     timezone = db.Column(db.String(50), default="Europe/London", nullable=False)
 
@@ -488,12 +540,17 @@ class User(db.Model, UserMixin):
     provider = db.Column(db.String(64))  # e.g. 'google', 'local'
     provider_id = db.Column(db.String(64))  # e.g. Google's unique ID for the user
 
+    extra_data = db.Column(db.JSON, default={})
+
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
 
     group_id = db.Column(db.Integer, db.ForeignKey("group.id"))
-    group = db.relationship("Group", back_populates="users")
+    group = db.relationship("Group")
+
+    groups = db.relationship("UserGroup", back_populates="users")
+
     owned_machines = db.relationship(
         "Machine", back_populates="owner", foreign_keys="Machine.owner_id"
     )
@@ -515,6 +572,9 @@ class User(db.Model, UserMixin):
 
     def __repr__(self):
         return f"<{self.username}>"
+
+    def add_to_group(self, group):
+        self.groups.append(group)
 
 
 class AssignDataSourcesForm(FlaskForm):
@@ -694,6 +754,11 @@ class ProtectedUserModelView(ProtectedModelView):
     column_formatters = {
         "group": _color_formatter,
     }
+
+    def scaffold_form(self):
+        form_class = super(ProtectedUserModelView, self).scaffold_form()
+        form_class.extra_data = JsonTextAreaField("Extra Data")
+        return form_class
 
     @action(
         "enable_user",
@@ -1345,6 +1410,7 @@ admin.add_view(ProtectedUserModelView(User, db.session))
 admin.add_view(ProtectedDataSourceModelView(DataSource, db.session))
 admin.add_view(ProtectedDataTransferJobModelView(DataTransferJob, db.session))
 admin.add_view(ProtectedGroupModelView(Group, db.session))
+admin.add_view(ProtectedGroupWelcomePageModelView(GroupWelcomePage, db.session))
 admin.add_view(ProtectedMachineProviderModelView(MachineProvider, db.session))
 admin.add_view(ProtectedMachineTemplateModelView(MachineTemplate, db.session))
 admin.add_view(ProtectedMachineModelView(Machine, db.session))
@@ -1505,9 +1571,61 @@ def applicationerror_handler(e):
     return render_template("error.jinja2", message=m, title=t, code=500), 500
 
 
+class SwitchGroupForm(FlaskForm):
+    switch_group = SelectField("Group", coerce=int, validators=[DataRequired()])
+    submit = SubmitField("Submit")
+
+
+def profile_complete_required(f):
+    @functools.wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.group:
+            return redirect(url_for("pick_group"))
+        if not current_user.is_enabled:
+            return redirect(url_for("not_activated"))
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
+@app.route("/switch_group", methods=["POST"])
+@limiter.limit("60 per hour")
+@login_required
+@profile_complete_required
+def switch_group():
+    form = SwitchGroupForm()
+    form.switch_group.choices = [(g.id, g.name) for g in Group.query.all()]
+
+    if form.validate_on_submit():
+        group_id = form.switch_group.data
+        current_user.group_id = group_id
+        db.session.commit()
+
+    return redirect(url_for("welcome"))
+
+
 @app.context_processor
 def inject_globals():
     """Add some stuff into all templates."""
+
+    switch_group_form = SwitchGroupForm()
+    if current_user.is_authenticated:
+        switch_group_form.switch_group.data = current_user.group_id
+        if current_user.is_admin:
+            # the admin can switch to any group
+            switch_group_form.switch_group.choices = [
+                (g.id, g.name) for g in Group.query.all()
+            ]
+        elif groups := current_user.extra_data.get("groups", []):
+            switch_group_form.switch_group.choices = [
+                (g.id, g.name)
+                for g in db.session.query(Group)
+                .filter(Group.id.in_([int(group["id"]) for group in groups]))
+                .all()
+            ]
+        else:
+            switch_group_form.switch_group.choices = []
+
     return {
         "icon": icon,
         "icon_regular": icon_regular,
@@ -1521,6 +1639,7 @@ def inject_globals():
         "version": version,
         "hostname": hostname,
         "LOGIN_RECAPTCHA": LOGIN_RECAPTCHA,
+        "switch_group_form": switch_group_form,
     }
 
 
@@ -1683,7 +1802,8 @@ def pick_group():
         return redirect(url_for("welcome"))
 
     form = PickGroupForm()
-    form.group.choices = [(g.id, g.name) for g in db.session.query(Group).all()]
+    public_groups = db.session.query(Group).filter(Group.is_public).all()
+    form.group.choices = [(g.id, g.name) for g in public_groups]
 
     if request.method == "POST":
         if form.validate_on_submit():
@@ -1700,18 +1820,6 @@ def pick_group():
         form=form,
         title=gettext("Setup"),
     )
-
-
-def profile_complete_required(f):
-    @functools.wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.group:
-            return redirect(url_for("pick_group"))
-        if not current_user.is_enabled:
-            return redirect(url_for("not_activated"))
-        return f(*args, **kwargs)
-
-    return decorated_function
 
 
 @app.route("/google_authorize")
@@ -1777,6 +1885,21 @@ def google_authorize():
         return redirect(url_for("login"))
 
 
+@app.route("/impersonate/<user_id>")
+@limiter.limit("60 per hour")
+@login_required
+@profile_complete_required
+def impersonate_user(user_id):
+    if not current_user.is_admin:
+        abort(403)
+
+    user_to_impersonate = User.query.filter_by(id=user_id).first_or_404()
+
+    login_user(user_to_impersonate)
+    flash("Impersonating user", "danger")
+    return redirect(url_for("welcome"))
+
+
 @app.route("/visit_machine/<m_id>")
 @limiter.limit("60 per minute")
 @login_required
@@ -1797,13 +1920,13 @@ def visit_machine(m_id):
         flash("Machine not found", "danger")
         return redirect(url_for("machines"))
 
-    # TODO use per machine access key
-    access_key = "Sw8OSELATBzI74XT"
+    # Uxse per machine access key
+    access_token = m.access_token
 
     if m.hostname and m.machine_template.extra_data.get("has_https"):
-        machine_url = "https://" + m.hostname + "/" + access_key
+        machine_url = "https://" + m.hostname + "/" + access_token
     else:
-        machine_url = "http://" + m.ip + "/" + access_key
+        machine_url = "http://" + m.ip + "/" + access_token
 
     finish_audit(audit, "ok")
     return redirect(machine_url)
@@ -2201,24 +2324,63 @@ def index():
         return redirect(url_for("login"))
 
 
-@app.route("/group_mgmt")
+class EditWelcomePageForm(FlaskForm):
+    content = TextAreaField(
+        "Content",
+        render_kw={"rows": 20},
+    )
+    submit = SubmitField("Update Welcome Page")
+
+
+@app.route("/group_mgmt", methods=["GET", "POST"])
 @limiter.limit("60 per minute")
 @login_required
 @profile_complete_required
 def group_mgmt():
-    if not current_user.is_admin or not current_user.is_group_admin:
+    if not current_user.is_admin and not current_user.is_group_admin:
+        flash("Invalid page", "danger")
         return redirect(url_for("welcome"))
+
+    form = EditWelcomePageForm()
+
+    if request.method == "POST":
+        if form.validate_on_submit():
+            group = current_user.group
+            if group.welcome_page:
+                group.welcome_page.content = form.content.data
+                group.welcome_page.updated_date = datetime.datetime.utcnow()
+            else:
+                new_welcome_page = GroupWelcomePage(
+                    content=form.content.data,
+                    group_id=group.id,
+                )
+                db.session.add(new_welcome_page)
+            db.session.commit()
+
+            flash("Welcome message updated")
+            return redirect(url_for("group_mgmt"))
 
     group_users = (
         db.session.query(User)
-        .filter(and_(User.group == current_user.group, User.id != current_user.id))
+        .filter(
+            and_(
+                User.group == current_user.group,
+                ~User.is_admin,  # group admins can't control other admins
+                ~User.is_group_admin,
+                User.id != current_user.id,
+            )
+        )
         .order_by(asc(User.is_enabled), desc(User.creation_date))
         .all()
     )
 
+    if current_user.group.welcome_page:
+        form.content.data = current_user.group.welcome_page.content
+
     return render_template(
         "group_mgmt.jinja2",
         group_users=group_users,
+        form=form,
         title=gettext("Group"),
     )
 
@@ -2235,7 +2397,12 @@ def enable_user():
 
     user = User.query.filter_by(id=user_id).first_or_404()
 
-    if not current_user.is_group_admin or user.group != current_user.group:
+    perm_ok = current_user.is_admin or (
+        current_user.is_group_admin
+        and user.group == current_user.group
+        and not (user.is_admin or user.is_group_admin)
+    )
+    if not perm_ok:
         abort(403)
 
     user.is_enabled = not user.is_enabled
@@ -2257,7 +2424,12 @@ def disable_user():
 
     user = User.query.filter_by(id=user_id).first_or_404()
 
-    if not current_user.is_group_admin or user.group != current_user.group:
+    perm_ok = current_user.is_admin or (
+        current_user.is_group_admin
+        and user.group == current_user.group
+        and not (user.is_admin or user.is_group_admin)
+    )
+    if not perm_ok:
         abort(403)
 
     user.is_enabled = not user.is_enabled
@@ -2279,7 +2451,12 @@ def remove_user():
 
     user = User.query.filter_by(id=user_id).first_or_404()
 
-    if not current_user.is_group_admin or user.group != current_user.group:
+    perm_ok = current_user.is_admin or (
+        current_user.is_group_admin
+        and user.group == current_user.group
+        and not (user.is_admin or user.is_group_admin)
+    )
+    if not perm_ok:
         abort(403)
 
     user.group = None
@@ -2306,6 +2483,10 @@ class SetupUser2(FlaskForm):
 def setup_user(user_id):
     # assign data sources to users. This version is for group admins.
     user = User.query.filter_by(id=user_id).first_or_404()
+
+    if not (current_user.is_group_admin or current_user.is_admin):
+        flash("Invalid page", "danger")
+        return redirect(url_for("welcome"))
 
     # Check group access right
     if user.group != current_user.group:
@@ -2827,8 +3008,18 @@ def share_machine(machine_id):
     """
     Shows the share page
     """
-    machine_id = int(machine_id)
+    try:
+        machine_id = int(machine_id)
+    except:
+        abort(404)
+
     machine = Machine.query.filter_by(id=machine_id).first_or_404()
+
+    perm_ok = machine.owner == current_user or machine.owner in machine.shared_users
+
+    if not perm_ok:
+        flash("You can't share that machine", "danger")
+        return redirect(url_for("welcome"))
 
     return render_template("share.jinja2", title=gettext("Machines"), machine=machine)
 
@@ -3042,6 +3233,125 @@ def stop_machine2(machine_id, audit_id=None):
     db.session.commit()
 
     threading.Thread(target=target, args=(machine.id, audit.id)).start()
+
+
+@log_function_call
+def run_machine_command(machine, command):
+    escaped_command = shlex.quote(command)
+    host = f"{machine.machine_template.os_username}@{machine.ip}"
+    cmd = f"ssh -oUserKnownHostsFile=/dev/null -oStrictHostKeyChecking=no {host} bash -c {escaped_command}"
+    logging.info(f"running command: {cmd}")
+
+    process = subprocess.Popen(
+        cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    stdout, stderr = process.communicate()
+
+    logging.debug(f"stdout: {stdout}")
+    logging.debug(f"stderr: {stderr}")
+
+    if process.returncode != 0:
+        raise RuntimeError("Command failed")
+
+
+@log_function_call
+def wait_for_nginx(machine, timeout=120):
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+    start_time = time.time()
+
+    while time.time() - start_time < timeout:
+        try:
+            ssh.connect(machine.ip, username=machine.machine_template.os_username)
+            stdin, stdout, stderr = ssh.exec_command("ps -A | grep [n]ginx")
+            output = stdout.read().decode().strip()
+
+            if "nginx" in output:
+                logging.info("Nginx process found, the VM seems ready.")
+                break
+            else:
+                logging.info("Nginx process not found, retrying in 5 seconds...")
+                time.sleep(5)
+
+        except Exception as e:
+            logging.exception("An error occurred:")
+            time.sleep(5)
+
+        finally:
+            ssh.close()
+
+
+@log_function_call
+def configure_nginx(machine, service_type="systemd"):
+    # this function replaces the nginx access token and sets a new cookie value
+    # it can be used on machine set up, and when we want to kick users out
+
+    wait_for_nginx(machine)
+
+    new_access_token = machine.access_token
+    new_cookie_value = gen_token(16)
+
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
+
+    # Connect to the remote machine
+    ssh.connect(machine.ip, username=machine.machine_template.os_username)
+    sftp = ssh.open_sftp()
+
+    # Fetch the existing configuration
+    sftp.get(
+        "/etc/nginx/sites-enabled/nginx-ada.conf", f"{new_access_token}_nginx.conf"
+    )
+
+    # Replace the placeholders in the configuration
+    with open(f"{new_access_token}_nginx.conf", "r") as f:
+        config = f.read()
+
+    config = re.sub(
+        r"location /[a-zA-Z0-9]{16} ",
+        rf"location /{new_access_token} ",
+        config,
+    )
+    config = re.sub(
+        r"session=[a-zA-Z0-9]{16};",
+        rf"session={new_cookie_value};",
+        config,
+    )
+    config = re.sub(
+        r'cookie_session != "[a-zA-Z0-9]{16}"',
+        rf'cookie_session != "{new_cookie_value}"',
+        config,
+    )
+
+    with open(f"{new_access_token}_nginx.conf", "w") as f:
+        f.write(config)
+
+    # Upload the new configuration to a temporary location in the remote machine
+    sftp.put(f"{new_access_token}_nginx.conf", "/tmp/nginx.conf")
+
+    # Use sudo to move the configuration to its final location
+    stdin, stdout, stderr = ssh.exec_command(
+        "sudo mv /tmp/nginx.conf /etc/nginx/sites-enabled/nginx-ada.conf"
+    )
+    exit_status = stdout.channel.recv_exit_status()  # Wait for exec_command to finish
+
+    # Restart nginx
+    if service_type == "systemd":
+        stdin, stdout, stderr = ssh.exec_command("sudo systemctl restart nginx")
+        exit_status = (
+            stdout.channel.recv_exit_status()
+        )  # Wait for exec_command to finish
+    elif service_type == "direct":
+        stdin, stdout, stderr = ssh.exec_command(
+            "sudo pkill -QUIT nginx && sudo nohup nginx &"
+        )
+        exit_status = (
+            stdout.channel.recv_exit_status()
+        )  # Wait for exec_command to finish
+
+    sftp.close()
+    ssh.close()
 
 
 class VirtService(ABC):
@@ -3395,6 +3705,7 @@ class DockerService(VirtService):
                 )
 
                 m.ip = DockerService.wait_for_ip(client, m.name, network)
+                configure_nginx(m, service_type="direct")
 
                 m.state = MachineState.READY
                 finish_audit(audit, "ok")
@@ -3588,6 +3899,9 @@ class LibvirtService(VirtService):
 
                 m.ip = ip
                 m.state = MachineState.READY
+
+                configure_nginx(m)
+
                 finish_audit(audit, "ok")
                 db.session.commit()
             except Exception:
@@ -3711,9 +4025,11 @@ def create_initial_db():
                 data_size="432",
             )
 
-            localtester_group = Group(name="Local test users")
-            stfctester_group = Group(name="STFC Cloud test users")
-            imperialtester_group = Group(name="Imperial Cloud test users")
+            localtester_group = Group(name="Local test users", is_public=True)
+            stfctester_group = Group(name="STFC Cloud test users", is_public=True)
+            imperialtester_group = Group(
+                name="Imperial Cloud test users", is_public=True
+            )
 
             admin_user = User(
                 is_enabled=True,
