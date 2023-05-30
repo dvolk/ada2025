@@ -847,7 +847,7 @@ class DataSource(db.Model):
     """
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String, nullable=False)
+    name = db.Column(db.String, unique=True, nullable=False)
     source_username = db.Column(db.String(64), nullable=False, default="root")
     source_host = db.Column(db.String(256), nullable=False)
     source_port = db.Column(db.Integer, nullable=False, default=22)
@@ -968,7 +968,7 @@ class MachineProvider(db.Model):
     """
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
+    name = db.Column(db.String(100), unique=True, nullable=False)
     type = db.Column(db.String(100), nullable=False)
     customer = db.Column(db.String(100), nullable=False)
     provider_data = db.Column(JSON, default={}, nullable=False)
