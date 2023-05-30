@@ -2538,6 +2538,7 @@ def setup_user(user_id):
     return render_template(
         "setup_user.jinja2",
         form=form,
+        user=user,
         title="Group",
     )
 

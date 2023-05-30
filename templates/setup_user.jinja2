@@ -2,7 +2,7 @@
 
 {% block content %}
 
-  {{ info("You're setting what data the user has access to.") }}
+  {{ info("You're setting what data {username} ({email}) has access to.", username=user.username, email=user.email) }}
 
   <div class="w3-container w3-yellow">
     <h2>Set data sources for user</h2>
