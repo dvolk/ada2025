@@ -3033,7 +3033,7 @@ def share_machine(machine_id):
 
     machine = Machine.query.filter_by(id=machine_id).first_or_404()
 
-    perm_ok = machine.owner == current_user or machine.owner in machine.shared_users
+    perm_ok = current_user == machine.owner or current_user in machine.shared_users
 
     if not perm_ok:
         flash("You can't share that machine", "danger")
