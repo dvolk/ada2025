@@ -3483,6 +3483,8 @@ class OpenStackService(VirtService):
                 if hostname_postfix := mt.extra_data.get("hostname_postfix"):
                     m.hostname = m.ip.replace(".", "-") + hostname_postfix
 
+                configure_nginx(m)
+
                 m.state = MachineState.READY
                 finish_audit(audit, "ok")
                 db.session.commit()
