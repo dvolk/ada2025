@@ -21,6 +21,7 @@ Ada2025 allows you to create, run, and share machines from various templates, al
 - Share machine access with other users
 - Import data from various sources into your machines
 - Access a fully-featured desktop environment in your browser
+- Group admins can approve/remove users from groups, manage what data users have access to, and define a custom welcome page.
 - Integrated file browser for uploading and downloading files
 - Multi-language support: English, Chinese, Slovenian
 - Login with local account or Google, with optional reCaptcha for added security
@@ -100,27 +101,9 @@ pip3 install -r requirements.txt
 pybabel compile -d translations
 ```
 
-## Database Setup (Current Development Phase)
-
-At this phase of the project's lifecycle, the database is initialized and migrated every time the application starts. This will change in the future as the application matures.
-
-Here's how to set up the database:
-
-```bash
-flask db init
-flask db migrate
-flask db upgrade
-```
-
-## Database Setup (After Release)
-
-Upon official release, the application will include database migrations. This means you'll no longer need to initialize the database every time. Instead, you will run database migration scripts that will manage your database schema for you.
-
-Stay tuned for more detailed instructions in this section when the application is officially released.
-
-Remember to backup your data frequently during the development phase to avoid any potential data loss due to changes in the database schema.
-
 ## Docker setup (for docker-based machines)
+
+*This is needed for running Ada machines on docker, not for running the ada web app itself.*
 
 Create a Docker bridge network and build the example Docker desktop container:
 
@@ -131,6 +114,8 @@ docker build . -f Dockerfile -t workspace
 ```
 
 ## libvirt setup (for libvirt-based machines)
+
+*This is needed for running Ada machines on libvirt, not for running the ada web app itself.*
 
 Follow these steps to prepare a libvirt virtual machine:
 
@@ -145,6 +130,7 @@ You can also set the following optional environment variables to further configu
 
 ```bash
 ADA2025_SENTRY_DSN  # set to DSN to have sentry.io integration
+ADA2025_SENTRY_ENVIRONMENT  # sentry.io environment string (eg. "dev" or "prod")
 ADA2025_FLASK_SECRET_KEY  # set to string or one will be randomly generated
 ADA2025_SQLALCHEMY_URL  # set to database URL if you don't want SQLite
 LOGIN_RECAPTCHA  # set to 1 if you want reCaptcha on the login screen
@@ -152,6 +138,12 @@ RECAPTCHA_SITE_KEY  # your reCaptcha v2 site key
 RECAPTCHA_SECRET_KEY  # your reCaptcha secret key
 GOOGLE_OAUTH2_CLIENT_ID  # your Google OAuth2 client ID
 GOOGLE_OAUTH2_CLIENT_SECRET  # your Google OAuth2 client secret
+```
+
+Apply database migrations:
+
+```
+flask db upgrade
 ```
 
 ## Running the Web App
@@ -163,6 +155,8 @@ python3 app.py
 ```
 
 Then, open your web browser and navigate to http://localhost:5000.
+
+The randomized admin password is printed on the console on first startup.
 
 # Docker Installation (Alternative)
 
@@ -188,6 +182,12 @@ Clone the repository:
 ```bash
 git clone https://github.com/dvolk/ada2025
 cd ada2025
+```
+
+Create the adanet network (skip this if you've done it above):
+
+```
+docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.1 adanet
 ```
 
 Build and start the Docker containers:
