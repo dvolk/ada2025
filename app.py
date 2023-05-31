@@ -313,7 +313,7 @@ def get_hostname(ip):
         hostname, _, _ = socket.gethostbyaddr(ip)
         return hostname
     except Exception:
-        logging.exception(f"Couldn't get hostname of {ip}")
+        logging.warning(f"Couldn't get hostname of {ip}")
         return ""
 
 
@@ -1241,8 +1241,8 @@ class ProtectedMachineModelView(ProtectedModelView):
         for id in ids:
             try:
                 stop_machine2(id)
-            except Exception:
-                logging.exception("Error: ")
+            except Exception as e:
+                logging.warning("Error stopping machine: {str(e)}")
                 flash(f"Failed to stop machine with id {id}", "danger")
 
 
@@ -3293,7 +3293,7 @@ def wait_for_nginx(machine, timeout=120):
                 time.sleep(5)
 
         except Exception as e:
-            logging.exception("An error occurred:")
+            logging.info("wait_for_nginx: looping again: {str(e)}")
             time.sleep(5)
 
         finally:
@@ -3478,7 +3478,7 @@ class OpenStackService(VirtService):
                 try:
                     m.hostname = get_hostname(m.ip)
                 except:
-                    logging.exception(f"Couldn't get openstack hostname for {m.ip}")
+                    logging.warning(f"Couldn't get openstack hostname for {m.ip}")
                     m.hostname = ""
 
                 if hostname_postfix := mt.extra_data.get("hostname_postfix"):
