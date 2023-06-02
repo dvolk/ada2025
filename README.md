@@ -60,34 +60,6 @@ sudo apt -y install --no-install-recommends pkg-config build-essential libvirt-c
 
 Please note, these instructions are specifically for Ubuntu 23.04. If you are using a different operating system, please adjust the commands accordingly.
 
-### Docker and libvirt Prerequisites
-
-For Docker and libvirt setup, ensure that Docker and libvirt are installed on your system:
-
-- Docker: Docker can be installed using the official package available in Ubuntu repositories:
-
-  ```bash
-  sudo apt update
-  sudo apt install docker.io
-  ```
-
-  For detailed instructions, follow the official [Docker installation guide](https://docs.docker.com/get-docker/).
-
-- libvirt: On Ubuntu, you can install libvirt using the package `libvirt-daemon-system` which provides the necessary tools and systems daemons for running libvirt:
-
-  ```bash
-  sudo apt install libvirt-daemon-system
-  ```
-
-After installing these packages, make sure to add your user to the `docker` and `libvirt` groups:
-
-```bash
-sudo usermod -aG docker $USER
-sudo usermod -aG libvirt $USER
-```
-
-Remember to log out and back in for these changes to take effect.
-
 ## Web app setup
 
 Clone the repository and install the required Python packages:
@@ -100,29 +72,6 @@ source env/bin/activate
 pip3 install -r requirements.txt
 pybabel compile -d translations
 ```
-
-## Docker setup (for docker-based machines)
-
-*This is needed for running Ada machines on docker, not for running the ada web app itself.*
-
-Create a Docker bridge network and build the example Docker desktop container:
-
-```bash
-docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.1 adanet
-cd machines/docker_example
-docker build . -f Dockerfile -t workspace
-```
-
-## libvirt setup (for libvirt-based machines)
-
-*This is needed for running Ada machines on libvirt, not for running the ada web app itself.*
-
-Follow these steps to prepare a libvirt virtual machine:
-
-1. Install a new Debian 11 system on a virtual machine named "debian11-5".
-2. Copy the files located in machines/debian11_vm to the virtual machine.
-3. SSH into the virtual machine and execute setup.bash.
-4. Shut down the virtual machine.
 
 ## Optional Configuration
 
@@ -158,6 +107,59 @@ Then, open your web browser and navigate to http://localhost:5000.
 
 The randomized admin password is printed on the console on first startup.
 
+### Docker and libvirt Prerequisites
+
+*This is needed for running Ada machines on docker/libvirt, not for running the ada web app itself.*
+
+For Docker and libvirt setup, ensure that Docker and libvirt are installed on your system:
+
+- Docker: Docker can be installed using the official package available in Ubuntu repositories:
+
+  ```bash
+  sudo apt update
+  sudo apt install docker.io
+  ```
+
+  For detailed instructions, follow the official [Docker installation guide](https://docs.docker.com/get-docker/).
+
+- libvirt: On Ubuntu, you can install libvirt using the package `libvirt-daemon-system` which provides the necessary tools and systems daemons for running libvirt:
+
+  ```bash
+  sudo apt install libvirt-daemon-system
+  ```
+
+After installing these packages, make sure to add your user to the `docker` and `libvirt` groups:
+
+```bash
+sudo usermod -aG docker $USER
+sudo usermod -aG libvirt $USER
+```
+
+Remember to log out and back in for these changes to take effect.
+
+## Docker setup (for docker-based machines)
+
+*This is needed for running Ada machines on docker, not for running the ada web app itself.*
+
+Create a Docker bridge network and build the example Docker desktop container:
+
+```bash
+docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.1 adanet
+cd machines/docker_example
+docker build . -f Dockerfile -t workspace
+```
+
+## libvirt setup (for libvirt-based machines)
+
+*This is needed for running Ada machines on libvirt, not for running the ada web app itself.*
+
+Follow these steps to prepare a libvirt virtual machine:
+
+1. Install a new Debian 11 system on a virtual machine named "debian11-5".
+2. Copy the files located in machines/debian11_vm to the virtual machine.
+3. SSH into the virtual machine and execute setup.bash.
+4. Shut down the virtual machine.
+
 # Docker Installation (Alternative)
 
 As an alternative to manually installing Ada2025, you can use Docker and Docker Compose to simplify the process. This method is especially recommended if you are planning to deploy the application in a containerized environment.
@@ -173,7 +175,7 @@ please also see the sections above:
 - Docker setup (for docker-based machines)
 - libvirt setup (for libvirt-based machines)
 
-docker-compose.yml mounts the docker and libvirt sockets in the container, allowing you to launch docker and libvirt machines on the host.
+docker-compose.yml mounts the docker and libvirt sockets in the container, allowing you to launch docker and libvirt machines on the host. If you don't want this, comment it out in the file.
 
 ## Steps
 
@@ -197,6 +199,8 @@ docker-compose up -d --build
 ```
 
 Your Ada2025 app should now be up and running at http://localhost:5000.
+
+The randomized admin password is printed on the console on first startup.
 
 Remember to stop the services once you're done:
 

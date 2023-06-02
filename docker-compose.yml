@@ -25,17 +25,23 @@ services:
       - 5000:5000
     restart: always
     volumes:
+      # comment this if you don't want docker-based machines
       - type: bind
         source: /var/run/docker.sock
         target: /var/run/docker.sock
+      # comment this if you don't want libvirt-based machines
       - type: bind
         source: /var/run/libvirt/libvirt-sock
         target: /var/run/libvirt/libvirt-sock
+      # comment this to not share hosts ssh keys
       - type: bind
         source: /root/.ssh
         target: /root/.ssh
     environment:
       - ADA2025_SQLALCHEMY_URL=postgresql://postgres:postgres@db:5432/postgres
+      # these are optional, set vars in shell and it will be picked up here
+      - ADA2025_SENTRY_DSN=${ADA2025_SENTRY_DSN}
+      - ADA2025_SENTRY_ENVIRONMENT=${ADA2025_SENTRY_ENVIRONMENT}
       - ADA2025_FLASK_SECRET_KEY=${ADA2025_FLASK_SECRET_KEY}
       - GOOGLE_OAUTH2_CLIENT_ID=${GOOGLE_OAUTH2_CLIENT_ID}
       - GOOGLE_OAUTH2_CLIENT_SECRET=${GOOGLE_OAUTH2_CLIENT_SECRET}
