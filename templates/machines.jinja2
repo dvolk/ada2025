@@ -261,59 +261,70 @@
  let isHidden = localStorage.getItem('isHidden');
 
  function applyHiddenSetting() {
- // If there is a saved setting, apply it
- if(isHidden !== null) {
+     let mql = window.matchMedia("(min-width: 1601px)");
+
+     // If there is a saved setting, apply it
      if(isHidden === 'true') {
          contentSpan.style.display = 'none';
          collapseTemplatesIcon.innerHTML = '{{ icon("expand") }}';
-     }
-     else {
+     } else {
          contentSpan.style.display = 'block';
          collapseTemplatesIcon.innerHTML = '{{ icon("compress") }}';
      }
- }
+
+     // Hide the icon if window size is larger than 1601px
+     if(mql.matches) {
+         collapseTemplatesIcon.style.visibility = 'hidden';
+     }
  }
 
- applyHiddenSetting();
-
- // Allow the user to toggle the
- toggleBtn.addEventListener('click', function() {
-     var mql = window.matchMedia("(min-width: 1601px)");
-     if (mql.matches) {
-         localStorage.setItem('isHidden', 'false');
+ function toggleVisibility(mql) {
+     if (mql.matches) { // bigger than 1601px
+         isHidden = 'false';
          collapseTemplatesIcon.style.visibility = 'hidden';
          contentSpan.style.display = 'block';
-     }
-     else {
+     } else { // smaller than 1601px
          collapseTemplatesIcon.style.visibility = 'visible';
-         // Toggle visibility of the span
-         if(contentSpan.style.display === 'none') {
+
+         if(isHidden === 'true') {
              contentSpan.style.display = 'block';
              collapseTemplatesIcon.innerHTML = '{{ icon("compress") }}';
-             localStorage.setItem('isHidden', 'false');
-         }
-         else {
+             isHidden = 'false';
+         } else {
              contentSpan.style.display = 'none';
              collapseTemplatesIcon.innerHTML = '{{ icon("expand") }}';
-             localStorage.setItem('isHidden', 'true');
+             isHidden = 'true';
          }
      }
- });
+     // Save the updated visibility setting
+     localStorage.setItem('isHidden', isHidden);
+ }
 
- // The event listener function
  function screenTest(e) {
-     if (e.matches) {
-         let contentSpan = document.getElementById('contentSpan');
+     if (e.matches) { // bigger than 1601px
          contentSpan.style.display = 'block';
          collapseTemplatesIcon.style.visibility = 'hidden';
-     } else {
+         isHidden = 'false';
+     } else { // smaller than 1601px
+         contentSpan.style.display = 'block';
          collapseTemplatesIcon.style.visibility = 'visible';
          collapseTemplatesIcon.innerHTML = '{{ icon("compress") }}';
+         isHidden = 'false';
      }
+     // Save the updated visibility setting
+     localStorage.setItem('isHidden', isHidden);
  }
- var mql = window.matchMedia("(min-width: 1601px)");
- screenTest(mql);
+
+ // Apply the initial visibility settings
+ applyHiddenSetting();
+
+ // Add the click event listener to the button
+ toggleBtn.addEventListener('click', () => toggleVisibility(window.matchMedia("(min-width: 1601px)")));
+
+ // Add the screen size change event listener
+ let mql = window.matchMedia("(min-width: 1601px)");
  mql.addEventListener("change", screenTest);
+
 
 </script>
 {% endblock %}
