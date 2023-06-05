@@ -2,273 +2,318 @@
 
 {% block content %}
 
-<h2 id="toggleBtn">
-    {{ gettext('Create new machine') }}
-    <span style="" class="w3-button w3-padding-small w3-round">
-        {{ icon('star') }}
-    </span>
-</h2>
+  <div class="w3-row">
+    <div class="w3-half my-half" style="padding-right: 5px;">
+      <h2 id="toggleBtn">
+        {{ gettext('Create new machine') }}
+        <span id="collapseTemplatesIcon" style="float: right;" class="w3-button w3-blue w3-padding-small w3-round">
+          {{ icon('compress') }}
+        </span>
+      </h2>
 
-<span id="contentSpan">
-  {{ info(gettext("This lists all templates that are available to the group you are in: {g}"), g=current_user.group.name) }}
+      <span id="contentSpan">
+        {{ info(gettext("This lists all templates that are available to the group you are in: {g}"), g=current_user.group.name) }}
 
-  <p>
-    {% set mts = current_user.group.machine_templates %}
-    {% for mt in mts %}
-      {% set count = count_machines(mt) %}
-      {% set quota = mt.extra_data.get("quota") %}
-      {% set quota_reached = quota - count <= 0 %}
+        <p>
+          {% set mts = current_user.group.machine_templates %}
+          {% for mt in mts %}
+            {% set count = count_machines(mt) %}
+            {% set quota = mt.extra_data.get("quota") %}
+            {% set quota_reached = quota - count <= 0 %}
+            <p>
+              <div class="w3-card w3-padding w3-round">
+                <div class="w3-row" style="display: flex; align-items: center;">
+                  <div class="w3-col m8" style="display: flex; align-items: center;">
+                    <h3>{{ icon('file-lines') }} {{ mt.name }}</h3>
+                  </div>
+                  <div class="w3-col m4 w3-right-align">
+                    <form method="POST" action="/new_machine">
+                      <input type="hidden" name="machine_template_name" value="{{ mt.name }}">
+                      <button
+                        title="Launch an instance of this machine template"
+                        type="submit"
+                        {% if quota_reached %}
+                          disabled
+                        {% endif %}
+                        class="w3-button w3-green w3-round">
+                        {{ icon("plus-circle") }} {{ gettext('Launch instance') }}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+                <div class="w3-row">
+                  <div class="w3-col m7">
+                    <p>{{ mt.description }}</p>
+                    <p>{{ gettext("Created:") }} {{ humanize.naturaldelta(now - mt.creation_date) }} {{ gettext("ago") }}</p>
+                  </div>
+                  <div class="w3-col m5 w3-right-align">
+                    <p>
+                      {{ gettext("Group:") }} {{ mt.group.name }}<br/>
+                      {{ gettext("Provider:") }} {{ mt.machine_provider.name }}<br/>
+                      {% if mt.cpu_limit_cores %}
+                        {{ gettext("CPUs:") }} {{ mt.cpu_limit_cores }}
+                      {% endif %}
+                      {% if mt.cpu_limit_cores and mt.memory_limit_gb %}&nbsp; {% endif %}
+                      {% if mt.memory_limit_gb %}
+                        {{ gettext("Memory:") }} {{ mt.memory_limit_gb }} GB
+                      {% endif %}
+                      {% if mt.disk_size_gb %}
+                        &nbsp;
+                        {{ gettext("Disk:") }} {{ mt.disk_size_gb }} GB
+                      {% endif %}
+                      <br/>
+                      {{ gettext("Instances running:") }} {{ count }}
+                      {% if quota %}
+                        / {{ quota }}
+                      {% endif %}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </p>
+          {% endfor %}
+        </p>
+      </span>
+    </div>
+
+    <div class="w3-half my-half" style="padding-left: 5px;">
+      <h2>{{ gettext('List of machines') }}</h2>
+      {{ info(gettext("This lists all machines you have access to, both your own and those shared with you by other users.")) }}
       <p>
-        <div class="w3-card w3-padding w3-round">
-          <div class="w3-row" style="display: flex; align-items: center;">
-            <div class="w3-col m8" style="display: flex; align-items: center;">
-              <h3>{{ icon('file-lines') }} {{ mt.name }}</h3>
-            </div>
-            <div class="w3-col m4 w3-right-align">
-              <form method="POST" action="/new_machine">
-                <input type="hidden" name="machine_template_name" value="{{ mt.name }}">
-                <button
-                  title="Launch an instance of this machine template"
-                  type="submit"
-                  {% if quota_reached %}
-                    disabled
+        {% for machine in current_user.owned_machines|reverse|list + current_user.shared_machines|reverse|list if machine.state not in [MachineState.DELETED, MachineState.DELETING] %}
+          {% if machine.hostname and machine.machine_template.extra_data.get("has_https", False) %}
+            {% set machine_url = "https://" + machine.hostname %}
+          {% else %}
+            {% set machine_url = "http://" + machine.ip %}
+          {% endif %}
+          <p>
+            <div class="w3-card w3-padding w3-round w3-animate-opacity">
+              <div class="w3-row" style="display: flex; align-items: center;">
+                <div class="w3-col m6" style="display: flex; align-items: center;">
+                  <h3>
+                    {{ icon('cube') }} {{ machine.display_name }}
+                  </h3>
+
+                </div>
+                <div class="w3-col m6 w3-right-align">
+                  {% if machine.state == MachineState.READY %}
+                    <a
+                      target="_blank"
+                      title="Open machine page"
+                      href="{{ url_for('visit_machine', m_id=machine.id) }}"
+                      class="w3-button w3-blue w3-round">
+                      {{ icon("external-link") }} {{ gettext('Open') }}
+                    </a>
+                  {% elif machine.state == MachineState.PROVISIONING %}
+                    <button
+                      title="Machine is being prepared. Refresh page to update status"
+                      class="w3-button w3-blue w3-round" disabled>
+                      <i class="fa-solid fa-spinner fa-spin"></i> {{ gettext('Preparing') }}
+                    </button>
+                  {% else %}
+                    <button
+                      title="Machine is in error state"
+                      class="w3-button w3-red w3-round" disabled>
+                      {{ icon("circle-xmark") }} {{ machine.state.name }}
+                    </button>
                   {% endif %}
-                  class="w3-button w3-green w3-round">
-                  {{ icon("plus-circle") }} {{ gettext('Launch instance') }}
-                </button>
-              </form>
-            </div>
-          </div>
-          <div class="w3-row">
-            <div class="w3-col m7">
-              <p>{{ mt.description }}</p>
-              <p>{{ gettext("Created:") }} {{ humanize.naturaldelta(now - mt.creation_date) }} {{ gettext("ago") }}</p>
-            </div>
-            <div class="w3-col m5 w3-right-align">
-              <p>
-                {{ gettext("Group:") }} {{ mt.group.name }}<br/>
-                {{ gettext("Provider:") }} {{ mt.machine_provider.name }}<br/>
-                {% if mt.cpu_limit_cores %}
-                  {{ gettext("CPUs:") }} {{ mt.cpu_limit_cores }}
-                {% endif %}
-                {% if mt.cpu_limit_cores and mt.memory_limit_gb %}&nbsp; {% endif %}
-                {% if mt.memory_limit_gb %}
-                  {{ gettext("Memory:") }} {{ mt.memory_limit_gb }} GB
-                {% endif %}
-                {% if mt.disk_size_gb %}
-                  &nbsp;
-                  {{ gettext("Disk:") }} {{ mt.disk_size_gb }} GB
-                {% endif %}
-                <br/>
-                {{ gettext("Instances running:") }} {{ count }}
-                {% if quota %}
-                  / {{ quota }}
-                {% endif %}
-              </p>
-            </div>
-          </div>
-        </div>
-      </p>
-    {% endfor %}
-  </p>
-</span>
-
-  <h2>{{ gettext('List of machines') }}</h2>
-  {{ info(gettext("This lists all machines you have access to, both your own and those shared with you by other users.")) }}
-  <p>
-    {% for machine in current_user.owned_machines|reverse|list + current_user.shared_machines|reverse|list if machine.state not in [MachineState.DELETED, MachineState.DELETING] %}
-      {% if machine.hostname and machine.machine_template.extra_data.get("has_https", False) %}
-        {% set machine_url = "https://" + machine.hostname %}
-      {% else %}
-        {% set machine_url = "http://" + machine.ip %}
-      {% endif %}
-      <p>
-        <div class="w3-card w3-padding w3-round">
-          <div class="w3-row" style="display: flex; align-items: center;">
-            <div class="w3-col m6" style="display: flex; align-items: center;">
-              <h3>
-                {{ icon('cube') }} {{ machine.display_name }}
-              </h3>
-
-            </div>
-            <div class="w3-col m6 w3-right-align">
-              {% if machine.state == MachineState.READY %}
-                <a
-                  target="_blank"
-                  title="Open machine page"
-                  href="{{ url_for('visit_machine', m_id=machine.id) }}"
-                  class="w3-button w3-blue w3-round">
-                  {{ icon("external-link") }} {{ gettext('Open') }}
-                </a>
-              {% elif machine.state == MachineState.PROVISIONING %}
-                <button
-                  title="Machine is being prepared. Refresh page to update status"
-                  class="w3-button w3-blue w3-round" disabled>
-                  <i class="fa-solid fa-spinner fa-spin"></i> {{ gettext('Preparing') }}
-                </button>
-              {% else %}
-                <button
-                  title="Machine is in error state"
-                  class="w3-button w3-red w3-round" disabled>
-                  {{ icon("circle-xmark") }} {{ machine.state.name }}
-                </button>
-              {% endif %}
-              <a href="/share_machine/{{ machine.id }}"
-                 class="w3-button w3-blue w3-round"
-                 title="Open share page for machine">
-                 {{ icon('share-nodes') }}
-              </a>
-              {% if machine.owner == current_user %}
-                <button
-                  class="w3-button w3-blue w3-round"
-                  title="Rename machine"
-                  onclick='renameObject({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
-                  >
-                  {{ icon('pen') }}
-                </button>
-              {% endif %}
-              <a href="{{ url_for('report_problem', machine_id=machine.id, title=gettext('Problem with machine ') + machine.display_name ) }}"
-                 class="w3-button w3-blue-gray w3-round"
-                 title={{ gettext("Report problem") }}>
-                 {{ icon('flag') }}
-              </a>
-              {% if machine.owner == current_user %}
-                <a href="#"
-                   onclick="document.getElementById('stop-form-{{ machine.id }}').submit();"
-                   class="w3-button w3-red w3-round"
-                   title={{ gettext("Stop and remove machine") }}>
-                   {{ icon('trash') }}
-                </a>
-                <form id="stop-form-{{ machine.id }}" action="/stop_machine" method="POST">
-                  <input type="hidden" name="machine_id" value="{{ machine.id }}">
-                </form>
-              {% endif %}
-
-            </div>
-          </div>
-          <div class="w3-row">
-            <div class="w3-col m8">
-              <p>
-                <a href="{{ url_for('visit_machine', m_id=machine.id) }}" target="_blank">
-
-                  <div class="fallback-div" style="display: none; width: 240px; height: 140px; border: 3px dashed gray; text-align: center; line-height: 140px; border-radius:4px">Thumbnail Not Available</div>
-                  <img class="vm-thumbnail w3-round lighten-on-hover blur-on-hover" src="{{ machine_url }}/screenshots/screenshot-thumb.png" alt="Alternative text" style="display: none; max-width: 300px; max-height: 175px;">
-                </a>
-              </p>
-            </div>
-            <div class="w3-col m4 w3-right-align">
-              <p>
-                {{ gettext("Template:") }} {{ machine.machine_template.name }}<br/>
-                {% if machine.owner.id != current_user.id %}
-                  {{ gettext("Shared with you by:") }} {{ machine.owner.username }}<br/>
-                {% else %}
-                  {{ gettext("Owner:") }} {{ machine.owner.username }}<br/>
-
-                  {% if machine.shared_users %}
-                    {{ gettext("Shared with other users:") }} {{ machine.shared_users|join(", ", attribute="username") }}<br/>
+                  <a href="/share_machine/{{ machine.id }}"
+                     class="w3-button w3-blue w3-round"
+                     title="Open share page for machine">
+                     {{ icon('share-nodes') }}
+                  </a>
+                  {% if machine.owner == current_user %}
+                    <button
+                      class="w3-button w3-blue w3-round"
+                      title="Rename machine"
+                      onclick='renameObject({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
+                      >
+                      {{ icon('pen') }}
+                    </button>
                   {% endif %}
-                {% endif %}
-                {% if machine.ip %}
-                  {{ gettext("IP:") }} {{ machine.ip }}<br/>
-                {% endif %}
-                {{ gettext("Created:") }} {{ humanize.naturaldelta(now - machine.creation_date) }} ago
-              </p>
-              {% set finished_jobs = machine_format_dtj(machine) %}
-              {% if finished_jobs %}
-                <p>{{ gettext("Data:") }}<br/>
-                  {% for job in finished_jobs %}
-                    {{ job }}<br/>
-                  {% endfor %}
-                </p>
-              {% endif %}
+                  <a href="{{ url_for('report_problem', machine_id=machine.id, title=gettext('Problem with machine ') + machine.display_name ) }}"
+                     class="w3-button w3-blue-gray w3-round"
+                     title={{ gettext("Report problem") }}>
+                     {{ icon('flag') }}
+                  </a>
+                  {% if machine.owner == current_user %}
+                    <a href="#"
+                       onclick="document.getElementById('stop-form-{{ machine.id }}').submit();"
+                       class="w3-button w3-red w3-round"
+                       title={{ gettext("Stop and remove machine") }}>
+                       {{ icon('trash') }}
+                    </a>
+                    <form id="stop-form-{{ machine.id }}" action="/stop_machine" method="POST">
+                      <input type="hidden" name="machine_id" value="{{ machine.id }}">
+                    </form>
+                  {% endif %}
+
+                </div>
+              </div>
+              <div class="w3-row">
+                <div class="w3-col m8">
+                  <p>
+                    <a href="{{ url_for('visit_machine', m_id=machine.id) }}" target="_blank">
+
+                      <div class="fallback-div" style="display: none; width: 240px; height: 140px; border: 3px dashed gray; text-align: center; line-height: 140px; border-radius:4px">Thumbnail Not Available</div>
+                      <img class="vm-thumbnail w3-round lighten-on-hover blur-on-hover" src="{{ machine_url }}/screenshots/screenshot-thumb.png" alt="Alternative text" style="display: none; max-width: 300px; max-height: 175px;">
+                    </a>
+                  </p>
+                </div>
+                <div class="w3-col m4 w3-right-align">
+                  <p>
+                    {{ gettext("Template:") }} {{ machine.machine_template.name }}<br/>
+                    {% if machine.owner.id != current_user.id %}
+                      {{ gettext("Shared with you by:") }} {{ machine.owner.username }}<br/>
+                    {% else %}
+                      {{ gettext("Owner:") }} {{ machine.owner.username }}<br/>
+
+                      {% if machine.shared_users %}
+                        {{ gettext("Shared with other users:") }} {{ machine.shared_users|join(", ", attribute="username") }}<br/>
+                      {% endif %}
+                    {% endif %}
+                    {% if machine.ip %}
+                      {{ gettext("IP:") }} {{ machine.ip }}<br/>
+                    {% endif %}
+                    {{ gettext("Created:") }} {{ humanize.naturaldelta(now - machine.creation_date) }} ago
+                  </p>
+                  {% set finished_jobs = machine_format_dtj(machine) %}
+                  {% if finished_jobs %}
+                    <p>{{ gettext("Data:") }}<br/>
+                      {% for job in finished_jobs %}
+                        {{ job }}<br/>
+                      {% endfor %}
+                    </p>
+                  {% endif %}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </p>
+        {% endfor %}
       </p>
-    {% endfor %}
-  </p>
-  <br/>
+      <br/>
+    </div>
+  </div>
 {% endblock %}
 
 {% block javascript %}
-  <script>
-    function renameObject(objectName, objectId) {
-      var newName = prompt("Enter a new name for " + objectName + ":", objectName);
-      if (newName !== null && newName !== objectName) {
-        var form = document.createElement("form");
-        form.setAttribute("method", "post");
-        form.setAttribute("action", "/rename_machine");
+<script>
+ function renameObject(objectName, objectId) {
+     var newName = prompt("Enter a new name for " + objectName + ":", objectName);
+     if (newName !== null && newName !== objectName) {
+         var form = document.createElement("form");
+         form.setAttribute("method", "post");
+         form.setAttribute("action", "/rename_machine");
 
-        var oldNameInput = document.createElement("input");
-        oldNameInput.setAttribute("type", "hidden");
-        oldNameInput.setAttribute("name", "machine_id");
-        oldNameInput.setAttribute("value", objectId);
-        form.appendChild(oldNameInput);
+         var oldNameInput = document.createElement("input");
+         oldNameInput.setAttribute("type", "hidden");
+         oldNameInput.setAttribute("name", "machine_id");
+         oldNameInput.setAttribute("value", objectId);
+         form.appendChild(oldNameInput);
 
-        var newNameInput = document.createElement("input");
-        newNameInput.setAttribute("type", "hidden");
-        newNameInput.setAttribute("name", "machine_new_name");
-        newNameInput.setAttribute("value", newName);
-        form.appendChild(newNameInput);
+         var newNameInput = document.createElement("input");
+         newNameInput.setAttribute("type", "hidden");
+         newNameInput.setAttribute("name", "machine_new_name");
+         newNameInput.setAttribute("value", newName);
+         form.appendChild(newNameInput);
 
-        document.body.appendChild(form);
+         document.body.appendChild(form);
 
-        form.submit();
-      }
-    }
-    document.addEventListener('DOMContentLoaded', function() {
-      function displayThumbnail(thumbnail, fallbackDiv) {
-        if (thumbnail.naturalWidth === 0) {
-          fallbackDiv.style.display = 'block';
-        } else {
-          thumbnail.style.display = 'inline-block';
-          fallbackDiv.style.display = 'none';
-        }
-      }
+         form.submit();
+     }
+ }
+ document.addEventListener('DOMContentLoaded', function() {
+     function displayThumbnail(thumbnail, fallbackDiv) {
+         if (thumbnail.naturalWidth === 0) {
+             fallbackDiv.style.display = 'block';
+         } else {
+             thumbnail.style.display = 'inline-block';
+             fallbackDiv.style.display = 'none';
+         }
+     }
 
-      var thumbnails = document.getElementsByClassName('vm-thumbnail');
-      var fallbackDivs = document.getElementsByClassName('fallback-div');
+     var thumbnails = document.getElementsByClassName('vm-thumbnail');
+     var fallbackDivs = document.getElementsByClassName('fallback-div');
 
-      for (var i = 0; i < thumbnails.length; i++) {
-        (function(i) {
-          if (thumbnails[i].complete) {
-            displayThumbnail(thumbnails[i], fallbackDivs[i]);
-          } else {
-            thumbnails[i].addEventListener('load', function() {
-              displayThumbnail(thumbnails[i], fallbackDivs[i]);
-            });
+     for (var i = 0; i < thumbnails.length; i++) {
+         (function(i) {
+             if (thumbnails[i].complete) {
+                 displayThumbnail(thumbnails[i], fallbackDivs[i]);
+             } else {
+                 thumbnails[i].addEventListener('load', function() {
+                     displayThumbnail(thumbnails[i], fallbackDivs[i]);
+                 });
 
-            thumbnails[i].addEventListener('error', function() {
-              fallbackDivs[i].style.display = 'block';
-            });
-          }
-        })(i);
-      }
-    });
+                 thumbnails[i].addEventListener('error', function() {
+                     fallbackDivs[i].style.display = 'block';
+                 });
+             }
+         })(i);
+     }
+ });
 
-    // Get the button and span elements
-    let toggleBtn = document.getElementById('toggleBtn');
-    let contentSpan = document.getElementById('contentSpan');
+ // Get the button and span elements
+ let toggleBtn = document.getElementById('toggleBtn');
+ let contentSpan = document.getElementById('contentSpan');
+ let collapseTemplatesIcon = document.getElementById('collapseTemplatesIcon');
 
-    // Check if there is a saved visibility setting in localStorage
-    let isHidden = localStorage.getItem('isHidden');
+ // Check if there is a saved visibility setting in localStorage
+ let isHidden = localStorage.getItem('isHidden');
 
-    // If there is a saved setting, apply it
-    if(isHidden !== null) {
-        contentSpan.style.display = isHidden === 'true' ? 'none' : 'block';
-    }
+ function applyHiddenSetting() {
+ // If there is a saved setting, apply it
+ if(isHidden !== null) {
+     if(isHidden === 'true') {
+         contentSpan.style.display = 'none';
+         collapseTemplatesIcon.innerHTML = '{{ icon("expand") }}';
+     }
+     else {
+         contentSpan.style.display = 'block';
+         collapseTemplatesIcon.innerHTML = '{{ icon("compress") }}';
+     }
+ }
+ }
 
-    // Add a click event listener to the button
-    toggleBtn.addEventListener('click', function() {
-        // Toggle visibility of the span
-        if(contentSpan.style.display === 'none') {
-            contentSpan.style.display = 'block';
-            localStorage.setItem('isHidden', 'false');
-        } else {
-            contentSpan.style.display = 'none';
-            localStorage.setItem('isHidden', 'true');
-        }
-    });
+ applyHiddenSetting();
 
-  </script>
+ // Allow the user to toggle the
+ toggleBtn.addEventListener('click', function() {
+     var mql = window.matchMedia("(min-width: 1601px)");
+     if (mql.matches) {
+         localStorage.setItem('isHidden', 'false');
+         collapseTemplatesIcon.style.visibility = 'hidden';
+         contentSpan.style.display = 'block';
+     }
+     else {
+         collapseTemplatesIcon.style.visibility = 'visible';
+         // Toggle visibility of the span
+         if(contentSpan.style.display === 'none') {
+             contentSpan.style.display = 'block';
+             collapseTemplatesIcon.innerHTML = '{{ icon("compress") }}';
+             localStorage.setItem('isHidden', 'false');
+         }
+         else {
+             contentSpan.style.display = 'none';
+             collapseTemplatesIcon.innerHTML = '{{ icon("expand") }}';
+             localStorage.setItem('isHidden', 'true');
+         }
+     }
+ });
+
+ // The event listener function
+ function screenTest(e) {
+     if (e.matches) {
+         let contentSpan = document.getElementById('contentSpan');
+         contentSpan.style.display = 'block';
+         collapseTemplatesIcon.style.visibility = 'hidden';
+     } else {
+         collapseTemplatesIcon.style.visibility = 'visible';
+         collapseTemplatesIcon.innerHTML = '{{ icon("compress") }}';
+     }
+ }
+ var mql = window.matchMedia("(min-width: 1601px)");
+ screenTest(mql);
+ mql.addEventListener("change", screenTest);
+
+</script>
 {% endblock %}

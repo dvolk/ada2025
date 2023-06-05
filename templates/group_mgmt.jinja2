@@ -29,6 +29,9 @@
               {% endif %}
               &nbsp;
               {{ u.username }}
+              {% if u.provider == "google" %}
+                {{ icon("google") }}
+              {% endif %}
             </td>
             <td style="vertical-align: middle;">{{ u.email }}</td>
             <td style="vertical-align: middle;">{{ humanize.naturaldelta(time_now - u.creation_date) }} ago</td>
