@@ -30,13 +30,13 @@
                     <form method="POST" action="/new_machine">
                       <input type="hidden" name="machine_template_name" value="{{ mt.name }}">
                       <button
-                        title="Launch an instance of this machine template"
+                        title="Create an instance of this machine template"
                         type="submit"
                         {% if quota_reached %}
                           disabled
                         {% endif %}
                         class="w3-button w3-green w3-round">
-                        {{ icon("plus-circle") }} {{ gettext('Launch instance') }}
+                        {{ icon("plus-circle") }} {{ gettext('Create machine') }}
                       </button>
                     </form>
                   </div>
