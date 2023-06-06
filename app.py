@@ -2118,8 +2118,8 @@ def login():
                 flash(
                     gettext(
                         "Sorry, you can't use a local login. Try using the login method you signed in (eg. Google) with the first time, or contact support for help.",
-                        "danger",
-                    )
+                    ),
+                    "danger",
                 )
                 return render_template(
                     "login.jinja2",
@@ -3089,14 +3089,14 @@ def share_revoke(machine_id):
     machine = Machine.query.filter_by(id=machine_id).first()
     if not machine:
         finish_audit(audit, "no machine")
-        flash(gettext("That machine could not be found", "danger"))
+        flash(gettext("That machine could not be found"), "danger")
         return redirect(url_for("machines"))
 
     update_audit(audit, machine=machine)
 
     if current_user != machine.owner:
         finish_audit(audit, "not owner")
-        flash(gettext("You can't revoke shares on a machine you don't own.", "danger"))
+        flash(gettext("You can't revoke shares on a machine you don't own."), "danger")
         return redirect(url_for("machines"))
 
     machine.share_token = gen_token(16)
