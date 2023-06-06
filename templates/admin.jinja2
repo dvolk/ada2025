@@ -42,6 +42,34 @@
       </tr>
     {% endfor %}
   </table>
+
+  <h2>{{ gettext("Groups") }}</h2>
+  <table class="w3-table-all">
+    <thead>
+      <th>{{ gettext("Name") }}</th>
+      <th>{{ gettext("Users") }}</th>
+      <th>{{ gettext("Templates") }}</th>
+      <th>{{ gettext("Images") }}</th>
+    </thead>
+    {% for group in Group.query.all() %}
+      <tr>
+        <td>
+          {{ group.name }}
+        </td>
+        <td>
+          {% for user in group.users %}
+            {{ user.given_name }} {{ user.family_name }} ({{ user.username }})<br/>
+          {% endfor %}
+        </td>
+        <td>
+          {{ group.machine_templates|map(attribute="name")|join("<br/>") }}
+        </td>
+        <td>
+          {{ group.machine_templates|map(attribute="image")|unique|join("<br/>") }}
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
   <br/>
 
 {% endblock %}

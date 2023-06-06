@@ -2711,11 +2711,11 @@ def rename_machine():
 def admin():
     if not current_user.is_admin:
         return redirect(url_for("login"))
+
     return render_template(
         "admin.jinja2",
         title=gettext("Admin"),
-        User=User,
-        Machine=Machine,
+        Group=Group,
         env=os.environ,
     )
 
