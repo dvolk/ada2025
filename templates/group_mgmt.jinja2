@@ -29,11 +29,12 @@
               {% endif %}
               &nbsp;
               {{ u.username }}
-              {% if u.provider == "google" %}
-                {{ icon("google") }}
-              {% endif %}
             </td>
-            <td style="vertical-align: middle;">{{ u.email }}</td>
+            <td style="vertical-align: middle;">
+              {% if u.provider == "google" %}
+                <i class="fa-brands fa-fw fa-google"></i>
+              {% endif %}
+              {{ u.email }}</td>
             <td style="vertical-align: middle;">{{ humanize.naturaldelta(time_now - u.creation_date) }} ago</td>
             <td style="vertical-align: middle; text-align: right">
               {% if u.is_enabled %}
