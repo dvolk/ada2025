@@ -194,137 +194,144 @@
       <br/>
     </div>
   </div>
+
 {% endblock %}
 
 {% block javascript %}
-<script>
- function renameObject(objectName, objectId) {
-     var newName = prompt("Enter a new name for " + objectName + ":", objectName);
-     if (newName !== null && newName !== objectName) {
-         var form = document.createElement("form");
-         form.setAttribute("method", "post");
-         form.setAttribute("action", "/rename_machine");
+  <script>
 
-         var oldNameInput = document.createElement("input");
-         oldNameInput.setAttribute("type", "hidden");
-         oldNameInput.setAttribute("name", "machine_id");
-         oldNameInput.setAttribute("value", objectId);
-         form.appendChild(oldNameInput);
+   document.addEventListener('DOMContentLoaded', function() {
+       function renameObject(objectName, objectId) {
+           var newName = prompt("Enter a new name for " + objectName + ":", objectName);
+           if (newName !== null && newName !== objectName) {
+               var form = document.createElement("form");
+               form.setAttribute("method", "post");
+               form.setAttribute("action", "/rename_machine");
 
-         var newNameInput = document.createElement("input");
-         newNameInput.setAttribute("type", "hidden");
-         newNameInput.setAttribute("name", "machine_new_name");
-         newNameInput.setAttribute("value", newName);
-         form.appendChild(newNameInput);
+               var oldNameInput = document.createElement("input");
+               oldNameInput.setAttribute("type", "hidden");
+               oldNameInput.setAttribute("name", "machine_id");
+               oldNameInput.setAttribute("value", objectId);
+               form.appendChild(oldNameInput);
 
-         document.body.appendChild(form);
+               var newNameInput = document.createElement("input");
+               newNameInput.setAttribute("type", "hidden");
+               newNameInput.setAttribute("name", "machine_new_name");
+               newNameInput.setAttribute("value", newName);
+               form.appendChild(newNameInput);
 
-         form.submit();
-     }
- }
- document.addEventListener('DOMContentLoaded', function() {
-     function displayThumbnail(thumbnail, fallbackDiv) {
-         if (thumbnail.naturalWidth === 0) {
-             fallbackDiv.style.display = 'block';
-         } else {
-             thumbnail.style.display = 'inline-block';
-             fallbackDiv.style.display = 'none';
-         }
-     }
+               document.body.appendChild(form);
 
-     var thumbnails = document.getElementsByClassName('vm-thumbnail');
-     var fallbackDivs = document.getElementsByClassName('fallback-div');
+               form.submit();
+           }
+       }
+       function displayThumbnail(thumbnail, fallbackDiv) {
+           if (thumbnail.naturalWidth === 0) {
+               fallbackDiv.style.display = 'block';
+           } else {
+               thumbnail.style.display = 'inline-block';
+               fallbackDiv.style.display = 'none';
+           }
+       }
 
-     for (var i = 0; i < thumbnails.length; i++) {
-         (function(i) {
-             if (thumbnails[i].complete) {
-                 displayThumbnail(thumbnails[i], fallbackDivs[i]);
-             } else {
-                 thumbnails[i].addEventListener('load', function() {
-                     displayThumbnail(thumbnails[i], fallbackDivs[i]);
-                 });
+       var thumbnails = document.getElementsByClassName('vm-thumbnail');
+       var fallbackDivs = document.getElementsByClassName('fallback-div');
 
-                 thumbnails[i].addEventListener('error', function() {
-                     fallbackDivs[i].style.display = 'block';
-                 });
-             }
-         })(i);
-     }
- });
+       for (var i = 0; i < thumbnails.length; i++) {
+           (function(i) {
+               if (thumbnails[i].complete) {
+                   displayThumbnail(thumbnails[i], fallbackDivs[i]);
+               } else {
+                   thumbnails[i].addEventListener('load', function() {
+                       displayThumbnail(thumbnails[i], fallbackDivs[i]);
+                   });
 
- // Get the button and span elements
- let toggleBtn = document.getElementById('toggleBtn');
- let contentSpan = document.getElementById('contentSpan');
- let collapseTemplatesIcon = document.getElementById('collapseTemplatesIcon');
+                   thumbnails[i].addEventListener('error', function() {
+                       fallbackDivs[i].style.display = 'block';
+                   });
+               }
+           })(i);
+       }
 
- // Check if there is a saved visibility setting in localStorage
- let isHidden = localStorage.getItem('isHidden');
+       // Get the button and span elements
+       let toggleBtn = document.getElementById('toggleBtn');
+       let contentSpan = document.getElementById('contentSpan');
+       let collapseTemplatesIcon = document.getElementById('collapseTemplatesIcon');
 
- function applyHiddenSetting() {
-     let mql = window.matchMedia("(min-width: 1601px)");
+       // Check if there is a saved visibility setting in localStorage
+       let isHidden = localStorage.getItem('isHidden');
 
-     // If there is a saved setting, apply it
-     if(isHidden === 'true') {
-         contentSpan.style.display = 'none';
-         collapseTemplatesIcon.innerHTML = '{{ icon("expand") }}';
-     } else {
-         contentSpan.style.display = 'block';
-         collapseTemplatesIcon.innerHTML = '{{ icon("compress") }}';
-     }
+       function applyHiddenSetting() {
+           let mql = window.matchMedia("(min-width: 1601px)");
 
-     // Hide the icon if window size is larger than 1601px
-     if(mql.matches) {
-         collapseTemplatesIcon.style.visibility = 'hidden';
-     }
- }
+           // If there is a saved setting, apply it
+           if(isHidden === 'true') {
+               contentSpan.style.display = 'none';
+               collapseTemplatesIcon.innerHTML = '{{ icon("expand") }}';
+           } else {
+               contentSpan.style.display = 'block';
+               collapseTemplatesIcon.innerHTML = '{{ icon("compress") }}';
+           }
 
- function toggleVisibility(mql) {
-     if (mql.matches) { // bigger than 1601px
-         isHidden = 'false';
-         collapseTemplatesIcon.style.visibility = 'hidden';
-         contentSpan.style.display = 'block';
-     } else { // smaller than 1601px
-         collapseTemplatesIcon.style.visibility = 'visible';
+           // If window size is smaller than 1601px, always show the contentSpan and collapseTemplatesIcon
+           if(mql.matches) {
+               contentSpan.style.display = 'block';
+               collapseTemplatesIcon.style.visibility = 'hidden';
+               collapseTemplatesIcon.innerHTML = '{{ icon("compress") }}';
+               isHidden = 'false';
+           } else { // If window size is larger than 1601px, hide the collapseTemplatesIcon
+               collapseTemplatesIcon.style.visibility = 'visible';
+           }
+           localStorage.setItem('isHidden', isHidden);
+       }
 
-         if(isHidden === 'true') {
-             contentSpan.style.display = 'block';
-             collapseTemplatesIcon.innerHTML = '{{ icon("compress") }}';
-             isHidden = 'false';
-         } else {
-             contentSpan.style.display = 'none';
-             collapseTemplatesIcon.innerHTML = '{{ icon("expand") }}';
-             isHidden = 'true';
-         }
-     }
-     // Save the updated visibility setting
-     localStorage.setItem('isHidden', isHidden);
- }
+       function toggleVisibility(mql) {
+           if (mql.matches) { // bigger than 1601px
+               isHidden = 'false';
+               collapseTemplatesIcon.style.visibility = 'hidden';
+               contentSpan.style.display = 'block';
+           } else { // smaller than 1601px
+               collapseTemplatesIcon.style.visibility = 'visible';
 
- function screenTest(e) {
-     if (e.matches) { // bigger than 1601px
-         contentSpan.style.display = 'block';
-         collapseTemplatesIcon.style.visibility = 'hidden';
-         isHidden = 'false';
-     } else { // smaller than 1601px
-         contentSpan.style.display = 'block';
-         collapseTemplatesIcon.style.visibility = 'visible';
-         collapseTemplatesIcon.innerHTML = '{{ icon("compress") }}';
-         isHidden = 'false';
-     }
-     // Save the updated visibility setting
-     localStorage.setItem('isHidden', isHidden);
- }
+               if(isHidden === 'true') {
+                   contentSpan.style.display = 'block';
+                   collapseTemplatesIcon.innerHTML = '{{ icon("compress") }}';
+                   isHidden = 'false';
+               } else {
+                   contentSpan.style.display = 'none';
+                   collapseTemplatesIcon.innerHTML = '{{ icon("expand") }}';
+                   isHidden = 'true';
+               }
+           }
+           // Save the updated visibility setting
+           localStorage.setItem('isHidden', isHidden);
+       }
 
- // Apply the initial visibility settings
- applyHiddenSetting();
+       function screenTest(e) {
+           if (e.matches) { // bigger than 1601px
+               contentSpan.style.display = 'block';
+               collapseTemplatesIcon.style.visibility = 'hidden';
+               isHidden = 'false';
+           } else { // smaller than 1601px
+               contentSpan.style.display = 'block';
+               collapseTemplatesIcon.style.visibility = 'visible';
+               collapseTemplatesIcon.innerHTML = '{{ icon("compress") }}';
+               isHidden = 'false';
+           }
+           // Save the updated visibility setting
+           localStorage.setItem('isHidden', isHidden);
+       }
 
- // Add the click event listener to the button
- toggleBtn.addEventListener('click', () => toggleVisibility(window.matchMedia("(min-width: 1601px)")));
+       // Apply the initial visibility settings
+       applyHiddenSetting();
 
- // Add the screen size change event listener
- let mql = window.matchMedia("(min-width: 1601px)");
- mql.addEventListener("change", screenTest);
+       // Add the click event listener to the button
+       toggleBtn.addEventListener('click', () => toggleVisibility(window.matchMedia("(min-width: 1601px)")));
 
+       // Add the screen size change event listener
+       let mql = window.matchMedia("(min-width: 1601px)");
+       mql.addEventListener("change", screenTest);
+   });
 
-</script>
+  </script>
 {% endblock %}
