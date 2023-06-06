@@ -80,7 +80,7 @@
       <h2>{{ gettext('List of machines') }}</h2>
       {{ info(gettext("This lists all machines you have access to, both your own and those shared with you by other users.")) }}
       <p>
-        {% for machine in current_user.owned_machines|reverse|list + current_user.shared_machines|reverse|list if machine.state not in [MachineState.DELETED, MachineState.DELETING] %}
+        {% for machine in user_machines %}
           {% if machine.hostname and machine.machine_template.extra_data.get("has_https", False) %}
             {% set machine_url = "https://" + machine.hostname %}
           {% else %}
