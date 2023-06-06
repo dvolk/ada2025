@@ -1887,9 +1887,9 @@ def google_authorize():
         app.logger.error(e)
         flash(
             gettext(
-                "An error occurred while processing your Google login. Please try again.",
-                "danger",
-            )
+                "An error occurred while processing your Google login. Please try again."
+            ),
+            "danger",
         )
         return redirect(url_for("login"))
 
