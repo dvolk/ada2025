@@ -51,9 +51,8 @@
       <label>{{ gettext("Confirm Password") }}*</label>
       {{ form.password_confirm(class="w3-input w3-round w3-border w3-light-grey") }}
     </div>
-  </p>
-
-  <br/><br/><br/>
+    {{ info("Please don't reuse a password from a different site. Generate a secure password.") }}
+  </ep>
 
   <p>
     <label class="w3-text-black">{{ gettext("Email") }}* (min: {{ form.email_min }}, max: {{ form.email_max }})</label>
