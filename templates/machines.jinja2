@@ -200,67 +200,41 @@
 {% block javascript %}
   <script>
 
+   function renameObject(objectName, objectId) {
+       var newName = prompt("Enter a new name for " + objectName + ":", objectName);
+       if (newName !== null && newName !== objectName) {
+           var form = document.createElement("form");
+           form.setAttribute("method", "post");
+           form.setAttribute("action", "/rename_machine");
+
+           var oldNameInput = document.createElement("input");
+           oldNameInput.setAttribute("type", "hidden");
+           oldNameInput.setAttribute("name", "machine_id");
+           oldNameInput.setAttribute("value", objectId);
+           form.appendChild(oldNameInput);
+
+           var newNameInput = document.createElement("input");
+           newNameInput.setAttribute("type", "hidden");
+           newNameInput.setAttribute("name", "machine_new_name");
+           newNameInput.setAttribute("value", newName);
+           form.appendChild(newNameInput);
+
+           document.body.appendChild(form);
+
+           form.submit();
+       }
+   }
+
+   function displayThumbnail(thumbnail, fallbackDiv) {
+       if (thumbnail.naturalWidth === 0) {
+           fallbackDiv.style.display = 'block';
+       } else {
+           thumbnail.style.display = 'inline-block';
+           fallbackDiv.style.display = 'none';
+       }
+   }
+
    document.addEventListener('DOMContentLoaded', function() {
-       function renameObject(objectName, objectId) {
-           var newName = prompt("Enter a new name for " + objectName + ":", objectName);
-           if (newName !== null && newName !== objectName) {
-               var form = document.createElement("form");
-               form.setAttribute("method", "post");
-               form.setAttribute("action", "/rename_machine");
-
-               var oldNameInput = document.createElement("input");
-               oldNameInput.setAttribute("type", "hidden");
-               oldNameInput.setAttribute("name", "machine_id");
-               oldNameInput.setAttribute("value", objectId);
-               form.appendChild(oldNameInput);
-
-               var newNameInput = document.createElement("input");
-               newNameInput.setAttribute("type", "hidden");
-               newNameInput.setAttribute("name", "machine_new_name");
-               newNameInput.setAttribute("value", newName);
-               form.appendChild(newNameInput);
-
-               document.body.appendChild(form);
-
-               form.submit();
-           }
-       }
-       function displayThumbnail(thumbnail, fallbackDiv) {
-           if (thumbnail.naturalWidth === 0) {
-               fallbackDiv.style.display = 'block';
-           } else {
-               thumbnail.style.display = 'inline-block';
-               fallbackDiv.style.display = 'none';
-           }
-       }
-
-       var thumbnails = document.getElementsByClassName('vm-thumbnail');
-       var fallbackDivs = document.getElementsByClassName('fallback-div');
-
-       for (var i = 0; i < thumbnails.length; i++) {
-           (function(i) {
-               if (thumbnails[i].complete) {
-                   displayThumbnail(thumbnails[i], fallbackDivs[i]);
-               } else {
-                   thumbnails[i].addEventListener('load', function() {
-                       displayThumbnail(thumbnails[i], fallbackDivs[i]);
-                   });
-
-                   thumbnails[i].addEventListener('error', function() {
-                       fallbackDivs[i].style.display = 'block';
-                   });
-               }
-           })(i);
-       }
-
-       // Get the button and span elements
-       let toggleBtn = document.getElementById('toggleBtn');
-       let contentSpan = document.getElementById('contentSpan');
-       let collapseTemplatesIcon = document.getElementById('collapseTemplatesIcon');
-
-       // Check if there is a saved visibility setting in localStorage
-       let isHidden = localStorage.getItem('isHidden');
-
        function applyHiddenSetting() {
            let mql = window.matchMedia("(min-width: 1601px)");
 
@@ -321,6 +295,34 @@
            // Save the updated visibility setting
            localStorage.setItem('isHidden', isHidden);
        }
+
+       var thumbnails = document.getElementsByClassName('vm-thumbnail');
+       var fallbackDivs = document.getElementsByClassName('fallback-div');
+
+       for (var i = 0; i < thumbnails.length; i++) {
+           (function(i) {
+               if (thumbnails[i].complete) {
+                   displayThumbnail(thumbnails[i], fallbackDivs[i]);
+               } else {
+                   thumbnails[i].addEventListener('load', function() {
+                       displayThumbnail(thumbnails[i], fallbackDivs[i]);
+                   });
+
+                   thumbnails[i].addEventListener('error', function() {
+                       fallbackDivs[i].style.display = 'block';
+                   });
+               }
+           })(i);
+       }
+
+       // Get the button and span elements
+       let toggleBtn = document.getElementById('toggleBtn');
+       let contentSpan = document.getElementById('contentSpan');
+       let collapseTemplatesIcon = document.getElementById('collapseTemplatesIcon');
+
+       // Check if there is a saved visibility setting in localStorage
+       let isHidden = localStorage.getItem('isHidden');
+
 
        // Apply the initial visibility settings
        applyHiddenSetting();
