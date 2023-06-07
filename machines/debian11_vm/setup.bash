@@ -55,7 +55,7 @@ cp index.html /var/www/html/index.html
 cp ada.png /var/www/html/ada.png
 
 # cronjob: take a screenshot every minute
-crontab -l -u $USER | { cat; echo '* * * * * DISPLAY=:0 scrot -t 20 -o /var/www/html/screenshots/screenshot.png'; } | crontab -u $USER -
+crontab -l -u $USER | { cat; echo '* * * * * DISPLAY=:0 scrot -z -t 20 -o /var/www/html/screenshots/screenshot.png'; } | crontab -u $USER -
 
 # don't boot into X by default since it's started by vncserver
 sudo systemctl set-default multi-user.target

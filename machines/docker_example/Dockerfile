@@ -88,6 +88,6 @@ CMD service nginx start & \
     su -c "vncserver :0 -geometry 1280x800 -SecurityTypes=None && \
     filebrowser --baseurl=/browse --noauth -r /home/$USER & \
     sleep 1 && \
-    crontab -l -u $USER | { cat; echo '* * * * * DISPLAY=:0 scrot -t 20 -o /var/www/html/screenshots/screenshot.png'; } | crontab -u $USER - && \
+    crontab -l -u $USER | { cat; echo '* * * * * DISPLAY=:0 scrot -z -t 20 -o /var/www/html/screenshots/screenshot.png'; } | crontab -u $USER - && \
     websockify --web /usr/share/novnc/ 5901 localhost:$VNC_PORT && \
     tail -F /home/$USER/.vnc/*:0.log" $USER
