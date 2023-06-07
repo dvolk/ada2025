@@ -2231,6 +2231,10 @@ class RegistrationForm(FlaskForm):
 @app.route("/register", methods=["GET", "POST"])
 @limiter.limit("60 per hour")
 def register():
+    # log out users who go to the register page
+    if current_user.is_authenticated:
+        return redirect(url_for("login"))
+
     # register a user account
     form = RegistrationForm()
 
