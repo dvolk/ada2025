@@ -2553,6 +2553,12 @@ def logout():
     return redirect(url_for("index"))
 
 
+@app.route("/privacy")
+@limiter.limit("60 per minute")
+def privacy():
+    return render_template("privacy.jinja2")
+
+
 @app.route("/welcome")
 @limiter.limit("60 per minute")
 @login_required
