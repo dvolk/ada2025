@@ -51,7 +51,7 @@ mkdir -p /home/$USER/.vnc
 echo $VNC_PW | vncpasswd -f > /home/$USER/.vnc/passwd
 chown -R $USER:$USER /home/$USER/.vnc
 chmod 600 /home/$USER/.vnc/passwd
-apt purge -y xfce4-power-manager
+apt purge -y xfce4-power-manager xfce4-screensaver
 rm /etc/nginx/sites-enabled/default
 
 
