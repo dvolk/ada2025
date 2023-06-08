@@ -127,7 +127,9 @@ wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-2023.06.0-4
 dpkg -i rstudio-server-2023.06.0-421-amd64.deb
 apt install -y -f
 rm rstudio-server-2023.06.0-421-amd64.deb
-
+cp rstudio-server.service /usr/lib/systemd/system/rstudio-server.service
+systemctl daemon-reload
+systemctl restart rstudio-server.service
 
 
 # OPTIONAL: Install Python and jupyter notebook
