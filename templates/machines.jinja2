@@ -151,7 +151,7 @@
                 </div>
               </div>
               <div class="w3-row">
-                <div class="w3-col m8">
+                <div class="w3-col m4">
                   <p>
                     <a href="{{ url_for('visit_machine', m_id=machine.id) }}" target="_blank">
 
@@ -160,7 +160,7 @@
                     </a>
                   </p>
                 </div>
-                <div class="w3-col m4 w3-right-align">
+                <div class="w3-col m8 w3-right-align">
                   <p>
                     {{ gettext("Template:") }} {{ machine.machine_template.name }}<br/>
                     {% if machine.owner.id != current_user.id %}
