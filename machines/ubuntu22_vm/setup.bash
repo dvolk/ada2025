@@ -33,7 +33,7 @@ apt-get install -y coreutils findutils grep sed gawk gzip tar curl wget git open
 
 
 # Install desktop applications
-apt-get -y install emacs
+apt-get -y install emacs materia-gtk-theme
 
 
 
