@@ -1460,11 +1460,6 @@ def get_main_menu():
             "href": "/data",
         },
         {
-            "icon": "book",
-            "name": gettext("Citations"),
-            "href": "/citations",
-        },
-        {
             "icon": "gear",
             "name": gettext("Settings"),
             "href": "/settings",
@@ -1480,6 +1475,11 @@ def get_main_menu():
             "icon": "lightbulb",
             "name": gettext("Help"),
             "href": "/help",
+        },
+        {
+            "icon": "book",
+            "name": gettext("Citations"),
+            "href": "/citations",
         },
         {
             "icon": "circle-question",
