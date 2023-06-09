@@ -1,4 +1,13 @@
 {% extends 'base-bare.jinja2' %}
+
+{% block head %}
+  <style>
+    .lighten-on-hover:hover {
+      opacity: 0.7; /* decrease the opacity to lighten the image */
+    }
+  </style>
+{% endblock %}
+
 {% block content %}
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -24,20 +33,33 @@
       {{ form.password(class="w3-input w3-round w3-border w3-light-grey") }}
     </p>
 
-    {% if LOGIN_RECAPTCHA %}
-      {{ recaptcha }}
-      <br>
-    {% endif %}
+    <div class="w3-row">
+      <div class="w3-half">
+        {% if LOGIN_RECAPTCHA %}
+          {{ recaptcha }}
+          <br>
+        {% endif %}
 
-    <button class="w3-btn w3-round ada-blue" type="submit">{{ gettext("Log In") }}</button>
-    <a class="w3-btn w3-round ada-blue" href="/register">{{ gettext("Register") }}</a>
+        <button class="w3-btn w3-round ada-blue" type="submit">{{ gettext("Log In") }}</button>
+        <a class="w3-btn w3-round ada-blue" href="/register">{{ gettext("Register") }}</a>
 
-    {% if show_google_button %}
-      <a class="w3-btn w3-round w3-green" href="/google_login">
-        <i class="fa-brands fa-fw fa-google"></i> {{ gettext("Google Login") }}
-      </a>
-    {% endif %}
+        {% if show_google_button %}
+          <a class="w3-btn w3-round w3-green" href="/google_login">
+            <i class="fa-brands fa-fw fa-google"></i> {{ gettext("Google") }}
+          </a>
+        {% endif %}
+      </div>
+      <div class="w3-half">
+        <a href="https://www.scd.stfc.ac.uk/" target="_blank">
+          <img src="{{ url_for('static', filename='ukri_stfc_sc.png') }}" class="lighten-on-hover" style="float: right; width: 150px; background-color: #f3f3f3; border: 7px solid #f3f3f3; border-radius: 5px;">
+        </a>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <a target="_blank" style="float: right; text-decoration: underline; color: blue;" href="{{ url_for('privacy') }}">Privacy policy</a>
+      </div>
+    </div>
   </form>
-  <br/>
-  <a target="_blank" style="text-decoration: underline; color: blue;" href="{{ url_for('privacy') }}">Privacy policy</a>
+
 {% endblock %}
