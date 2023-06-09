@@ -152,13 +152,18 @@
               </div>
               <div class="w3-row">
                 <div class="w3-col m4">
-                  <p>
-                    <a href="{{ url_for('visit_machine', m_id=machine.id) }}" target="_blank">
-
-                      <div class="fallback-div" style="display: none; width: 240px; height: 140px; border: 3px dashed gray; text-align: center; line-height: 140px; border-radius:4px">Thumbnail Not Available</div>
-                      <img class="vm-thumbnail w3-round lighten-on-hover blur-on-hover" src="{{ machine_url }}/screenshots/screenshot-thumb.png" alt="Alternative text" style="display: none; max-width: 300px; max-height: 175px;">
-                    </a>
-                  </p>
+                  {% if machine.state == MachineState.READY %}
+                    <p>
+                      <a href="{{ url_for('visit_machine', m_id=machine.id) }}" target="_blank">
+                        <div class="fallback-div" style="display: none; width: 240px; height: 140px; border: 3px dashed gray; text-align: center; line-height: 140px; border-radius:4px">Thumbnail Not Available</div>
+                        <img class="vm-thumbnail w3-round lighten-on-hover blur-on-hover" src="{{ machine_url }}/screenshots/screenshot-thumb.png" alt="Alternative text" style="display: none; max-width: 300px; max-height: 175px;">
+                      </a>
+                    </p>
+                  {% else %}
+                    <p>
+                      <div style="width: 240px; height: 140px; border: 3px dashed gray; text-align: center; line-height: 140px; border-radius:4px">Thumbnail Not Available</div>
+                    </p>
+                  {% endif %}
                 </div>
                 <div class="w3-col m8 w3-right-align">
                   <p>
