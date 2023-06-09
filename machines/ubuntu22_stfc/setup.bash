@@ -155,4 +155,22 @@ systemctl start jupyter.service
 systemctl restart nginx
 
 
+# OPTIONAL: Install docker
+apt install docker.io
+usermod -a -G docker ubuntu
+
+
+# OPTIONAL: Install apptainer
+
+wget https://github.com/apptainer/apptainer/releases/download/v1.1.9/apptainer_1.1.9_amd64.deb
+wget https://github.com/apptainer/apptainer/releases/download/v1.1.9/apptainer-suid_1.1.9_amd64.deb
+
+dpkg -i apptainer_1.1.9_amd64.deb
+apt install -f
+dpkg -i apptainer-suid_1.1.9_amd64.deb
+
+rm apptainer_1.1.9_amd64.deb
+rm apptainer-suid_1.1.9_amd64.deb
+
+
 ### THE END
