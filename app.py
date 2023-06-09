@@ -2079,6 +2079,7 @@ def login():
             title=gettext("Login"),
             form=form,
             show_google_button=show_google_button,
+            show_stfc_logo=True,
         )
 
     # POST path
@@ -2093,6 +2094,7 @@ def login():
                     title=gettext("Login"),
                     form=form,
                     show_google_button=show_google_button,
+                    show_stfc_logo=True,
                 )
         if form.validate_on_submit():
             user = User.query.filter_by(username=form.username.data).first()
@@ -2110,6 +2112,7 @@ def login():
                         title=gettext("Login"),
                         form=form,
                         show_google_button=show_google_button,
+                        show_stfc_logo=True,
                     )
 
             # oauth2 users trying to log in locally but don't have a password
@@ -2126,6 +2129,7 @@ def login():
                     title=gettext("Login"),
                     form=form,
                     show_google_button=show_google_button,
+                    show_stfc_logo=True,
                 )
 
             # local users or oauth2 users who have set a password
@@ -2150,6 +2154,7 @@ def login():
         title=gettext("Login"),
         form=form,
         show_google_button=show_google_button,
+        show_stfc_logo=True,
     )
 
 
@@ -2247,6 +2252,7 @@ def register():
                 "register.jinja2",
                 form=form,
                 title=gettext("Register account"),
+                show_stfc_logo=True,
             )
 
         if form.validate_on_submit():
@@ -2285,6 +2291,7 @@ def register():
                     "register.jinja2",
                     form=form,
                     title=gettext("Register account"),
+                    show_stfc_logo=True,
                 )
 
             new_user = User(
@@ -2325,6 +2332,7 @@ def register():
         "register.jinja2",
         form=form,
         title=gettext("Register account"),
+        show_stfc_logo=True,
     )
 
 

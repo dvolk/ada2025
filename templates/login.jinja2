@@ -1,13 +1,5 @@
 {% extends 'base-bare.jinja2' %}
 
-{% block head %}
-  <style>
-    .lighten-on-hover:hover {
-      opacity: 0.7; /* decrease the opacity to lighten the image */
-    }
-  </style>
-{% endblock %}
-
 {% block content %}
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -50,13 +42,7 @@
         {% endif %}
       </div>
       <div class="w3-half">
-        <a href="https://www.scd.stfc.ac.uk/" target="_blank">
-          <img src="{{ url_for('static', filename='ukri_stfc_sc.png') }}" class="lighten-on-hover" style="float: right; width: 150px; background-color: #f3f3f3; border: 7px solid #f3f3f3; border-radius: 5px;">
-        </a>
-        <br/>
-        <br/>
-        <br/>
-        <br/>
+
         <a target="_blank" style="float: right; text-decoration: underline; color: blue;" href="{{ url_for('privacy') }}">Privacy policy</a>
       </div>
     </div>
