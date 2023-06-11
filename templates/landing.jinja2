@@ -30,22 +30,10 @@
              background-color: rgba(2, 70, 179, 0.05);
              color: black;
          }
-         .ada-blue-text {
-             color: rgb(2, 70, 179);
-         }
          .big-icon {
              font-size: 150px;
              max-width: 120px;
              color: #333;
-         }
-         .mid-icon {
-             font-size: 48px;
-             border-radius: 50%;
-             padding: 10px 5px 10px 5px;
-             max-width: 100px;
-             background-color: rgb(2, 70, 179);
-             color: white;
-
          }
          .set-width {
              max-width: 800px;
@@ -55,7 +43,13 @@
              margin: 0;
          }
          .email {
-             color: rgb(255, 20, 147) !important;
+             color: blue !important;
+         }
+         .badge {
+             border-radius: 50%;  /* makes the image circular */
+             width: 72px;  /* width of the image */
+             height: 72px;  /* height of the image */
+             object-fit: cover;  /* ensures that the aspect ratio of the image is maintained */
          }
         </style>
     </head>
@@ -132,16 +126,18 @@
         <hr style="border: 1px dashed" class="ada-blue">
 
         <center>
-            <div class="w3-container" style="width: 720px; padding-top: 15px; padding-bottom: 25px;">
+            <div class="w3-container" style="max-width: 720px; padding-top: 15px; padding-bottom: 25px;">
                 <h3>The Ada team</h3>
                 <div class="w3-container w3-row w3-padding" style="display: flex; align-items: center;">
                     <div class="w3-container w3-half">
                         <p>
                             <div class="w3-row">
                                 <div class="w3-third" style="text-align: right;">
-                                    <i class="fa fa-fw fa-user-astronaut mid-icon"></i>
+                                    <a href="https://github.com/dvolk" target="_blank">
+                                        <img src="https://github.com/dvolk.png" class="badge">
+                                    </a>
                                 </div>
-                                <div class="w3-twothird w3-padding" style="text-align: left;">
+                                <div class="w3-twothird w3-padding" style="padding-top: 13px !important; text-align: left;">
                                     Denis Volk<br/>
                                     <a href="#" class="email">denis.volk@stfc.ac.uk</a>
                                 </div>
@@ -152,9 +148,11 @@
                         <p>
                             <div class="w3-row">
                                 <div class="w3-third" style="text-align: right;">
-                                    <i class="fa fa-fw fa-user-tie mid-icon ada-blue"></i>
+                                    <a href="https://github.com/oxfordfun" target="_blank">
+                                        <img src="https://github.com/oxfordfun.png" class="badge">
+                                    </a>
                                 </div>
-                                <div class="w3-twothird w3-padding" style="text-align: left;">
+                                <div class="w3-twothird w3-padding" style="padding-top: 13px !important; text-align: left;">
                                     Fan Yang-Turner<br/>
                                     <a href="#" class="email">fan.yang-turner@stfc.ac.uk</a>
                                 </div>
