@@ -1,0 +1,127 @@
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+        <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{ title }}</title>
+        <link rel="stylesheet" href="/static/w3.css">
+
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed&display=swap" rel="stylesheet">
+        {% block head %}
+        {% endblock %}
+
+        <style>
+         * {
+             font-family: 'Roboto Condensed', sans-serif !important;
+         }
+         a {
+             text-decoration: none;
+         }
+         .ada-blue {
+             background-color: rgb(2, 70, 179);
+             color: white;
+         }
+         .ada-blue-faded {
+             background-color: rgba(2, 70, 179, 0.05);
+             color: black;
+         }
+         .ada-blue-text {
+             color: rgb(2, 70, 179);
+         }
+         .big-icon {
+             font-size: 150px;
+             max-width: 120px;
+             color: #333;
+         }
+         .set-width {
+             max-width: 800px;
+         }
+         hr {
+             border: 1px dashed;
+             margin: 0;
+         }
+        </style>
+    </head>
+    <body>
+        <div class="w3-container w3-center w3-padding-large">
+            <h1 style="margin-top: 13px;">
+                <img class="ada-blue" src="/static/ada.png" style="border-radius: 38px;" height=72/>
+                {{ gettext('Data Analysis') }}
+                <a href="https://www.scd.stfc.ac.uk/" target="_blank">
+                    <img src="{{ url_for('static', filename='ukri_stfc_sc.png') }}" style="width: 150px; margin: 6px; margin-left: 200px;">
+                </a>
+            </h1>
+        </div>
+
+        <hr class="ada-blue">
+
+        <div class="w3-container ada-blue-faded w3-center" style="padding: 25px 25px 25px 25px;">
+            <h2>Level-Up Your Data Analysis</h2>
+            <h4>An innovative platform that enables scientists to analyse their data in a simple and accessible way.</h4>
+            <img src="https://i.postimg.cc/v88mvYQ9/ada-stfc-ac-uk-machingges.png" class="w3-margin w3-round w3-center ada-blue" style="max-width: 600px; width: 100%; opacity: 0.9;">
+
+            <div style="padding: 0px 0 10px 0;">
+                <a href="{{ url_for('register') }}" class="w3-button w3-large w3-margin-top w3-margin-right w3-round ada-blue">Sign up</a>
+                <a href="{{ url_for('login') }}" class="w3-button w3-large w3-margin-top w3-round w3-green">Sign in</a>
+            </div>
+        </div>
+
+        <hr class="ada-blue">
+
+        <center>
+            <div class="w3-container set-width" style="padding-top: 25px; padding-bottom: 25px;">
+            <div class="w3-container w3-row" style="display: flex; align-items: center;">
+                <div class="w3-container w3-third">
+                    <i class="fa fa-fw fa-layer-group big-icon"></i>
+                </div>
+                <div class="w3-container w3-twothird" style="text-align: left;">
+                    <p>Scientists and other users can launch virtual machines from pre-defined templates. These templates already include all the software that is needed to perform the analysis. We also give users administrative access so they can further customize their environment.</p>
+                </div>
+            </div>
+        </div>
+        </center>
+
+        <hr class="ada-blue">
+
+        <center>
+            <div class="w3-container set-width" style="padding-top: 25px; padding-bottom: 25px;">
+            <div class="w3-container w3-row" style="display: flex; align-items: center;">
+                <div class="w3-container w3-twothird" style="text-align: left;">
+                    <p>Users on Ada can have access to different data sources and can select which data they wish to copy into their virtual machines. Adding your data as an Ada data source is easy, and your data can be of any time, including programs.</p>
+                </div>
+                <div class="w3-container w3-third" style="text-align: center;" >
+                    <i class="fa fa-fw fa-server big-icon"></i>
+                </div>
+            </div>
+        </div>
+        </center>
+
+        <hr class="ada-blue">
+
+        <center>
+            <div class="w3-container set-width" style="padding-top: 25px; padding-bottom: 25px;">
+            <div class="w3-container w3-row" style="display: flex; align-items: center;">
+                <div class="w3-container w3-third">
+                    <i class="fa fa-fw fa-people-group big-icon"></i>
+                </div>
+                <div class="w3-container w3-twothird" style="text-align: left;">
+                    <p>Ada allows group leaders to manage their own members, including enabling and disabling their accounts, setting per-user data access permissions, and replacing the welcome page for their group.</p>
+                </div>
+            </div>
+        </div>
+        </center>
+
+        <hr style="border: 1px dashed" class="ada-blue">
+
+        <div class="w3-container w3-center" style="padding-top: 25px; padding-bottom: 25px;">
+            <p><h4>"Ada is really great"</h4> - is what a user could say</p>
+        </div>
+
+        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/js/all.min.js"></script>
+    </body>
+</html>

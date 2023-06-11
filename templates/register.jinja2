@@ -18,81 +18,80 @@
     {% endfor %}
   {% endif %}
 
+  <p>{{ icon('hand-spock') }} {{ gettext("Thank you for your interest in using Ada 2025. Please fill in the following form and you will be emailed once your account is activated.") }}</p>
+  <p>{{ icon('circle-info') }} {{ gettext("If you would like to set up a new group, please email <a href=' mailto:fan.yang-turner@stfc.ac.uk' style='color: blue; text-decoration: underline'>fan.yang-turner@stfc.ac.uk</a> to discuss your requirements.") }}</p>
 
-</form>
-<p>{{ icon('hand-spock') }} {{ gettext("Thank you for your interest in using Ada 2025. Please fill in the following form and you will be emailed once your account is activated.") }}</p>
+  <form method="POST" action="{{ url_for('register') }}">
+    {{ form.hidden_tag() }}
 
-<form method="POST" action="{{ url_for('register') }}">
-  {{ form.hidden_tag() }}
+    <p>
+      <div class="w3-half" style="padding-right: 5px;">
+        <label>{{ gettext("Given Name") }}* (min: {{ form.given_name_min }}, max: {{ form.given_name_max }})</label>
+        {{ form.given_name(class="w3-input w3-round w3-border w3-light-grey") }}
+      </div>
+      <div class="w3-half" style="padding-left: 5px;">
+        <label>{{ gettext("Family Name") }}* (min: {{ form.family_name_min }}, max: {{ form.family_name_max }})</label>
+        {{ form.family_name(class="w3-input w3-round w3-border w3-light-grey") }}
+      </div>
+    </p>
+    <br/><br/><br/>
 
-  <p>
-    <div class="w3-half" style="padding-right: 5px;">
-      <label>{{ gettext("Given Name") }}* (min: {{ form.given_name_min }}, max: {{ form.given_name_max }})</label>
-      {{ form.given_name(class="w3-input w3-round w3-border w3-light-grey") }}
-    </div>
-    <div class="w3-half" style="padding-left: 5px;">
-      <label>{{ gettext("Family Name") }}* (min: {{ form.family_name_min }}, max: {{ form.family_name_max }})</label>
-      {{ form.family_name(class="w3-input w3-round w3-border w3-light-grey") }}
-    </div>
-  </p>
-  <br/><br/><br/>
+    <p>
+      <label>{{ gettext("Username") }}* (character length min: {{ form.username_min }}, max: {{ form.username_max }})</label>
+      {{ form.username(class="w3-input w3-round w3-border w3-light-grey") }}
+    </p>
 
-  <p>
-    <label>{{ gettext("Username") }}* (character length min: {{ form.username_min }}, max: {{ form.username_max }})</label>
-    {{ form.username(class="w3-input w3-round w3-border w3-light-grey") }}
-  </p>
+    <p>
+      <div class="w3-half" style="padding-right: 5px;">
+        <label>{{ gettext("Password") }}* (min: {{ form.password_min }}, max: {{ form.password_max }})</label>
+        {{ form.password(class="w3-input w3-round w3-border w3-light-grey") }}
+      </div>
+      <div class="w3-half" style="padding-left: 5px;">
+        <label>{{ gettext("Confirm Password") }}*</label>
+        {{ form.password_confirm(class="w3-input w3-round w3-border w3-light-grey") }}
+      </div>
+      {{ info("Please don't reuse a password from a different site. Generate a secure password.") }}
+    </p>
 
-  <p>
-    <div class="w3-half" style="padding-right: 5px;">
-      <label>{{ gettext("Password") }}* (min: {{ form.password_min }}, max: {{ form.password_max }})</label>
-      {{ form.password(class="w3-input w3-round w3-border w3-light-grey") }}
-    </div>
-    <div class="w3-half" style="padding-left: 5px;">
-      <label>{{ gettext("Confirm Password") }}*</label>
-      {{ form.password_confirm(class="w3-input w3-round w3-border w3-light-grey") }}
-    </div>
-    {{ info("Please don't reuse a password from a different site. Generate a secure password.") }}
-  </ep>
+    <p>
+      <label class="w3-text-black">{{ gettext("Email") }}* (min: {{ form.email_min }}, max: {{ form.email_max }})</label>
+      {{ form.email(class="w3-input w3-round w3-border w3-light-grey") }}
+    </p>
 
-  <p>
-    <label class="w3-text-black">{{ gettext("Email") }}* (min: {{ form.email_min }}, max: {{ form.email_max }})</label>
-    {{ form.email(class="w3-input w3-round w3-border w3-light-grey") }}
-  </p>
+    <p>
+      <div class="w3-half" style="padding-right: 5px;">
+        <label>{{ gettext("Language") }}*</label>
+        {{ form.language(class="w3-select w3-round w3-border w3-light-grey") }}
+      </div>
+      <div class="w3-half" style="padding-left: 5px;">
+        <label>{{ gettext("Timezone") }}*</label>
+        {{ form.timezone(class="w3-select w3-round w3-border w3-light-grey") }}
+      </div>
+    </p>
+    <br/><br/><br/>
 
-  <p>
-    <div class="w3-half" style="padding-right: 5px;">
-      <label>{{ gettext("Language") }}*</label>
-      {{ form.language(class="w3-select w3-round w3-border w3-light-grey") }}
-    </div>
-    <div class="w3-half" style="padding-left: 5px;">
-      <label>{{ gettext("Timezone") }}*</label>
-      {{ form.timezone(class="w3-select w3-round w3-border w3-light-grey") }}
-    </div>
-  </p>
-  <br/><br/><br/>
+    <p>
+      <label>{{ gettext("Organization") }}* (min: {{ form.organization_min }}, max: {{ form.organization_max }})</label>
+      {{ form.organization(class="w3-input w3-round w3-border w3-light-grey") }}
+    </p>
 
-  <p>
-    <label>{{ gettext("Organization") }}* (min: {{ form.organization_min }}, max: {{ form.organization_max }})</label>
-    {{ form.organization(class="w3-input w3-round w3-border w3-light-grey") }}
-  </p>
+    <p>
+      <label>{{ gettext("Job Title") }}* (min: {{ form.job_title_min }}, max: {{ form.job_title_max }})</label>
+      {{ form.job_title(class="w3-input w3-round w3-border w3-light-grey") }}
+    </p>
 
-  <p>
-    <label>{{ gettext("Job Title") }}* (min: {{ form.job_title_min }}, max: {{ form.job_title_max }})</label>
-    {{ form.job_title(class="w3-input w3-round w3-border w3-light-grey") }}
-  </p>
-
-  <p>
-    <div class="w3-half" style="padding-right: 5px;">
-      {{ recaptcha }}
-    </div>
-    <div class="w3-half" style="padding-left: 5px;">
-      <button style="float:right" class="w3-btn ada-blue w3-round" type="submit">{{ gettext("Submit") }}</button>
-      <span style="float:right;"><a style="text-decoration: underline; color: blue;" target="_blank" href="{{ url_for('privacy') }}">Privacy policy</a>
-        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-      </span>
-    </div>
-  </p>
-</form>
+    <p>
+      <div class="w3-half" style="padding-right: 5px;">
+        {{ recaptcha }}
+      </div>
+      <div class="w3-half" style="padding-left: 5px;">
+        <button style="float:right" class="w3-btn ada-blue w3-round" type="submit">{{ gettext("Submit") }}</button>
+        <span style="float:right;"><a style="text-decoration: underline; color: blue;" target="_blank" href="{{ url_for('privacy') }}">Privacy policy</a>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        </span>
+      </div>
+    </p>
+  </form>
 
 <script type="text/javascript">
  window.onload = function() {

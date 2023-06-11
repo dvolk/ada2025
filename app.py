@@ -2342,7 +2342,7 @@ def index():
     if current_user.is_authenticated:
         return redirect(url_for("welcome"))
     else:
-        return redirect(url_for("login"))
+        return render_template("landing.jinja2")
 
 
 class EditWelcomePageForm(FlaskForm):
@@ -2760,6 +2760,12 @@ def about():
 @profile_complete_required
 def help():
     return render_template("help.jinja2", title=gettext("Help"))
+
+
+@app.route("/landing")
+@limiter.limit("60 per minute")
+def landing():
+    return render_template("landing.jinja2")
 
 
 class ProblemReportForm(FlaskForm):
