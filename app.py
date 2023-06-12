@@ -2342,7 +2342,7 @@ def index():
     if current_user.is_authenticated:
         return redirect(url_for("welcome"))
     else:
-        return render_template("landing.jinja2")
+        return render_template("landing.jinja2", title=gettext("Ada Data Analysis"))
 
 
 class EditWelcomePageForm(FlaskForm):
@@ -2765,7 +2765,7 @@ def help():
 @app.route("/landing")
 @limiter.limit("60 per minute")
 def landing():
-    return render_template("landing.jinja2")
+    return render_template("landing.jinja2", title=gettext("Ada Data Analysis"))
 
 
 class ProblemReportForm(FlaskForm):
