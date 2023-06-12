@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# upgrade from 20.04
+#     apt update
+#     apt upgrade
+#     reboot
+#     export DEBIAN_FRONTEND=noninteractive
+#     sudo do-release-upgrade -f DistUpgradeViewNonInteractive
+#     reboot
+# continue
+
 # Set environment variables
 export DEBIAN_FRONTEND=noninteractive
 export VNC_PORT=5900
@@ -157,15 +166,28 @@ systemctl restart nginx
 
 # OPTIONAL: Install CUDA, tensorflow and tensorboard
 
-# agree to nvidia licence
-echo "nvidia-cudnn nvidia-cudnn/license select true" | sudo debconf-set-selections
-echo "nvidia-cudnn nvidia-cudnn/question select I Agree" | sudo debconf-set-selections
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin
+mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600 # what does this do?
 
-apt install -y nvidia-driver-530 nvidia-utils-530 nvidia-cuda-toolkit nvidia-cuda-toolkit-gcc nvidia-cudnn
+dpkg -i cuda-repo-ubuntu2204-11-8-local_11.8.0-520.61.05-1_amd64.deb
+sudo cp /var/cuda-repo-ubuntu2204-11-8-local/cuda-D95DBBE2-keyring.gpg /usr/share/keyrings/
+apt update
+apt install -y cuda
+
+dpkg -i cudnn-local-repo-ubuntu2204-8.6.0.163_1.0-1_amd64.deb
+sudo cp /var/cudnn-local-repo-ubuntu2204-8.6.0.163/cudnn-local-FAED14DD-keyring.gpg /usr/share/keyrings/
+apt update
+apt install -y libcudnn8 libcudnn8-dev libcudnn8-samples
+
+dpkg -i nv-tensorrt-local-repo-ubuntu2204-8.6.1-cuda-11.8_1.0-1_amd64.deb
+sudo cp /var/nv-tensorrt-local-repo-ubuntu2204-8.6.1-cuda-11.8/nv-tensorrt-local-0628887B-keyring.gpg /usr/share/keyrings/
+apt update
+apt install -y tensorrt tensorrt
 
 su ubuntu << EOF
 /home/ubuntu/jupyter-env/bin/pip3 install tensorflow tensorboard
 echo "export CUDA_DIR=/usr/lib/cuda/" >> /home/ubuntu/.bashrc
+/home/ubuntu/jupyter-env/bin/pip3 install scikit-learn scipy pandas pandas-datareader matplotlib pillow tqdm requests h5py pyyaml flask boto3 bayesian-optimization gym kaggle
 EOF
 
 cp tensorboard.service /etc/systemd/system/tensorboard.service
