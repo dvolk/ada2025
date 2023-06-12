@@ -1,0 +1,15 @@
+[Unit]
+Description=RStudio Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=forking
+PIDFile=/run/rstudio-server.pid
+ExecStart=/usr/lib/rstudio-server/bin/rserver --auth-none 1 --auth-validate-users 0
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+Environment=USER=ubuntu
+
+[Install]
+WantedBy=multi-user.target
