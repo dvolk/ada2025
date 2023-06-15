@@ -3365,6 +3365,11 @@ def configure_nginx(machine, service_type="systemd"):
         rf'cookie_session != "{new_cookie_value}"',
         config,
     )
+    config = re.sub(
+        r"limit_req zone=mylimit;",
+        r"limit_req zone=mylimit burst=30 nodelay;",
+        config,
+    )
 
     with open(f"{new_access_token}_nginx.conf", "w") as f:
         f.write(config)
