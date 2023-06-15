@@ -1007,7 +1007,10 @@ class MachineProvider(db.Model):
     )
 
     def __repr__(self):
-        return f"<{self.name}>"
+        if self.customer:
+            return f"<{self.name} ({self.customer})>"
+        else:
+            return f"<{self.name}>"
 
     """
     based on experience, cloud providers have the following parameters:
@@ -4275,7 +4278,7 @@ def create_initial_db():
             docker_machine_provider = MachineProvider(
                 name="Local docker",
                 type="docker",
-                customer="unknown",
+                customer="",
                 provider_data={
                     "base_url": "unix:///var/run/docker.sock",
                     "network": "adanet",
@@ -4284,15 +4287,15 @@ def create_initial_db():
             libvirt_machine_provider = MachineProvider(
                 name="Local libvirt",
                 type="libvirt",
-                customer="unknown",
+                customer="",
                 provider_data={
                     "base_url": "qemu:///system",
                 },
             )
             stfc_os_machine_provider = MachineProvider(
-                name="STFC 'IDAaaS-Dev'",
+                name="STFC OpenStack",
                 type="openstack",
-                customer="unknown",
+                customer="IDAaaS-Dev",
                 provider_data={
                     # TODO add provider core, mem, hdd limits
                     # and enforcement in /new_machine
@@ -4305,9 +4308,9 @@ def create_initial_db():
                 },
             )
             imperial_os_machine_provider = MachineProvider(
-                name="Imperial 'daaas'",
+                name="Imperial OpenStack",
                 type="openstack",
-                customer="unknown",
+                customer="daaas",
                 provider_data={
                     "auth_url": "https://oskeystone.grid.hep.ph.ic.ac.uk:5000/v3/",
                     "user_domain_name": "Default",
