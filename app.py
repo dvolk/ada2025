@@ -465,7 +465,6 @@ def _list_color_formatter(view, context, model, name):
         return Markup("")
     out = ""
     for x in xs:
-        print(x)
         color_code = color(x)
         out += '<span class="rounded p-1 mr-1" style="color: #fff; background-color: {0};">{1}</span>'.format(
             color_code, x
@@ -2391,7 +2390,7 @@ def register():
                 )
             if error_msg:
                 finish_audit(audit, "validation failed")
-                print(f"Registration error: {error_msg}")
+                logging.info(f"Registration error: {error_msg}")
                 flash(error_msg, "danger")
                 return render_template(
                     "register.jinja2",
