@@ -449,6 +449,30 @@ def _color_formatter(view, context, model, name):
     )
 
 
+# a formatter for flask-admin modelview cells that picks background colors
+# for a field that's a comma-sep list of items
+def _list_color_formatter(view, context, model, name):
+    # This is a field of the model itself
+    attr_value = str(getattr(model, name))
+    if attr_value == "None":
+        return Markup("")
+
+    # Escape the special HTML characters
+    attr_value_escaped = html.escape(attr_value)
+
+    xs = attr_value_escaped[1:-1].split(",")
+    if not xs or xs == [""]:
+        return Markup("")
+    out = ""
+    for x in xs:
+        print(x)
+        color_code = color(x)
+        out += '<span class="rounded p-1 mr-1" style="color: #fff; background-color: {0};">{1}</span>'.format(
+            color_code, x
+        )
+    return Markup(out)
+
+
 class Group(db.Model):
     """
     A group that users belong to. A user can belong to a single group
@@ -493,6 +517,10 @@ class ProtectedGroupModelView(ProtectedModelView):
     column_sortable_list = ("id", "name", "creation_date")
     column_filters = ("name", "is_public", "creation_date")
     column_auto_select_related = True
+    column_formatters = {
+        "users": _list_color_formatter,
+        "machine_templates": _list_color_formatter,
+    }
 
 
 class GroupWelcomePage(db.Model):
@@ -1052,6 +1080,81 @@ class ProtectedMachineProviderModelView(ProtectedModelView):
         return form_class
 
 
+software_image_table = db.Table(
+    "software_image",
+    db.Column(
+        "software_id", db.Integer, db.ForeignKey("software.id"), primary_key=True
+    ),
+    db.Column("image_id", db.Integer, db.ForeignKey("image.id"), primary_key=True),
+)
+
+
+image_provider_table = db.Table(
+    "image_provider",
+    db.Column("image_id", db.Integer, db.ForeignKey("image.id"), primary_key=True),
+    db.Column(
+        "machine_provider_id",
+        db.Integer,
+        db.ForeignKey("machine_provider.id"),
+        primary_key=True,
+    ),
+)
+
+
+class Software(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    creation_date = db.Column(
+        db.DateTime, default=datetime.datetime.utcnow, nullable=False
+    )
+    images = db.relationship(
+        "Image", secondary=software_image_table, backref="softwares"
+    )
+
+    def __repr__(self):
+        return f"<{self.name}>"
+
+
+class ProtectedSoftwareModelView(ProtectedModelView):
+    column_list = ["name", "images", "creation_date"]
+    form_excluded_columns = ["id"]  # Exclude 'id' from the form
+    column_formatters = {
+        "images": _list_color_formatter,
+    }
+
+
+class Image(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    display_name = db.Column(db.String(100))
+    creation_date = db.Column(
+        db.DateTime, default=datetime.datetime.utcnow, nullable=False
+    )
+    machine_providers = db.relationship(
+        "MachineProvider", secondary=image_provider_table, backref="images"
+    )
+
+    def __repr__(self):
+        return f"<{self.name}>"
+
+
+class ProtectedImageModelView(ProtectedModelView):
+    column_list = [
+        "name",
+        "display_name",
+        "softwares",
+        "machine_providers",
+        "machine_templates",
+        "creation_date",
+    ]
+    form_excluded_columns = ["id"]  # Exclude 'id' from the form
+    column_formatters = {
+        "softwares": _list_color_formatter,
+        "machine_templates": _list_color_formatter,
+        "machine_providers": _list_color_formatter,
+    }
+
+
 class MachineTemplate(db.Model):
     """
     A MachineTemplate is a template from which the user builds Machines
@@ -1060,7 +1163,6 @@ class MachineTemplate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     type = db.Column(db.String(100), nullable=False)
-    image = db.Column(db.String(200), nullable=False)
     os_username = db.Column(db.String(100), nullable=False)  # operating system username
     description = db.Column(db.String(200), nullable=True)
     creation_date = db.Column(
@@ -1069,6 +1171,8 @@ class MachineTemplate(db.Model):
     memory_limit_gb = db.Column(db.Integer, nullable=True)
     cpu_limit_cores = db.Column(db.Integer, nullable=True)
     disk_size_gb = db.Column(db.Integer, nullable=True)
+    image_id = db.Column(db.Integer, db.ForeignKey("image.id"))
+    image = db.relationship("Image", backref="machine_templates")
     group_id = db.Column(db.Integer, db.ForeignKey("group.id"))
     group = db.relationship("Group", back_populates="machine_templates")
     machine_provider_id = db.Column(db.Integer, db.ForeignKey("machine_provider.id"))
@@ -1086,11 +1190,11 @@ class ProtectedMachineTemplateModelView(ProtectedModelView):
     column_list = (
         "id",
         "name",
+        "group",
         "type",
         "image",
         "memory_limit_gb",
         "cpu_limit_cores",
-        "group",
         "machine_provider",
     )
     form_columns = (
@@ -1107,12 +1211,11 @@ class ProtectedMachineTemplateModelView(ProtectedModelView):
         "machines",
         "extra_data",
     )
-    column_searchable_list = ("name", "type", "image")
+    column_searchable_list = ("name", "type")
     column_sortable_list = (
         "id",
         "name",
         "type",
-        "image",
         "creation_date",
         "memory_limit_gb",
         "cpu_limit_cores",
@@ -1132,6 +1235,7 @@ class ProtectedMachineTemplateModelView(ProtectedModelView):
         "extra_data": _extra_data_formatter,
         "group": _color_formatter,
         "type": _color_formatter,
+        "image": _color_formatter,
     }
 
     def scaffold_form(self):
@@ -1421,6 +1525,8 @@ admin.add_view(ProtectedDataTransferJobModelView(DataTransferJob, db.session))
 admin.add_view(ProtectedGroupModelView(Group, db.session))
 admin.add_view(ProtectedGroupWelcomePageModelView(GroupWelcomePage, db.session))
 admin.add_view(ProtectedMachineProviderModelView(MachineProvider, db.session))
+admin.add_view(ProtectedSoftwareModelView(Software, db.session))
+admin.add_view(ProtectedImageModelView(Image, db.session))
 admin.add_view(ProtectedMachineTemplateModelView(MachineTemplate, db.session))
 admin.add_view(ProtectedMachineModelView(Machine, db.session))
 admin.add_view(ProtectedProblemReportModelView(ProblemReport, db.session))
@@ -3435,7 +3541,7 @@ class OpenStackService(VirtService):
                 network_uuid = mt.extra_data.get("network_uuid")
                 vol_size = mt.extra_data.get("vol_size")
                 security_groups = mt.extra_data.get("security_groups", [])
-                vol_image = mt.image
+                vol_image = mt.image.name
 
                 conn, env = OpenStackService.conn_from_mp(mp)
 
@@ -3739,7 +3845,7 @@ class DockerService(VirtService):
                 # Define container options, including CPU and memory limits
                 container_options = {
                     "name": m.name,
-                    "image": mt.image,
+                    "image": mt.image.name,
                     "network": network,
                     "cpu_period": cpu_period,
                     "cpu_quota": cpu_quota,
@@ -3882,7 +3988,7 @@ class LibvirtService(VirtService):
                         "--connect",
                         qemu_url,
                         "--original",
-                        image,
+                        image.name,
                         "--name",
                         name,
                         "--auto-clone",
@@ -4212,6 +4318,31 @@ def create_initial_db():
                     "project_name": "daaas",
                 },
             )
+            software_1 = Software(name="emacs 28.2")
+            software_2 = Software(name="CUDA 11.8")
+            software_3 = Software(name="Jupyter Notebook 7")
+
+            docker_workspace_image = Image(
+                name="workspace",
+                machine_providers=[docker_machine_provider],
+                softwares=[software_1, software_2, software_3],
+            )
+            libvirt_debian_image = Image(
+                name="debian11-5",
+                machine_providers=[libvirt_machine_provider],
+            )
+            denis_dev_20230511 = Image(
+                name="denis_dev_20230511",
+                machine_providers=[stfc_os_machine_provider],
+            )
+            rfi_demo_20230517 = Image(
+                name="rfi_demo_20230517",
+                machine_providers=[stfc_os_machine_provider],
+            )
+            denis_dev_20230522 = Image(
+                name="denis_dev_20230522",
+                machine_providers=[imperial_os_machine_provider],
+            )
 
             # docker test
             test_machine_template1 = MachineTemplate(
@@ -4219,7 +4350,7 @@ def create_initial_db():
                 type="docker",
                 memory_limit_gb=16,
                 cpu_limit_cores=4,
-                image="workspace",
+                image=docker_workspace_image,
                 os_username="ubuntu",
                 group=localtester_group,
                 machine_provider=docker_machine_provider,
@@ -4236,7 +4367,7 @@ def create_initial_db():
                 memory_limit_gb=16,
                 cpu_limit_cores=4,
                 disk_size_gb=20,
-                image="debian11-5",
+                image=libvirt_debian_image,
                 os_username="ubuntu",
                 group=localtester_group,
                 machine_provider=libvirt_machine_provider,
@@ -4253,7 +4384,7 @@ def create_initial_db():
                 memory_limit_gb=32,
                 disk_size_gb=200,
                 cpu_limit_cores=8,
-                image="denis_dev_20230511",
+                image=denis_dev_20230511,
                 os_username="ubuntu",
                 group=stfctester_group,
                 machine_provider=stfc_os_machine_provider,
@@ -4279,7 +4410,7 @@ def create_initial_db():
                 memory_limit_gb=32,
                 cpu_limit_cores=8,
                 disk_size_gb=200,
-                image="rfi_demo_20230517",
+                image=rfi_demo_20230517,
                 os_username="ubuntu",
                 group=stfctester_group,
                 machine_provider=stfc_os_machine_provider,
@@ -4305,7 +4436,7 @@ def create_initial_db():
                 memory_limit_gb=90,
                 cpu_limit_cores=12,
                 disk_size_gb=700,
-                image="rfi_demo_20230517",
+                image=rfi_demo_20230517,
                 os_username="ubuntu",
                 group=stfctester_group,
                 machine_provider=stfc_os_machine_provider,
@@ -4331,7 +4462,7 @@ def create_initial_db():
                 memory_limit_gb=64,
                 disk_size_gb=400,
                 cpu_limit_cores=16,
-                image="denis_dev_20230522",
+                image=denis_dev_20230522,
                 os_username="ubuntu",
                 group=imperialtester_group,
                 machine_provider=imperial_os_machine_provider,

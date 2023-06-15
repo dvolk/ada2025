@@ -44,12 +44,17 @@
                 <div class="w3-row">
                   <div class="w3-col m7">
                     <p>{{ mt.description }}</p>
-                    <p>{{ gettext("Created:") }} {{ humanize.naturaldelta(now - mt.creation_date) }} {{ gettext("ago") }}</p>
+                    <p>
+                      {% for s in mt.image.softwares %}
+                        <span class="w3-light-gray w3-round" style="padding: 2px 5px 2px 5px;">{{ s.name }}</span>
+                      {% endfor %}
+                    </p>
+
                   </div>
                   <div class="w3-col m5 w3-right-align">
                     <p>
-                      {{ gettext("Group:") }} {{ mt.group.name }}<br/>
                       {{ gettext("Provider:") }} {{ mt.machine_provider.name }}<br/>
+                      {{ gettext("Image:") }} {{ mt.image.name }}<br/>
                       {% if mt.cpu_limit_cores %}
                         {{ gettext("CPUs:") }} {{ mt.cpu_limit_cores }}
                       {% endif %}
@@ -62,7 +67,8 @@
                         {{ gettext("Disk:") }} {{ mt.disk_size_gb }} GB
                       {% endif %}
                       <br/>
-                      {{ gettext("Instances running:") }} {{ count }}
+                    {{ gettext("Updated:") }} {{ humanize.naturaldelta(now - mt.image.creation_date) }} {{ gettext("ago") }}<br/>
+                    {{ gettext("Instances running:") }} {{ count }}
                       {% if quota %}
                         / {{ quota }}
                       {% endif %}

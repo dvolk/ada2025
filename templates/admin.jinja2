@@ -65,7 +65,7 @@
           {{ group.machine_templates|map(attribute="name")|join("<br/>") }}
         </td>
         <td>
-          {{ group.machine_templates|map(attribute="image")|unique|join("<br/>") }}
+          {{ group.machine_templates|map(attribute="image.name")|unique|join("<br/>") }}
         </td>
       </tr>
     {% endfor %}
