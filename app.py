@@ -4290,7 +4290,7 @@ def create_initial_db():
                 },
             )
             stfc_os_machine_provider = MachineProvider(
-                name="STFC OpenStack",
+                name="STFC 'IDAaaS-Dev'",
                 type="openstack",
                 customer="unknown",
                 provider_data={
@@ -4305,7 +4305,7 @@ def create_initial_db():
                 },
             )
             imperial_os_machine_provider = MachineProvider(
-                name="Imperial OpenStack",
+                name="Imperial 'daaas'",
                 type="openstack",
                 customer="unknown",
                 provider_data={
@@ -4317,30 +4317,36 @@ def create_initial_db():
                     "project_name": "daaas",
                 },
             )
-            software_1 = Software(name="emacs 28.2")
-            software_2 = Software(name="CUDA 11.8")
-            software_3 = Software(name="Jupyter Notebook 7")
+            software_1 = Software(name="Ubuntu 20.04")
+            software_2 = Software(name="Ubuntu 22.04")
+            software_3 = Software(name="Debian 11")
+            software_4 = Software(name="emacs 28.2")
+            software_5 = Software(name="CUDA 11.8")
 
             docker_workspace_image = Image(
                 name="workspace",
                 machine_providers=[docker_machine_provider],
-                softwares=[software_1, software_2, software_3],
+                softwares=[software_3, software_4, software_5],
             )
             libvirt_debian_image = Image(
                 name="debian11-5",
                 machine_providers=[libvirt_machine_provider],
+                softwares=[software_3],
             )
             denis_dev_20230511 = Image(
                 name="denis_dev_20230511",
                 machine_providers=[stfc_os_machine_provider],
+                softwares=[software_1],
             )
             rfi_demo_20230517 = Image(
                 name="rfi_demo_20230517",
                 machine_providers=[stfc_os_machine_provider],
+                softwares=[software_1],
             )
             denis_dev_20230522 = Image(
                 name="denis_dev_20230522",
                 machine_providers=[imperial_os_machine_provider],
+                softwares=[software_2],
             )
 
             # docker test
