@@ -3143,10 +3143,10 @@ def new_machine():
     """
     Launches thread to create the container/vm
     """
-    machine_template_name = request.form.get("machine_template_name", "")
+    machine_template_id = request.form.get("machine_template_id", "")
     audit = create_audit("create machine", user=current_user)
 
-    mt = MachineTemplate.query.filter_by(name=machine_template_name).first()
+    mt = MachineTemplate.query.filter_by(id=machine_template_id).first()
     if not mt:
         finish_audit(audit, "bad mt")
         flash("You can't launch that machine template")
