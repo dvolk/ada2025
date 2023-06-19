@@ -1,0 +1,14 @@
+[Unit]
+Description=TensorBoard Service
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+ExecStart=/home/ubuntu/jupyter-env/bin/tensorboard --logdir=/home/ubuntu/notebooks/logs
+Restart=on-failure
+RestartSec=10
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
