@@ -71,6 +71,7 @@ import waitress
 from authlib.integrations.flask_client import OAuth
 from werkzeug.middleware.proxy_fix import ProxyFix
 import jinja2
+from flask_mail import Mail, Message
 
 # flask recaptcha uses jinja2.Markup, which doesn't exist any more,
 # so we monkey-patch to use markupsafe.Markup
@@ -192,6 +193,22 @@ recaptcha = ReCaptcha(
 )
 recaptcha.init_app(app)
 LOGIN_RECAPTCHA = os.environ.get("LOGIN_RECAPTCHA", False)
+
+
+def str_to_bool(s):
+    return s == "True"
+
+
+app.config["MAIL_SERVER"] = os.environ.get("ADA2025_MAIL_SERVER", "")
+app.config["MAIL_PORT"] = os.environ.get("ADA2025_MAIL_PORT", 465)
+app.config["MAIL_USERNAME"] = os.environ.get("ADA2025_MAIL_USERNAME", "")
+app.config["MAIL_PASSWORD"] = os.environ.get("ADA2025_MAIL_PASSWORD", "")
+app.config["MAIL_USE_TLS"] = str_to_bool(
+    os.environ.get("ADA2025_MAIL_USE_TLS", "False")
+)
+app.config["MAIL_USE_SSL"] = str_to_bool(os.environ.get("ADA2025_MAIL_USE_SSL", "True"))
+MAIL_SENDER = os.environ.get("ADA2025_MAIL_SENDER", "")
+mail = Mail(app)
 
 
 @app.before_request
@@ -1932,6 +1949,44 @@ def pick_group():
             group = Group.query.filter_by(id=form.group.data).first_or_404()
             current_user.group = group
             db.session.commit()
+
+            def inform_group_admins(group_name, site_root):
+                if not MAIL_SENDER:
+                    logging.info("inform_group_admins: Mail sender not defined")
+                    return
+                with app.app_context():
+                    group_admins = (
+                        db.session.query(User)
+                        .join(Group)
+                        .filter(and_(Group.name == group_name, User.is_group_admin))
+                        .all()
+                    )
+                    if not group_admins:
+                        logging.error(f"No group admins for group: {group_name}")
+                        return
+                    emails_to = [ga.email for ga in group_admins]
+                    logging.info(
+                        f"Sending email about new user to group admins: {emails_to}"
+                    )
+                    msg = Message(
+                        "New user in Ada group", sender=MAIL_SENDER, bcc=emails_to
+                    )
+                    msg.body = f"""Hi,
+
+A new user has picked your group on Ada Data Analysis.
+
+The user won't be able to do anything until you approve them. If you want to do that you need to go to Group Management on the site:
+
+{site_root}group_mgmt
+
+You're receiving this message because you're a group admin on {site_root}.
+"""
+                    mail.send(msg)
+
+            site_root = request.url_root
+            threading.Thread(
+                target=inform_group_admins, args=(group.name, site_root)
+            ).start()
             return redirect(url_for("welcome"))
         else:
             flash("There was an error picking the group. Please try again.")
