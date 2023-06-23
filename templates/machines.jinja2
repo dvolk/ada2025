@@ -95,13 +95,13 @@
           <p>
             <div class="w3-card w3-padding w3-round w3-animate-opacity">
               <div class="w3-row" style="display: flex; align-items: center;">
-                <div class="w3-col m6" style="display: flex; align-items: center;">
+                <div class="w3-col m4" style="display: flex; align-items: center;">
                   <h3>
                     {{ icon('cube') }} {{ machine.display_name }}
                   </h3>
 
                 </div>
-                <div class="w3-col m6 w3-right-align">
+                <div class="w3-col m8 w3-right-align">
                   {% if machine.state == MachineState.READY %}
                     <a
                       target="_blank"
@@ -115,6 +115,24 @@
                       title="Machine is being prepared. Refresh page to update status"
                       class="w3-button w3-blue w3-round" disabled>
                       <i class="fa-solid fa-spinner fa-spin"></i> {{ gettext('Preparing') }}
+                    </button>
+                  {% elif machine.state == MachineState.STOPPED %}
+                    <button
+                      title="Machine is shut down. Power on the machine to visit it"
+                      class="w3-button w3-blue w3-round" disabled>
+                      {{ icon("external-link") }} {{ gettext('Stopped') }}
+                    </button>
+                  {% elif machine.state == MachineState.STOPPING %}
+                    <button
+                      title="Machine is shut down. Power on the machine to visit it"
+                      class="w3-button w3-blue w3-round" disabled>
+                      <i class="fa-solid fa-spinner fa-spin"></i> {{ gettext('Stopping') }}
+                    </button>
+                  {% elif machine.state == MachineState.STARTING %}
+                    <button
+                      title="Machine is shut down. Power on the machine to visit it"
+                      class="w3-button w3-blue w3-round" disabled>
+                      <i class="fa-solid fa-spinner fa-spin"></i> {{ gettext('Starting') }}
                     </button>
                   {% else %}
                     <button
@@ -142,14 +160,38 @@
                      title={{ gettext("Report problem") }}>
                      {{ icon('flag') }}
                   </a>
+
+                  {% if machine.owner == current_user and machine.state == MachineState.STOPPED %}
+                    <a href="#"
+                       onclick="document.getElementById('resume-form-{{ machine.id }}').submit();"
+                       class="w3-button w3-green w3-round"
+                       title='{{ gettext("Power on machine") }}'>
+                       {{ icon('power-off') }}
+                    </a>
+                    <form style="display: inline" id="resume-form-{{ machine.id }}" action="/resume_machine" method="POST">
+                      <input type="hidden" name="machine_id" value="{{ machine.id }}">
+                    </form>
+                  {% endif %}
+                  {% if machine.owner == current_user and machine.state == MachineState.READY and machine.machine_template.extra_data.get("can_shutdown", False) %}
+                    <a href="#"
+                       onclick="document.getElementById('shutdown-form-{{ machine.id }}').submit();"
+                       class="w3-button w3-orange w3-round"
+                       title='{{ gettext("Shut down machine") }}'>
+                       {{ icon('power-off') }}
+                    </a>
+                    <form style="display: inline" id="shutdown-form-{{ machine.id }}" action="/shutdown_machine" method="POST">
+                      <input type="hidden" name="machine_id" value="{{ machine.id }}">
+                    </form>
+                  {% endif %}
+
                   {% if machine.owner == current_user %}
                     <a href="#"
                        onclick="document.getElementById('stop-form-{{ machine.id }}').submit();"
                        class="w3-button w3-red w3-round"
-                       title={{ gettext("Stop and remove machine") }}>
+                       title='{{ gettext("Stop and remove machine") }}'>
                        {{ icon('trash') }}
                     </a>
-                    <form id="stop-form-{{ machine.id }}" action="/stop_machine" method="POST">
+                    <form style="display: inline" id="stop-form-{{ machine.id }}" action="/stop_machine" method="POST">
                       <input type="hidden" name="machine_id" value="{{ machine.id }}">
                     </form>
                   {% endif %}

@@ -1252,6 +1252,9 @@ class MachineState(enum.Enum):
     FAILED = "FAILED"
     DELETING = "DELETING"
     DELETED = "DELETED"
+    STOPPED = "STOPPED"
+    STOPPING = "STOPPING"
+    STARTING = "STARTING"
 
 
 class Machine(db.Model):
@@ -1271,7 +1274,9 @@ class Machine(db.Model):
     access_token = db.Column(
         db.String(16), nullable=False, default=lambda: gen_token(16)
     )
-    state = db.Column(db.Enum(MachineState), nullable=False, index=True)
+    state = db.Column(
+        db.Enum(MachineState, native_enum=False), nullable=False, index=True
+    )
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
@@ -3301,6 +3306,131 @@ def new_machine():
     return redirect(url_for("machines"))
 
 
+@app.route("/shutdown_machine", methods=["POST"])
+@limiter.limit("100 per day, 10 per minute, 1/3 seconds")
+@login_required
+@profile_complete_required
+def shutdown_machine():
+    """
+    Start thread to shutdown machine
+    """
+
+    # sanity checks
+    audit = create_audit("shutdown machine", user=current_user)
+    machine_id = request.form.get("machine_id")
+
+    if not machine_id:
+        finish_audit(audit, "machine_id missing")
+        logging.warning(f"machine_id parameter missing: {machine_id}")
+        abort(404)
+
+    try:
+        machine_id = int(machine_id)
+    except Exception:
+        finish_audit(audit, "machine_id bad")
+        logging.warning(f"machine_id not int: {machine_id}")
+        abort(404)
+
+    m = Machine.query.filter_by(id=machine_id).first()
+    if not m:
+        finish_audit(audit, "machine not found")
+        abort(404)
+
+    update_audit(audit, machine=m)
+
+    if not current_user.is_admin and not current_user == m.owner:
+        finish_audit(audit, "bad user")
+        logging.warning(
+            f"user {current_user.id} is not the owner of machine {machine_id} nor admin"
+        )
+        abort(403)
+    if m.state != MachineState.READY:
+        logging.warning(
+            f"machine {machine_id} is not in correct state for shutdown: {m.state}"
+        )
+
+    mt = m.machine_template
+
+    if mt.type == "docker":
+        raise NotImplementedError(mt.type)
+    elif mt.type == "libvirt":
+        raise NotImplementedError(mt.type)
+    elif mt.type == "openstack":
+        target = OpenStackService.shut_down
+    else:
+        raise RuntimeError(mt.type)
+
+    m.state = MachineState.STOPPING
+    db.session.commit()
+
+    threading.Thread(target=target, args=(m.id, audit.id)).start()
+    flash(gettext("Shutting down machine"), category="success")
+    return redirect(url_for("machines"))
+
+
+@app.route("/resume_machine", methods=["POST"])
+@limiter.limit("100 per day, 10 per minute, 1/3 seconds")
+@login_required
+@profile_complete_required
+def resume_machine():
+    """
+    Start thread to resume machine
+    """
+
+    # sanity checks
+    audit = create_audit("resume machine", user=current_user)
+    machine_id = request.form.get("machine_id")
+
+    if not machine_id:
+        finish_audit(audit, "machine_id missing")
+        logging.warning(f"machine_id parameter missing: {machine_id}")
+        abort(404)
+
+    try:
+        machine_id = int(machine_id)
+    except Exception:
+        finish_audit(audit, "machine_id bad")
+        logging.warning(f"machine_id not int: {machine_id}")
+        abort(404)
+
+    m = Machine.query.filter_by(id=machine_id).first()
+    if not m:
+        finish_audit(audit, "machine not found")
+        abort(404)
+
+    update_audit(audit, machine=m)
+
+    if not current_user.is_admin and not current_user == m.owner:
+        finish_audit(audit, "bad user")
+        logging.warning(
+            f"user {current_user.id} is not the owner of machine {machine_id} nor admin"
+        )
+        abort(403)
+    if m.state != MachineState.STOPPED:
+        logging.warning(
+            f"machine {machine_id} is not in correct state for resuming: {m.state}"
+        )
+
+    mt = m.machine_template
+
+    if mt.type == "docker":
+        raise NotImplementedError(mt.type)
+    elif mt.type == "libvirt":
+        raise NotImplementedError(mt.type)
+    elif mt.type == "openstack":
+        target = OpenStackService.resume
+    else:
+        raise RuntimeError(mt.type)
+
+    m.state = MachineState.STARTING
+    db.session.commit()
+
+    threading.Thread(target=target, args=(m.id, audit.id)).start()
+
+    flash(gettext("Resuming machine."), category="success")
+    return redirect(url_for("machines"))
+
+
 @app.route("/stop_machine", methods=["POST"])
 @limiter.limit("100 per day, 10 per minute, 1/3 seconds")
 @login_required
@@ -3425,7 +3555,7 @@ def wait_for_nginx(machine, timeout=120):
                 time.sleep(5)
 
         except Exception as e:
-            logging.info("wait_for_nginx: looping again: {str(e)}")
+            logging.info(f"wait_for_nginx: looping again: {str(e)}")
             time.sleep(5)
 
         finally:
@@ -3654,6 +3784,51 @@ class OpenStackService(VirtService):
                 finish_audit(audit, "error")
                 logging.exception("Couldn't stop openstack vm: ")
             m.state = MachineState.DELETED
+            db.session.commit()
+
+    @staticmethod
+    def shut_down(m_id: int, audit_id: int):
+        with OpenStackService.app.app_context():
+            audit = get_audit(audit_id)
+            try:
+                m = Machine.query.filter_by(id=m_id).first()
+                mt = m.machine_template
+                mp = mt.machine_provider
+                conn, _ = OpenStackService.conn_from_mp(mp)
+
+                server = conn.compute.find_server(m.name)
+                conn.compute.stop_server(server)
+                finish_audit(audit, "ok")
+                logging.info(f"OpenStack VM {m.name} stopped successfully.")
+
+            except Exception:
+                m.state = MachineState.FAILED
+                finish_audit(audit, "error")
+                logging.exception("Couldn't shut down openstack vm: ")
+            m.state = MachineState.STOPPED
+            db.session.commit()
+
+    @staticmethod
+    def resume(m_id: int, audit_id: int):
+        with OpenStackService.app.app_context():
+            audit = get_audit(audit_id)
+            try:
+                m = Machine.query.filter_by(id=m_id).first()
+                mt = m.machine_template
+                mp = mt.machine_provider
+                conn, _ = OpenStackService.conn_from_mp(mp)
+
+                server = conn.compute.find_server(m.name)
+                conn.compute.start_server(server)
+                finish_audit(audit, "ok")
+                wait_for_nginx(m, timeout=600)
+                logging.info(f"OpenStack VM {m.name} started successfully.")
+
+            except Exception:
+                m.state = MachineState.FAILED
+                finish_audit(audit, "error")
+                logging.exception("Couldn't resume openstack vm: ")
+            m.state = MachineState.READY
             db.session.commit()
 
     @log_function_call
