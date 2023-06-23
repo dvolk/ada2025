@@ -78,6 +78,13 @@ pybabel compile -d translations
 You can also set the following optional environment variables to further configure Ada2025:
 
 ```bash
+ADA2025_MAIL_SENDER # set to the email of the sender
+ADA2025_MAIL_SERVER # set to the mail server hostname
+ADA2025_MAIL_PORT # set to the mail server port
+ADA2025_MAIL_USERNAME # mail server username
+ADA2025_MAIL_PASSWORD # mail server password/app password
+ADA2025_MAIL_USE_TLS # True or False if you want to use TLS
+ADA2025_MAIL_USE_SSL # True or False if you want to use SSL
 ADA2025_SENTRY_DSN  # set to DSN to have sentry.io integration
 ADA2025_SENTRY_ENVIRONMENT  # sentry.io environment string (eg. "dev" or "prod")
 ADA2025_FLASK_SECRET_KEY  # set to string or one will be randomly generated
