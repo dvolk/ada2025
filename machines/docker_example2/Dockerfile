@@ -46,7 +46,7 @@ RUN sudo apt-get install -y \
         ssh rsync procps screenfetch
 
 # Install desktop applications
-RUN apt-get -y install emacs xterm
+RUN apt-get -y install emacs xterm materia-gtk-theme
 
 # Add desktop user 'ubuntu'
 RUN echo "$USER:$USER" | chpasswd && \
