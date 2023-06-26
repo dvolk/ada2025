@@ -2634,7 +2634,7 @@ def enable_user():
             )
             msg.body = f"""Hi,
 
-Your account on on Ada Data Analysis has been activated.
+Your account on Ada Data Analysis has been activated.
 
 You can now use the site by clicking:
 
