@@ -97,6 +97,11 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
+
+def str_to_bool(s):
+    return s.strip().lower() == "true"
+
+
 logging.basicConfig(
     level=logging.DEBUG,
     datefmt="%Y-%m-%d/%H:%M:%S",
@@ -189,14 +194,10 @@ limiter = Limiter(
 recaptcha = ReCaptcha(
     site_key=os.environ.get("RECAPTCHA_SITE_KEY"),
     secret_key=os.environ.get("RECAPTCHA_SECRET_KEY"),
-    is_enabled=True if os.environ.get("RECAPTCHA_SITE_KEY") else False,
+    is_enabled=str_to_bool(os.environ.get("RECAPTCHA_SITE_KEY")),
 )
 recaptcha.init_app(app)
-LOGIN_RECAPTCHA = os.environ.get("LOGIN_RECAPTCHA", False)
-
-
-def str_to_bool(s):
-    return s == "True"
+LOGIN_RECAPTCHA = str_to_bool(os.environ.get("LOGIN_RECAPTCHA"))
 
 
 app.config["MAIL_SERVER"] = os.environ.get("ADA2025_MAIL_SERVER", "")
@@ -1950,19 +1951,23 @@ def pick_group():
             current_user.group = group
             db.session.commit()
 
-            def inform_group_admins(group_name, site_root):
+            def inform_group_admins(group_id, site_root):
                 if not MAIL_SENDER:
                     logging.info("inform_group_admins: Mail sender not defined")
                     return
                 with app.app_context():
                     group_admins = (
                         db.session.query(User)
-                        .join(Group)
-                        .filter(and_(Group.name == group_name, User.is_group_admin))
+                        .filter(
+                            and_(
+                                User.group_id == group_id,
+                                User.is_group_admin,
+                            )
+                        )
                         .all()
                     )
                     if not group_admins:
-                        logging.error(f"No group admins for group: {group_name}")
+                        logging.error(f"No group admins for group id: {group_id}")
                         return
                     emails_to = [ga.email for ga in group_admins]
                     logging.info(
@@ -1985,7 +1990,7 @@ You're receiving this message because you're a group admin on {site_root}.
 
             site_root = request.url_root
             threading.Thread(
-                target=inform_group_admins, args=(group.name, site_root)
+                target=inform_group_admins, args=(group.id, site_root)
             ).start()
             return redirect(url_for("welcome"))
         else:
