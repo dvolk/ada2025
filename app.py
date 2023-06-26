@@ -4476,7 +4476,7 @@ def create_initial_db():
                 group=localtester_group,
                 language="en",
                 is_admin=True,
-                email="admin@ada.stfc.ac.uk",
+                email="denis.volk@stfc.ac.uk",
                 data_sources=[demo_source1, demo_source2],
             )
             admin_password = gen_token(8)
