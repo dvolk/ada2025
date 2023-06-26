@@ -1980,11 +1980,15 @@ def pick_group():
 
 A new user has picked your group on Ada Data Analysis.
 
-The user won't be able to do anything until you approve them. If you want to do that you need to go to Group Management on the site:
+The user won't be able to do anything until a group admin approves them.
+
+If you want to do that you need to go to Group Management on the site:
 
 {site_root}group_mgmt
 
-You're receiving this message because you're a group admin on {site_root}.
+and click the green enable user account button.
+
+You're receiving this email because you're a group admin on {site_root}.
 """
                     mail.send(msg)
 
