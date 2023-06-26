@@ -194,7 +194,7 @@ limiter = Limiter(
 recaptcha = ReCaptcha(
     site_key=os.environ.get("RECAPTCHA_SITE_KEY"),
     secret_key=os.environ.get("RECAPTCHA_SECRET_KEY"),
-    is_enabled=str_to_bool(os.environ.get("RECAPTCHA_SITE_KEY")),
+    is_enabled=True if os.environ.get("RECAPTCHA_SITE_KEY") else False,
 )
 recaptcha.init_app(app)
 LOGIN_RECAPTCHA = str_to_bool(os.environ.get("LOGIN_RECAPTCHA"))
