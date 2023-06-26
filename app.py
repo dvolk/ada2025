@@ -1834,7 +1834,8 @@ babel = Babel(app, locale_selector=get_locale, timezone_selector=get_timezone)
 
 class LoginForm(FlaskForm):
     username = StringField(
-        lazy_gettext("Username"), validators=[DataRequired(), Length(min=2, max=32)]
+        lazy_gettext("Username or email"),
+        validators=[DataRequired(), Length(min=2, max=32)],
     )
     password = PasswordField(
         lazy_gettext("Password"), validators=[DataRequired(), Length(min=8, max=100)]
@@ -2274,7 +2275,16 @@ def login():
                     show_stfc_logo=True,
                 )
         if form.validate_on_submit():
-            user = User.query.filter_by(username=form.username.data).first()
+            user = (
+                db.session.query(User)
+                .filter(
+                    or_(
+                        User.username == form.username.data,
+                        User.email == form.username.data,
+                    )
+                )
+                .first()
+            )
             # oauth2 returning users
             if user and user.provider_id:
                 if user.provider == "google":
