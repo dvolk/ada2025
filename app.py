@@ -2606,6 +2606,37 @@ def enable_user():
     user.is_enabled = not user.is_enabled
     db.session.commit()
 
+    def inform_enabled_user(user_id, site_root):
+        if not MAIL_SENDER:
+            logging.info("inform_group_admins: Mail sender not defined")
+            return
+        with app.app_context():
+            user = User.query.filter_by(id=user_id).first()
+            if not user:
+                logging.error(f"No user for id: {user_id}")
+                return
+            email_to = user.email
+            logging.info(f"Sending email enabled account to: {email_to}")
+            msg = Message(
+                "Ada Data Analysis account activated",
+                sender=MAIL_SENDER,
+                recipients=[email_to],
+            )
+            msg.body = f"""Hi,
+
+Your account on on Ada Data Analysis has been activated.
+
+You can now use the site by clicking:
+
+{site_root}
+
+You're receiving this email because you've registered on {site_root}.
+"""
+            mail.send(msg)
+
+    site_root = request.url_root
+    threading.Thread(target=inform_enabled_user, args=(user.id, site_root)).start()
+
     return "OK"
 
 
