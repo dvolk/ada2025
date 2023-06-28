@@ -1846,6 +1846,7 @@ class LoginForm(FlaskForm):
 oauth = OAuth(app)
 
 if os.environ.get("GOOGLE_OAUTH2_CLIENT_ID"):
+    logging.info("using google logins")
     google = oauth.register(
         name="google",
         client_id=os.environ.get("GOOGLE_OAUTH2_CLIENT_ID"),
@@ -1857,6 +1858,19 @@ if os.environ.get("GOOGLE_OAUTH2_CLIENT_ID"):
         api_base_url="https://www.googleapis.com/oauth2/v1/",
         userinfo_endpoint="https://openidconnect.googleapis.com/v1/userinfo",
         client_kwargs={"scope": "email profile"},
+    )
+
+if os.environ.get("ADA2025_IRIS_IAM_OAUTH2_CLIENT_ID"):
+    logging.info("using iris iam logins")
+    iris_iam = oauth.register(
+        name="iris_iam",
+        client_id=os.environ.get("ADA2025_IRIS_IAM_OAUTH2_CLIENT_ID"),
+        client_secret=os.environ.get("ADA2025_IRIS_IAM_OAUTH2_CLIENT_SECRET"),
+        access_token_url="https://iris-iam.stfc.ac.uk/token",
+        authorize_url="https://iris-iam.stfc.ac.uk/authorize",
+        api_base_url="https://iris-iam.stfc.ac.uk/",
+        server_metadata_url="https://iris-iam.stfc.ac.uk/.well-known/openid-configuration",
+        client_kwargs={"scope": "email profile openid"},
     )
 
 
@@ -1883,6 +1897,20 @@ def google_login():
     redirect_uri = url_for("google_authorize", _external=True)
     finish_audit(audit, state="ok")
     return google.authorize_redirect(redirect_uri)
+
+
+@app.route("/iris_iam_login")
+@limiter.limit("60 per hour")
+def iris_iam_login():
+    # send the users to google to log in. once they're logged
+    # in, they're sent back to google_authorize, where we
+    # make an account for them from the data that google
+    # provided
+    audit = create_audit("iris login")
+    iris_iam = oauth.create_client("iris_iam")
+    redirect_uri = url_for("iris_iam_authorize", _external=True)
+    finish_audit(audit, state="ok")
+    return iris_iam.authorize_redirect(redirect_uri)
 
 
 def gen_unique_username(email, max_attempts=1000):
@@ -2072,6 +2100,72 @@ def google_authorize():
         return redirect(url_for("login"))
 
 
+@app.route("/iris_iam_authorize")
+@limiter.limit("60 per hour")
+def iris_iam_authorize():
+    # iris iam has authenticated the user and sent them back
+    # here, make an account if they don't have one and log
+    # them in
+    audit = create_audit("iris iam auth")
+    try:
+        iris_iam = oauth.create_client("iris_iam")
+        iris_iam.authorize_access_token()
+        resp = iris_iam.get("userinfo")
+        if resp.status_code != 200:
+            update_audit(audit, state="bad userinfo")
+            logging.info(resp.status_code)
+            logging.info(resp.text)
+            raise Exception("Failed to get user info")
+        user_info = resp.json()
+        print(user_info)
+
+        user = User.query.filter_by(email=user_info.get("email")).first()
+
+        # Update or create the user
+        if user:
+            update_audit(audit, "existing user", user=user)
+            # Update user info if needed
+            user.given_name = user_info.get("given_name", user.given_name)
+            user.family_name = user_info.get("family_name", user.family_name)
+            user.provider_id = user_info.get("id", user.provider_id)
+        else:
+            # Create a new user
+            update_audit(audit, "new user 1")
+            user = User(
+                username=gen_unique_username(user_info.get("email", "")),
+                given_name=user_info.get("given_name", ""),
+                family_name=user_info.get("family_name", ""),
+                email=user_info.get("email", ""),
+                provider="iris_iam",
+                provider_id=user_info.get("id", ""),
+                language="en",
+                timezone="Europe/London",
+            )
+            db.session.add(user)
+            update_audit(audit, "new user 2", user=user)
+
+        db.session.commit()
+
+        # log the user in
+        user.sesh_id = gen_token(2)
+        login_user(user)
+        finish_audit(audit, "ok")
+
+        return redirect(url_for("welcome"))
+
+    except Exception as e:
+        finish_audit(audit, "error")
+        # Log the error and show an error message
+        app.logger.error(e)
+        flash(
+            gettext(
+                "An error occurred while processing your IRIS login. Please try again."
+            ),
+            "danger",
+        )
+        return redirect(url_for("login"))
+
+
 @app.route("/impersonate/<user_id>")
 @limiter.limit("60 per hour")
 @login_required
@@ -2241,8 +2335,11 @@ def login():
 
     # show the google login button or not
     show_google_button = False
+    show_iris_iam_button = False
     if os.environ.get("GOOGLE_OAUTH2_CLIENT_ID"):
         show_google_button = True
+    if os.environ.get("ADA2025_IRIS_IAM_OAUTH2_CLIENT_ID"):
+        show_iris_iam_button = True
 
     form = LoginForm()
 
@@ -2257,6 +2354,7 @@ def login():
             title=gettext("Login"),
             form=form,
             show_google_button=show_google_button,
+            show_iris_iam_button=show_iris_iam_button,
             show_stfc_logo=True,
         )
 
@@ -2272,6 +2370,7 @@ def login():
                     title=gettext("Login"),
                     form=form,
                     show_google_button=show_google_button,
+                    show_iris_iam_button=show_iris_iam_button,
                     show_stfc_logo=True,
                 )
         if form.validate_on_submit():
@@ -2299,6 +2398,7 @@ def login():
                         title=gettext("Login"),
                         form=form,
                         show_google_button=show_google_button,
+                        show_iris_iam_button=show_iris_iam_button,
                         show_stfc_logo=True,
                     )
 
@@ -2316,6 +2416,7 @@ def login():
                     title=gettext("Login"),
                     form=form,
                     show_google_button=show_google_button,
+                    show_iris_iam_button=show_iris_iam_button,
                     show_stfc_logo=True,
                 )
 
@@ -2341,6 +2442,7 @@ def login():
         title=gettext("Login"),
         form=form,
         show_google_button=show_google_button,
+        show_iris_iam_button=show_iris_iam_button,
         show_stfc_logo=True,
     )
 

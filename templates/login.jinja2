@@ -34,11 +34,17 @@
 
         <button class="w3-btn w3-round ada-blue" type="submit">{{ gettext("Log In") }}</button>
         <a class="w3-btn w3-round ada-blue" href="/register">{{ gettext("Register") }}</a>
-
+        <br/>
+        <p>Or use federated sign-up/sign-in:</p>
         {% if show_google_button %}
-          <a class="w3-btn w3-round w3-green" href="/google_login">
+        <a class="w3-btn w3-round w3-green" href="/google_login">
             <i class="fa-brands fa-fw fa-google"></i> {{ gettext("Google") }}
-          </a>
+        </a>
+        {% endif %}
+        {% if show_iris_iam_button %}
+        <a class="w3-btn w3-round w3-green" href="/iris_iam_login">
+            <i class="fa fa-fw fa-eye"></i> {{ gettext("IRIS IAM") }}
+        </a>
         {% endif %}
       </div>
       <div class="w3-half">
