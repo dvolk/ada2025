@@ -1,0 +1,148 @@
+#+INCLUDE: head.org
+
+#+TITLE: Ada Data Analysis User Guide
+
+* Sign-up
+
+We offer several types of sign-ups:
+
+|----------------------+---------------------------------------------------|
+| Account type         | Where to sign up                                  |
+|----------------------+---------------------------------------------------|
+| Local                | https://ada.stfc.ac.uk/register                   |
+| Google (federated)   | https://ada.stfc.ac.uk/login and click 'Google'   |
+| IRIS IAM (federated) | https://ada.stfc.ac.uk/login and click 'IRIS IAM' |
+|----------------------+---------------------------------------------------|
+
+Once you sign up, you will have to pick a group.
+
+If your group isn't listed, please don't pick anything. You will be put into a group by the administrators.
+
+If you're interested in setting up a new group, please email
+{{{fan}}}
+to discuss your requirements.
+
+Once you pick a group (or not), your account will have to be activated by the group admin. You'll receive an email when this happens.
+
+** Notes on external providers
+
+If you choose an external provider you will be asked to authorize the Ada site to access some of your user data (specifically, your name and email address).
+
+When you're using an external provider we still create a local account for you.
+
+If you then set an account password in the Settings tab, you will also be able to sign-in with the username and password.
+
+We recommend you set a password so you can still sign-in in case there is ever a problem with the provider.
+
+* Sign-in
+
+How you sign in will depend on what type of account you have:
+
+|----------------------+----------------------------------------------------------------|
+| Account type         | Where to sign in                                               |
+|----------------------+----------------------------------------------------------------|
+| Local                | https://ada.stfc.ac.uk/login fill in the username and password |
+| Google (federated)   | https://ada.stfc.ac.uk/login and click 'Google'                |
+| IRIS IAM (federated) | https://ada.stfc.ac.uk/login and click 'IRIS IAM'              |
+|----------------------+----------------------------------------------------------------|
+
+** Forgotten password
+
+If you've forgotten your password please email
+{{{denis}}}
+and you will be given a temporary password.
+
+* Machines
+
+On Ada, you can launch new virtual desktops to perform your work. We call these desktops machines. They are based on Linux and come with software pre-installed. You're also given administrator access so you can install more software.
+
+** Creating a new machine
+
+To launch a new machine, go to the Machines tab, and then in the list of templates, find the template you want to use and click the "Create Machine" button.
+
+Creating a new machine usually takes between 1 and 10 minutes.
+
+Please refresh the page to update the status of the provisioning process.
+
+** Opening a machine
+
+Once the machine is set up, you can click the "Open" button, or click on the thumbnail.
+
+You will be presented with a new page that opens on the machine itself. This page has a menu that allows you to open services on the machine in new pages, for example:
+
+- The virtual desktop itself
+- The File browser, which you can use to upload, download and manage files on the machine
+
+You may also have different services installed, such as VS Code and Jupyter Notebook.
+
+** Renaming a machine
+
+You can rename machines that you own. To do that click the pen button on the machine card that you want to rename, and enter a new name for it.
+
+** Deleting a machine
+
+To delete a machine, click the red rubbish bin icon on the machine card.
+
+**This will delete all the data on the machine.**
+
+** Turn off machine
+
+On some machines you may have the option to turn the machine off. To do that click the orange power button. The machine won't be available while it is turned off.
+
+** Turn on machine
+
+If you have turned a machine off, you can turn it back on by clicking on the orange power button.
+
+** Report a problem with/on machine
+
+If you encounter a problem with the operation of the machine, either a problem in the Ada web interface or on the machine itself, please click the gray flag icon. This will take you to a new page where you can describe the issue.
+
+Once you submit your issue, an administrator will take a look and follow up on it with you over email.
+
+** Machine administrator access
+
+To become an administrator on the machine, open a terminal and type
+
+#+BEGIN_SRC bash
+sudo -s
+#+END_SRC
+
+* Data
+
+Ada offers users the ability to copy data from various data sources into their machines. To do this please visit the Data tab.
+
+** Copy data into machine
+
+On the data page, select the data source you wish to copy, and the machine you want to copy it to and then submit the form.
+
+** Monitor progress of data transfers
+
+On top of the data page, you can see a list of data transfers that you have started. Once the transfer state is "Done" the transfer is finished and you can work on the data on your machine.
+
+** Report problem with data
+
+To report a problem with a data transfer (or the data itself), please click the gray flag icon. This will take you to a new page where you can describe the issue.
+
+Once you submit your issue, an administrator will take a look and follow up on it with you over email.
+
+* Settings
+
+** Change user details
+
+On the settings tab, you can change your user details, such as the interface language and your timezone.
+
+Note that if you're using an external account provider, your name and email will be overwritten each time you log in. To change these details, change them on your account provider itself.
+
+** Change password
+
+You can also set or change your password.
+
+* Feedback
+
+Thank you for using Ada. We always appreciate hearing from users about their experience, feedback and ideas.
+
+Please email
+{{{fan}}}
+with your thoughts.
+
+#+HTML: <hr/>
