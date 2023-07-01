@@ -99,7 +99,7 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 
 
 def str_to_bool(s):
-    return s.strip().lower() == "true"
+    return s and s.strip().lower() == "true"
 
 
 logging.basicConfig(
