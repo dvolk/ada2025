@@ -1995,6 +1995,7 @@ def pick_group():
                             and_(
                                 User.group_id == group_id,
                                 User.is_group_admin,
+                                User.is_enabled,
                             )
                         )
                         .all()
