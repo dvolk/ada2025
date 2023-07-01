@@ -1,6 +1,6 @@
 #+OPTIONS: html-style:nil
 #+OPTIONS: toc:2 num:nil validate:nil author:nil
 #+HTML_HEAD: <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/light.min.css">
-#+HTML_HEAD: <style>.validation { display: none; } table { padding: 5px; border: none; border-radius: 10px; border-spacing: 0; border-collapse: separate; background-color: #eee;  }  .src { font-family: Jetbrains Mono, Ubuntu Mono, monospace; border-radius: 7px; background-color: #eef; font-weight: 500; padding: 7px !important;} ul { list-style-type: none; } h1 { padding-top: 30px; padding-bottom: 30px; text-align: center; } h2 { text-align: center; margin-top: 45px !important; margin-bottom: 45px !important; padding-bottom: 15px; border-bottom: 1px dashed #ccc; } a { text-decoration: underline; }</style>
+#+HTML_HEAD: <style>.validation { display: none; } table { padding: 5px; border: none; border-radius: 10px; border-spacing: 0; border-collapse: separate; background-color: #eee;  }  .src { font-family: Jetbrains Mono, Ubuntu Mono, monospace; border-radius: 7px; background-color: #eef; font-weight: 500; padding: 7px !important;} ul { list-style-type: none; } h1 { padding-top: 30px; padding-bottom: 30px; text-align: center; } h2 { text-align: center; margin-top: 45px !important; margin-bottom: 15px !important; padding-bottom: 15px; border-bottom: 1px dashed #ccc; } a { text-decoration: underline; }</style>
 #+MACRO: denis [[mailto:denis.volk@stfc.ac.uk][denis.volk@stfc.ac.uk]]
 #+MACRO: fan [[mailto:fan.yang-turner@stfc.ac.uk][fan.yang-turner@stfc.ac.uk]]
