@@ -1975,7 +1975,9 @@ def pick_group():
         return redirect(url_for("welcome"))
 
     form = PickGroupForm()
-    public_groups = db.session.query(Group).filter(Group.is_public).all()
+    public_groups = (
+        db.session.query(Group).filter(Group.is_public).order_by(desc(Group.id)).all()
+    )
     form.group.choices = [(g.id, g.name) for g in public_groups]
 
     if request.method == "POST":
