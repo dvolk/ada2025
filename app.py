@@ -756,6 +756,7 @@ class ProtectedUserModelView(ProtectedModelView):
         "id",
         "is_enabled",
         "username",
+        "provider",
         "given_name",
         "family_name",
         "email",
@@ -783,6 +784,8 @@ class ProtectedUserModelView(ProtectedModelView):
         "data_sources",
         "data_transfer_jobs",
         "is_admin",
+        "provider",
+        "provider_id",
     )
     column_searchable_list = ("username", "email")
     column_sortable_list = ("id", "username", "email", "creation_date")
@@ -795,6 +798,7 @@ class ProtectedUserModelView(ProtectedModelView):
             model.set_password(form.password.data)
 
     column_formatters = {
+        "provider": _color_formatter,
         "group": _color_formatter,
     }
 
