@@ -2065,6 +2065,7 @@ def google_authorize():
             # Update user info if needed
             user.given_name = user_info.get("given_name", user.given_name)
             user.family_name = user_info.get("family_name", user.family_name)
+            user.provider = "google"
             user.provider_id = user_info.get("id", user.provider_id)
         else:
             # Create a new user
@@ -2131,6 +2132,7 @@ def iris_iam_authorize():
             # Update user info if needed
             user.given_name = user_info.get("given_name", user.given_name)
             user.family_name = user_info.get("family_name", user.family_name)
+            user.provider = "iris_iam"
             user.provider_id = user_info.get("id", user.provider_id)
         else:
             # Create a new user
@@ -2394,6 +2396,10 @@ def login():
                     # google users
                     finish_audit(audit, "google login")
                     return redirect(url_for("google_login"))
+                elif user.provider == "iris_iam":
+                    # iris iam users
+                    finish_audit(audit, "iris iam login")
+                    return redirect(url_for("iris_iam_login"))
                 else:
                     finish_audit(audit, "invalid provider")
                     flash(gettext("Invalid provider"), "danger")
