@@ -2125,7 +2125,6 @@ def iris_iam_authorize():
             logging.info(resp.text)
             raise Exception("Failed to get user info")
         user_info = resp.json()
-        print(user_info)
 
         user = User.query.filter_by(email=user_info.get("email")).first()
 
