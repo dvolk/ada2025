@@ -896,6 +896,8 @@ class DataSource(db.Model):
     """
 
     id = db.Column(db.Integer, primary_key=True)
+    import_name = db.Column(db.String(256), nullable=False)
+    is_enabled = db.Column(db.Boolean, nullable=False, default=False)
     name = db.Column(db.String, unique=True, nullable=False)
     source_username = db.Column(db.String(64), nullable=False, default="root")
     source_host = db.Column(db.String(256), nullable=False)
@@ -920,15 +922,19 @@ class DataSource(db.Model):
 class ProtectedDataSourceModelView(ProtectedModelView):
     column_list = (
         "id",
+        "is_enabled",
         "name",
         "source_host",
         "source_dir",
         "data_size",
+        "import_name",
         "creation_date",
         "users",
     )
     form_columns = (
         "name",
+        "is_enabled",
+        "import_name",
         "source_username",
         "source_host",
         "source_port",
@@ -937,9 +943,17 @@ class ProtectedDataSourceModelView(ProtectedModelView):
         "users",
         "data_transfer_jobs",
     )
-    column_searchable_list = ("source_host", "source_dir")
-    column_sortable_list = ("id", "source_host", "data_size", "creation_date")
+    column_searchable_list = ("source_host", "source_dir", "import_name")
+    column_sortable_list = (
+        "id",
+        "source_host",
+        "data_size",
+        "creation_date",
+        "import_name",
+    )
     column_filters = (
+        "is_enabled",
+        "import_name",
         "source_username",
         "source_host",
         "source_port",
@@ -948,6 +962,8 @@ class ProtectedDataSourceModelView(ProtectedModelView):
     )
     column_auto_select_related = True
     column_formatters = {
+        "is_enabled": _color_formatter,
+        "import_name": _color_formatter,
         "source_host": _color_formatter,
     }
 
