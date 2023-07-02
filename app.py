@@ -798,6 +798,8 @@ class ProtectedUserModelView(ProtectedModelView):
             model.set_password(form.password.data)
 
     column_formatters = {
+        "is_enabled": _color_formatter,
+        "is_admin": _color_formatter,
         "provider": _color_formatter,
         "group": _color_formatter,
     }
