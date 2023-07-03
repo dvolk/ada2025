@@ -4570,6 +4570,8 @@ def create_initial_db():
         if not User.query.filter_by(username="admin").first():
             logging.warning("Creating default data.")
             demo_source1 = DataSource(
+                import_name="manual",
+                is_enabled=True,
                 name="Demo Experiment 1",
                 source_username="root",
                 source_host="localhost",
@@ -4578,6 +4580,8 @@ def create_initial_db():
                 data_size="123",
             )
             demo_source2 = DataSource(
+                import_name="manual",
+                is_enabled=True,
                 name="Demo Experiment 2",
                 source_username="root",
                 source_host="localhost",
@@ -4586,6 +4590,8 @@ def create_initial_db():
                 data_size="321",
             )
             demo_source3 = DataSource(
+                import_name="manual",
+                is_enabled=True,
                 name="Demo Experiment 3",
                 source_username="root",
                 source_host="localhost",
