@@ -1,7 +1,7 @@
 c = get_config()  # noqa
 
-# serve jupyter on /jupyter/ not /
-c.NotebookApp.base_project_url = "/jupyter/"
+# serve jupyter notebook on /jupyter-notebook/ not /
+c.NotebookApp.base_project_url = "/jupyter-notebook/"
 
 # set default dir
 c.NotebookApp.notebook_dir = "/home/ubuntu/notebooks"

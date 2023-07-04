@@ -170,21 +170,27 @@ systemctl daemon-reload
 systemctl restart rstudio-server.service
 
 
-# OPTIONAL: Install Python and jupyter notebook
+# OPTIONAL: Install Python and jupyter lab+notebook
 apt install -y python3-pip python3-venv
 
 su ubuntu << EOF
 python3 -m venv /home/ubuntu/jupyter-env
 /home/ubuntu/jupyter-env/bin/pip3 install notebook
-mkdir -p /home/ubuntu/.jupyter
+mkdir -p /home/ubuntu/.jupyter-notebook
+cp jupyter_notebook_config.py /home/ubuntu/.jupyter-notebook/jupyter_notebook_config.py
+
+/home/ubuntu/jupyter-env/bin/pip3 install jupyterlab
+mkdir -p /home/ubuntu/.jupyter-lab
+cp jupyter_lab_config.py /home/ubuntu/.jupyter-lab/jupyter_lab_config.py
+
 mkdir -p /home/ubuntu/notebooks
-cp jupyter_notebook_config.py /home/ubuntu/.jupyter/jupyter_notebook_config.py
 EOF
 
-cp jupyter.service /etc/systemd/system
+cp jupyter-notebook.service /etc/systemd/system
+cp jupyter-lab.service /etc/systemd/system
 systemctl daemon-reload
-systemctl enable jupyter.service
-systemctl start jupyter.service
+systemctl enable jupyter-notebook.service jupyter-lab.service
+systemctl start jupyter-notebook.service jupyter-lab.service
 systemctl restart nginx
 
 
@@ -249,10 +255,11 @@ rm apptainer-suid_1.1.9_amd64.deb
 
 # OPTIONAL: Install emacs-gotty service
 
-# Add emacs config emacs config file
+# Add emacs config emacs config file and the tmux conf for better colors
 su ubuntu <<EOF
 mkdir /home/ubuntu/.emacs.d
 cp init.el /home/ubuntu/.emacs.d/init.el
+cp .tmux.conf /home/ubuntu/.tmux.conf
 EOF
 chown ubuntu:ubuntu /home/ubuntu/.emacs.d/init.el
 
@@ -268,12 +275,38 @@ systemctl start emacs-gotty.service
 
 # OPTIONAL: Install code-server
 
+
 curl -fsSL https://code-server.dev/install.sh | sh
 # modified service file disables authentication and telemetry
 cp code-server@.service /lib/systemd/system/code-server@.service
 systemctl daemon-reload
 systemctl enable code-server@ubuntu.service
 systemctl restart code-server@ubuntu.service
+
+
+
+# OPTIONAL: Install miniconda3
+
+
+su ubuntu <<EOF
+wget https://repo.anaconda.com/miniconda/Miniconda3-py310_23.3.1-0-Linux-x86_64.sh
+bash ./Miniconda3-py310_23.3.1-0-Linux-x86_64.sh -b
+/home/ubuntu/miniconda3/bin/conda init
+# /home/ubuntu/miniconda3/bin/conda config --set auto_activate_base false?
+rm ./Miniconda3-py310_23.3.1-0-Linux-x86_64.sh
+EOF
+
+
+# OPTIONAL: Install spyder
+
+
+su ubuntu << EOF
+/home/ubuntu/jupyter-env/bin/pip3 install spyder==5.4.3
+wget https://raw.githubusercontent.com/spyder-ide/spyder/master/img_src/spyder.png
+cp spyder.png /home/ubuntu/Downloads/spyder.png
+cp spyder.desktop /home/ubuntu/Desktop/spyder.desktop
+chmod a+x /home/ubuntu/Desktop/spyder.desktop
+EOF
 
 
 ### THE END

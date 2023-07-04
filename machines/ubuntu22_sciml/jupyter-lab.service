@@ -4,7 +4,7 @@ Description=Jupyter Notebook
 [Service]
 Type=simple
 PIDFile=/run/jupyter.pid
-ExecStart=/home/ubuntu/jupyter-env/bin/jupyter notebook --config=/home/ubuntu/.jupyter/jupyter_notebook_config.py
+ExecStart=/home/ubuntu/jupyter-env/bin/jupyter lab --config=/home/ubuntu/.jupyter-lab/jupyter_lab_config.py
 User=ubuntu
 Group=ubuntu
 WorkingDirectory=/home/ubuntu/
