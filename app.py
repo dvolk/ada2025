@@ -2645,7 +2645,12 @@ def register():
                     error_msg += f"{field}: {error}<br/>"
 
             flash(f"Sorry, the form could not be validated:<br/> {error_msg}", "danger")
-            return redirect(url_for("register"))
+            return render_template(
+                    "register.jinja2",
+                    form=form,
+                    title=gettext("Register account"),
+                    show_stfc_logo=True,
+                )
 
     return render_template(
         "register.jinja2",
