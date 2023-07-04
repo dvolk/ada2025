@@ -2590,11 +2590,11 @@ def register():
                 error_msg = "Sorry, that email is not allowed."
             if User.query.filter_by(username=form.username.data).first():
                 error_msg = gettext(
-                    "Sorry, that username is taken. Please choose another."
+                    "Sorry, that username or email is taken. Please choose another."
                 )
             if User.query.filter_by(email=form.email.data).first():
                 error_msg = gettext(
-                    "Sorry, that email is taken. Please choose another."
+                    "Sorry, that username or email is taken. Please choose another."
                 )
             if error_msg:
                 finish_audit(audit, "validation failed")
