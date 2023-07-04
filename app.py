@@ -2303,7 +2303,7 @@ def settings():
                         "Sorry, that email can't be used. Please choose another or contact us for support."
                     )
             if form.password.data:
-                if form.password.data != form.password_confirm.data:
+                if form.password.data != form.confirm_password.data:
                     error_msg = gettext("The passwords you entered don't match.")
                 if len(form.password.data) < 8:
                     error_msg = gettext("New password has to be at least 8 characters.")
@@ -2499,7 +2499,7 @@ class RegistrationForm(FlaskForm):
         lazy_gettext("Password"),
         validators=[DataRequired(), Length(min=password_min, max=password_max)],
     )
-    password_confirm = PasswordField(
+    confirm_password = PasswordField(
         lazy_gettext("Confirm Password"),
         validators=[
             DataRequired(),
@@ -2580,12 +2580,6 @@ def register():
                 error_msg = gettext("Bad language specified")
             if form.timezone.data not in form.timezone.choices:
                 error_msg = gettext("Bad timezone specified")
-            if contains_non_alphanumeric_chars(form.username.data):
-                error_msg = gettext(
-                    "Sorry, that username is invalid. The username can contain letters, numbers and ."
-                )
-            if form.password.data != form.password_confirm.data:
-                error_msg = gettext("The passwords you entered don't match.")
             if not is_name_safe(form.given_name.data):
                 error_msg = "Sorry, that given name is not allowed."
             if not is_name_safe(form.family_name.data):
@@ -2641,11 +2635,17 @@ def register():
         else:
             error_msg = ""
             for field, errors in form.errors.items():
+                field = field.replace("_", " ").title()
                 for error in errors:
                     error_msg += f"{field}: {error}<br/>"
 
             flash(f"Sorry, the form could not be validated:<br/> {error_msg}", "danger")
-            return redirect(url_for("register"))
+            return render_template(
+                    "register.jinja2",
+                    form=form,
+                    title=gettext("Register account"),
+                    show_stfc_logo=True,
+                )
 
     return render_template(
         "register.jinja2",
