@@ -3,7 +3,7 @@ Description=Jupyter Notebook
 
 [Service]
 Type=simple
-PIDFile=/run/jupyter.pid
+PIDFile=/run/jupyter-notebook.pid
 ExecStart=/home/ubuntu/jupyter-env/bin/jupyter notebook --config=/home/ubuntu/.jupyter-notebook/jupyter_notebook_config.py
 User=ubuntu
 Group=ubuntu

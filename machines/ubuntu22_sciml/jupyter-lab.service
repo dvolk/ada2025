@@ -1,9 +1,9 @@
 [Unit]
-Description=Jupyter Notebook
+Description=Jupyter Lab
 
 [Service]
 Type=simple
-PIDFile=/run/jupyter.pid
+PIDFile=/run/jupyter-lab.pid
 ExecStart=/home/ubuntu/jupyter-env/bin/jupyter lab --config=/home/ubuntu/.jupyter-lab/jupyter_lab_config.py
 User=ubuntu
 Group=ubuntu
