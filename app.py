@@ -2303,7 +2303,7 @@ def settings():
                         "Sorry, that email can't be used. Please choose another or contact us for support."
                     )
             if form.password.data:
-                if form.password.data != form.password_confirm.data:
+                if form.password.data != form.confirm_password.data:
                     error_msg = gettext("The passwords you entered don't match.")
                 if len(form.password.data) < 8:
                     error_msg = gettext("New password has to be at least 8 characters.")
@@ -2499,7 +2499,7 @@ class RegistrationForm(FlaskForm):
         lazy_gettext("Password"),
         validators=[DataRequired(), Length(min=password_min, max=password_max)],
     )
-    password_confirm = PasswordField(
+    confirm_password = PasswordField(
         lazy_gettext("Confirm Password"),
         validators=[
             DataRequired(),
@@ -2639,6 +2639,7 @@ def register():
         else:
             error_msg = ""
             for field, errors in form.errors.items():
+                field = field.replace("_", " ").capitalize()
                 for error in errors:
                     error_msg += f"{field}: {error}<br/>"
 
