@@ -175,6 +175,7 @@ apt install -y python3-pip python3-venv
 
 su ubuntu << EOF
 python3 -m venv /home/ubuntu/jupyter-env
+
 /home/ubuntu/jupyter-env/bin/pip3 install notebook
 mkdir -p /home/ubuntu/.jupyter-notebook
 cp jupyter_notebook_config.py /home/ubuntu/.jupyter-notebook/jupyter_notebook_config.py
@@ -297,7 +298,7 @@ rm ./Miniconda3-py310_23.3.1-0-Linux-x86_64.sh
 EOF
 
 
-# OPTIONAL: Install spyder
+# OPTIONAL: Install spyder (same env as jupyter)
 
 
 su ubuntu << EOF
