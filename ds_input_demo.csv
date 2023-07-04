@@ -1,0 +1,8 @@
+ImportName,SourceName,SourceUsername,SourceHost,SourcePort,SourceDir,DataSize,AccessUser
+Group1,Experiment 1,root,site1.com,22,/mnt/data/experiments/exp1,2000MB,denis.volk@stfc.ac.uk
+Group1,Experiment 1,root,site1.com,22,/mnt/data/experiments/exp1,2000MB,noname@example.com
+Group1,Experiment 2,root,site1.com,22,/mnt/data/experiments/exp2,2000MB,noname@example.com
+Group1,Experiment 3,root,site2.com,22,/mnt/data/experiments/exp3,3000MB,denis.volk@stfc.ac.uk
+Group1,Experiment 3,root,site2.com,22,/mnt/data/experiments/exp3,3000MB,noname@example.com
+Group2,Experiment 6,root,site2.com,22,/mnt/data/experiments/exp3,3000MB,denis.volk@stfc.ac.uk
+Group2,Experiment 6,root,site2.com,22,/mnt/data/experiments/exp3,3000MB,noname@example.com
