@@ -2584,8 +2584,6 @@ def register():
                 error_msg = gettext(
                     "Sorry, that username is invalid. The username can contain letters, numbers and ."
                 )
-            if form.password.data != form.password_confirm.data:
-                error_msg = gettext("The passwords you entered don't match.")
             if not is_name_safe(form.given_name.data):
                 error_msg = "Sorry, that given name is not allowed."
             if not is_name_safe(form.family_name.data):
