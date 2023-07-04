@@ -2580,10 +2580,6 @@ def register():
                 error_msg = gettext("Bad language specified")
             if form.timezone.data not in form.timezone.choices:
                 error_msg = gettext("Bad timezone specified")
-            if contains_non_alphanumeric_chars(form.username.data):
-                error_msg = gettext(
-                    "Sorry, that username is invalid. The username can contain letters, numbers and ."
-                )
             if not is_name_safe(form.given_name.data):
                 error_msg = "Sorry, that given name is not allowed."
             if not is_name_safe(form.family_name.data):
