@@ -2639,7 +2639,7 @@ def register():
         else:
             error_msg = ""
             for field, errors in form.errors.items():
-                field = field.replace("_", " ").capitalize()
+                field = field.replace("_", " ").title()
                 for error in errors:
                     error_msg += f"{field}: {error}<br/>"
 
