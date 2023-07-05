@@ -173,24 +173,24 @@
                     </form>
                   {% endif %}
                   {% if machine.owner == current_user and machine.state == MachineState.READY and machine.machine_template.extra_data.get("can_shutdown", False) %}
-                    <a href="#"
-                       onclick="document.getElementById('shutdown-form-{{ machine.id }}').submit();"
+                    <button 
+                       onclick='confirm_shutdown({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
                        class="w3-button w3-orange w3-round"
                        title='{{ gettext("Shut down machine") }}'>
                        {{ icon('power-off') }}
-                    </a>
+                    </button>
                     <form style="display: inline" id="shutdown-form-{{ machine.id }}" action="/shutdown_machine" method="POST">
                       <input type="hidden" name="machine_id" value="{{ machine.id }}">
                     </form>
                   {% endif %}
 
                   {% if machine.owner == current_user %}
-                    <a href="#"
-                       onclick="document.getElementById('stop-form-{{ machine.id }}').submit();"
+                    <button
+                       onclick='confirm_deletion({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
                        class="w3-button w3-red w3-round"
                        title='{{ gettext("Stop and remove machine") }}'>
                        {{ icon('trash') }}
-                    </a>
+                    </button>
                     <form style="display: inline" id="stop-form-{{ machine.id }}" action="/stop_machine" method="POST">
                       <input type="hidden" name="machine_id" value="{{ machine.id }}">
                     </form>
@@ -252,6 +252,21 @@
 
 {% block javascript %}
   <script>
+    function confirm_deletion(machine_display_name, machine_id) {
+      if (confirm('You have selected to stop and remove machine titled ' + machine_display_name + '. This action is irreversible. Is this ok?')){
+        document.getElementById('stop-form-'+machine_id).submit();
+      } else {
+        alert('Machine will not be deleted.');
+      }
+    }
+
+    function confirm_shutdown(machine_display_name, machine_id) {
+      if (confirm('You have selected to shutdown machine titled ' + machine_display_name + '. Is this ok?')){
+        document.getElementById('shutdown-form-'+machine_id).submit();
+      } else {
+        alert('Machine will not be shutdown.');
+      }
+    }
 
    function renameObject(objectName, objectId) {
        var newName = prompt("Enter a new name for " + objectName + ":", objectName);
