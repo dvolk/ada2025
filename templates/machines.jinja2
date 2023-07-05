@@ -254,7 +254,6 @@
   <script>
     function confirm_deletion(machine_display_name, machine_id) {
       if (confirm('You have selected to stop and remove machine titled ' + machine_display_name + '. This action is irreversible. Is this ok?')){
-        console.log('stop-form-'+machine_id)
         document.getElementById('stop-form-'+machine_id).submit();
       } else {
         alert('Machine will not be deleted.');
@@ -263,7 +262,6 @@
 
     function confirm_shutdown(machine_display_name, machine_id) {
       if (confirm('You have selected to shutdown machine titled ' + machine_display_name + '. Is this ok?')){
-        console.log('stop-form-'+machine_id)
         document.getElementById('shutdown-form-'+machine_id).submit();
       } else {
         alert('Machine will not be shutdown.');
