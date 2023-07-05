@@ -21,7 +21,6 @@ RUN apt-get update && \
         tigervnc-standalone-server \
         tigervnc-common \
         tigervnc-xorg-extension \
-        novnc \
         websockify \
         nginx \
         nginx-extras \
@@ -30,7 +29,6 @@ RUN apt-get update && \
         unzip \
         scrot \
         cron
-
 
 # Download and install filebrowser
 RUN curl -fsSL $FILEBROWSER_DL -o filebrowser.tar.gz && \
@@ -44,6 +42,16 @@ RUN sudo apt-get install -y \
         coreutils findutils grep sed gawk gzip tar curl wget git openssl \
         vim nano tmux htop ncdu tree file less bc zip unzip \
         ssh rsync procps screenfetch
+
+# Install novnc with clipboard api support
+RUN git clone --branch add_clipboard_support https://github.com/juanjoDiaz/noVNC.git /usr/share/novnc && \
+    cd /usr/share/novnc && \
+    git checkout 24dbf21474ca88928c5a7d63b39fc950240591f7
+
+RUN openssl req -new -newkey rsa:2048 -nodes -keyout server.key -out server.csr -subj "/C=US/ST=California/L=San Francisco/O=YourCompany/OU=Org/CN=www.yourdomain.com" && \
+    openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt && \
+    mkdir /etc/nginx/ssl && \
+    cp server.key server.crt /etc/nginx/ssl
 
 # Install desktop applications
 RUN apt-get -y install emacs xterm materia-gtk-theme
@@ -96,5 +104,5 @@ CMD service nginx start & \
     filebrowser --baseurl=/browse --noauth -r /home/$USER & \
     sleep 1 && \
     crontab -l -u $USER | { cat; echo '* * * * * DISPLAY=:0 scrot -z -t 20 -o /var/www/html/screenshots/screenshot.png'; } | crontab -u $USER - && \
-    websockify --web /usr/share/novnc/ 5901 localhost:$VNC_PORT && \
+    websockify --timeout 86400 --idle-timeout 86400 --web /usr/share/novnc/ 5901 localhost:$VNC_PORT && \
     tail -F /home/$USER/.vnc/*:0.log" $USER
