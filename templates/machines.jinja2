@@ -185,12 +185,12 @@
                   {% endif %}
 
                   {% if machine.owner == current_user %}
-                    <a href="#"
-                       onclick="document.getElementById('stop-form-{{ machine.id }}').submit();"
+                    <button
+                       onclick="confirm_deletion({{ machine.id }})"
                        class="w3-button w3-red w3-round"
                        title='{{ gettext("Stop and remove machine") }}'>
                        {{ icon('trash') }}
-                    </a>
+                    </button>
                     <form style="display: inline" id="stop-form-{{ machine.id }}" action="/stop_machine" method="POST">
                       <input type="hidden" name="machine_id" value="{{ machine.id }}">
                     </form>
@@ -252,6 +252,14 @@
 
 {% block javascript %}
   <script>
+    function confirm_deletion(machine_id) {
+      if (confirm('You have selected to stop and remove a machine. Is this ok?')){
+        console.log('stop-form-'+machine_id)
+        document.getElementById('stop-form-'+machine_id).submit();
+      } else {
+        alert('Machine will not be deleted.');
+      }
+    }
 
    function renameObject(objectName, objectId) {
        var newName = prompt("Enter a new name for " + objectName + ":", objectName);
