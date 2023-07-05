@@ -174,7 +174,7 @@
                   {% endif %}
                   {% if machine.owner == current_user and machine.state == MachineState.READY and machine.machine_template.extra_data.get("can_shutdown", False) %}
                     <button 
-                       onclick="confirm_shutdown('{{ machine.display_name }}', {{ machine.id }})"
+                       onclick='confirm_shutdown({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
                        class="w3-button w3-orange w3-round"
                        title='{{ gettext("Shut down machine") }}'>
                        {{ icon('power-off') }}
@@ -186,7 +186,7 @@
 
                   {% if machine.owner == current_user %}
                     <button
-                       onclick="confirm_deletion('{{ machine.display_name }}', {{ machine.id }})"
+                       onclick='confirm_deletion({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
                        class="w3-button w3-red w3-round"
                        title='{{ gettext("Stop and remove machine") }}'>
                        {{ icon('trash') }}
