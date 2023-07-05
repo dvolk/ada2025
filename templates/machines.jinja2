@@ -186,7 +186,7 @@
 
                   {% if machine.owner == current_user %}
                     <button
-                       onclick="confirm_deletion({{ machine.id }})"
+                       onclick="confirm_deletion('{{ machine.display_name }}', {{ machine.id }})"
                        class="w3-button w3-red w3-round"
                        title='{{ gettext("Stop and remove machine") }}'>
                        {{ icon('trash') }}
@@ -252,8 +252,8 @@
 
 {% block javascript %}
   <script>
-    function confirm_deletion(machine_id) {
-      if (confirm('You have selected to stop and remove a machine. Is this ok?')){
+    function confirm_deletion(machine_display_name, machine_id) {
+      if (confirm('You have selected to stop and remove machine titled ' + machine_display_name + '. Is this ok?')){
         console.log('stop-form-'+machine_id)
         document.getElementById('stop-form-'+machine_id).submit();
       } else {
