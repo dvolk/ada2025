@@ -165,7 +165,7 @@ flask db upgrade
 ```
 
 ## Enabling docker and libvirt machines 
-**This section is relevant for both standard AND docker web app deployment methods.**
+**__This section is relevant for both standard AND docker web app deployment methods.__**
 
 ### Prerequisites
 
