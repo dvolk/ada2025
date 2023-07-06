@@ -58,7 +58,7 @@ If you are using Ubuntu 23.04, you should also install some additional packages:
 
 ```bash
 sudo apt update
-sudo apt -y install --no-install-recommends pkg-config build-essential libvirt-clients virtinst libvirt-dev python3-openstackclient libpq-dev python3.11-venv
+sudo apt -y install --no-install-recommends pkg-config build-essential libvirt-clients virtinst libvirt-dev python3-openstackclient libpq-dev python3.11-venv libvirt-daemon-system
 ```
 
 Please note, these instructions are specifically for Ubuntu 23.04. If you are using a different operating system, please adjust the commands accordingly.
