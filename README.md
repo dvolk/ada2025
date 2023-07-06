@@ -70,10 +70,10 @@ Clone the repository and install the required Python packages:
 ```bash
 git clone https://github.com/dvolk/ada2025
 cd ada2025
-sudo python3 -m venv env
+python3 -m venv env
 source env/bin/activate
-sudo pip3 install -r requirements.txt
-sudo flask db upgrade
+pip3 install -r requirements.txt
+flask db upgrade
 pybabel compile -d translations
 ```
 
@@ -82,7 +82,7 @@ pybabel compile -d translations
 To run the web app:
 
 ```bash
-sudo python3 app.py
+python3 app.py
 ```
 
 Then, open your web browser and navigate to http://localhost:5000.
@@ -120,7 +120,7 @@ git clone https://github.com/dvolk/ada2025
 cd ada2025
 ```
 
-Create the adanet network (skip this if you've done it above):
+Create the adanet network (skip this if you've done it):
 
 ```bash
 sudo docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.1 adanet
@@ -217,9 +217,9 @@ Remember to log out and back in for these changes to take effect.
 Create a Docker bridge network and build the example Docker desktop container:
 
 ```bash
-sudo docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.1 adanet
+docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.1 adanet
 cd machines/docker_example
-sudo docker build . -f Dockerfile -t workspace
+docker build . -f Dockerfile -t workspace
 ```
 
 ### Libvirt setup (for libvirt-based machines)
