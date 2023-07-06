@@ -221,9 +221,9 @@ Follow these steps to prepare a libvirt virtual machine:
 4. Shut down the virtual machine.
 
 
-## Additional Guides
+# Additional Guides
 
-### Updating translation .po files
+## Updating translation .po files
 
 To update the translation files, use the following commands:
 
