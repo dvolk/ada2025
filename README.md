@@ -189,7 +189,7 @@ For Docker and libvirt setup, ensure that Docker and libvirt are installed on yo
 
   ```bash
   sudo apt update
-  sudo apt install docker.io
+  sudo apt -y nstall docker.io
   ```
 
   For detailed instructions, follow the official [Docker installation guide](https://docs.docker.com/get-docker/).
@@ -197,7 +197,7 @@ For Docker and libvirt setup, ensure that Docker and libvirt are installed on yo
 - libvirt: On Ubuntu, you can install libvirt using the package `libvirt-daemon-system` which provides the necessary tools and systems daemons for running libvirt:
 
   ```bash
-  sudo apt install libvirt-daemon-system
+  sudo apt -y install libvirt-daemon-system
   ```
 
 After installing these packages, make sure to add your user to the `docker` and `libvirt` groups:
