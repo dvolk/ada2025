@@ -127,7 +127,7 @@ sudo docker-compose up -d --build # note that docker-compose.yml will mount the 
 
 Your Ada2025 app should now be up and running at http://localhost:5000.
 
-The randomized admin password is printed on the console on first startup. Note that when using docker-compose you may need to run the following command in order to view this information:
+The randomized admin password is printed on the console on first startup. Note that when using docker-compose, you may need to run the following command in order to view this information:
 
 ```bash
 sudo docker-compose logs app
