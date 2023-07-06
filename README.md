@@ -100,7 +100,7 @@ Before proceeding, ensure that you have installed:
 - Docker
 - Docker Compose
 
-please also see the sections above:
+please also see the sections below:
 
 - Docker setup (for docker-based machines)
 - libvirt setup (for libvirt-based machines)
