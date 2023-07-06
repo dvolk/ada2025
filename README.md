@@ -98,6 +98,8 @@ Before proceeding, ensure that you have installed:
 - Docker
 - Docker Compose
 
+This can be done using the following command:
+
 ```bash
 sudo apt install docker.io docker-compose
 ```
