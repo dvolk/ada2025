@@ -44,9 +44,8 @@ export FILEBROWSER_DL=https://github.com/filebrowser/filebrowser/releases/downlo
 apt-get update
 apt-get install -y dbus-x11 xfce4 xfce4-goodies xfonts-base xfonts-100dpi \
     xfonts-75dpi xfonts-scalable tigervnc-standalone-server tigervnc-common \
-    tigervnc-xorg-extension novnc websockify nginx nginx-extras sudo curl \
+    tigervnc-xorg-extension websockify nginx nginx-extras sudo curl \
     unzip scrot cron
-
 
 
 # Download and install filebrowser
@@ -62,6 +61,12 @@ rm -f filebrowser.tar.gz
 apt-get install -y coreutils findutils grep sed gawk gzip tar curl wget git openssl \
     vim nano tmux htop ncdu tree file less bc zip unzip ssh rsync procps screenfetch
 
+
+# Install novnc
+git clone --branch add_clipboard_support https://github.com/juanjoDiaz/noVNC.git /usr/share/novnc
+cd /usr/share/novnc
+git checkout 24dbf21474ca88928c5a7d63b39fc950240591f7
+cd -
 
 
 # Install desktop applications
