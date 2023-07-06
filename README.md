@@ -142,7 +142,7 @@ sudo docker-compose logs app
 Remember to stop the services once you're done:
 
 ```bash
-docker-compose down
+sudo docker-compose down
 ```
 
 ### Optional configuration
