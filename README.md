@@ -100,6 +100,10 @@ Before proceeding, ensure that you have installed:
 - Docker
 - Docker Compose
 
+```bash
+sudo apt install docker.io docker-compose
+```
+
 please also see the sections below:
 
 - Docker setup (for docker-based machines)
