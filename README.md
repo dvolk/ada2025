@@ -90,7 +90,7 @@ Then, open your web browser and navigate to http://localhost:5000.
 
 The randomized admin password is printed on the console on first startup.
 
-### Docker deployment (Alternative)
+### Docker deployment (alternative)
 
 As an alternative to manually installing Ada2025, you can use Docker and Docker Compose to simplify the process. This method is especially recommended if you are planning to deploy the application in a containerized environment.
 
@@ -135,7 +135,7 @@ Remember to stop the services once you're done:
 docker-compose down
 ```
 
-### Optional Configuration
+### Optional configuration
 
 You can also set the following optional environment variables to further configure Ada2025:
 
@@ -166,7 +166,7 @@ Apply database migrations:
 flask db upgrade
 ```
 
-### Enabling docker and libvirt machines (relevant for both standard and docker web app deployment methods)
+## Enabling docker and libvirt machines (relevant for both standard and docker web app deployment methods)
 
 ### Prerequisites
 
@@ -198,7 +198,7 @@ sudo usermod -aG libvirt $USER
 
 Remember to log out and back in for these changes to take effect.
 
-#### Docker setup (for docker-based machines)
+### Docker setup (for docker-based machines)
 
 *This is needed for running Ada machines on docker, not for running the ada web app itself.*
 
@@ -210,7 +210,7 @@ cd machines/docker_example
 docker build . -f Dockerfile -t workspace
 ```
 
-#### libvirt setup (for libvirt-based machines)
+### Libvirt setup (for libvirt-based machines)
 
 *This is needed for running Ada machines on libvirt, not for running the ada web app itself.*
 
