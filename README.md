@@ -169,7 +169,7 @@ flask db upgrade
 
 ### Prerequisites
 
-*This is needed for running Ada machines on docker/libvirt, not for running the ada web app itself.*
+*This is needed for running Ada machines on docker/libvirt, not for running the Ada web app itself.*
 
 For Docker and libvirt setup, ensure that Docker and libvirt are installed on your system:
 
@@ -199,7 +199,7 @@ Remember to log out and back in for these changes to take effect.
 
 ### Docker setup (for docker-based machines)
 
-*This is needed for running Ada machines on docker, not for running the ada web app itself.*
+*This is needed for running Ada machines on docker, not for running the Ada web app itself.*
 
 Create a Docker bridge network and build the example Docker desktop container:
 
@@ -211,7 +211,7 @@ docker build . -f Dockerfile -t workspace
 
 ### Libvirt setup (for libvirt-based machines)
 
-*This is needed for running Ada machines on libvirt, not for running the ada web app itself.*
+*This is needed for running Ada machines on libvirt, not for running the Ada web app itself.*
 
 Follow these steps to prepare a libvirt virtual machine:
 
