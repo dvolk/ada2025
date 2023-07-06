@@ -72,7 +72,8 @@ git clone https://github.com/dvolk/ada2025
 cd ada2025
 sudo python3 -m venv env
 source env/bin/activate
-pip3 install -r requirements.txt
+sudo pip3 install -r requirements.txt
+sudo flask db upgrade
 pybabel compile -d translations
 ```
 
@@ -81,7 +82,7 @@ pybabel compile -d translations
 To run the web app:
 
 ```bash
-python3 app.py
+sudo python3 app.py
 ```
 
 Then, open your web browser and navigate to http://localhost:5000.
