@@ -44,9 +44,11 @@ The following technologies were used to build Ada2025:
 
 Follow these steps to get Ada2025 running on your machine:
 
-## Prerequisites
+## Web App
 
-### Web App Prerequisites
+### Standard deployment
+
+#### Prerequisites
 
 Before proceeding with the installation of the web application, ensure that you have the following prerequisites:
 
@@ -61,7 +63,7 @@ sudo apt -y install --no-install-recommends pkg-config build-essential libvirt-c
 
 Please note, these instructions are specifically for Ubuntu 23.04. If you are using a different operating system, please adjust the commands accordingly.
 
-## Web app setup
+#### Setup
 
 Clone the repository and install the required Python packages:
 
@@ -74,38 +76,9 @@ pip3 install -r requirements.txt
 pybabel compile -d translations
 ```
 
-## Optional Configuration
 
-You can also set the following optional environment variables to further configure Ada2025:
 
-```bash
-ADA2025_MAIL_SENDER # set to the email of the sender
-ADA2025_MAIL_SERVER # set to the mail server hostname
-ADA2025_MAIL_PORT # set to the mail server port
-ADA2025_MAIL_USERNAME # mail server username
-ADA2025_MAIL_PASSWORD # mail server password/app password
-ADA2025_MAIL_USE_TLS # True or False if you want to use TLS
-ADA2025_MAIL_USE_SSL # True or False if you want to use SSL
-ADA2025_SENTRY_DSN  # set to DSN to have sentry.io integration
-ADA2025_SENTRY_ENVIRONMENT  # sentry.io environment string (eg. "dev" or "prod")
-ADA2025_FLASK_SECRET_KEY  # set to string or one will be randomly generated
-ADA2025_SQLALCHEMY_URL  # set to database URL if you don't want SQLite
-LOGIN_RECAPTCHA  # set to 1 if you want reCaptcha on the login screen
-RECAPTCHA_SITE_KEY  # your reCaptcha v2 site key
-RECAPTCHA_SECRET_KEY  # your reCaptcha secret key
-GOOGLE_OAUTH2_CLIENT_ID  # your Google OAuth2 client ID
-GOOGLE_OAUTH2_CLIENT_SECRET  # your Google OAuth2 client secret
-ADA2025_IRIS_IAM_OAUTH2_CLIENT_ID  # your IRIS IAM OAuth2 client ID
-ADA2025_IRIS_IAM_OAUTH2_CLIENT_SECRET  # your IRIS IAM OAuth2 client secret
-```
-
-Apply database migrations:
-
-```
-flask db upgrade
-```
-
-## Running the Web App
+#### Running
 
 To run the web app:
 
@@ -117,7 +90,55 @@ Then, open your web browser and navigate to http://localhost:5000.
 
 The randomized admin password is printed on the console on first startup.
 
-### Docker and libvirt Prerequisites
+### Docker deployment (Alternative)
+
+As an alternative to manually installing Ada2025, you can use Docker and Docker Compose to simplify the process. This method is especially recommended if you are planning to deploy the application in a containerized environment.
+
+#### Prerequisites
+Before proceeding, ensure that you have installed:
+
+- Docker
+- Docker Compose
+
+please also see the sections above:
+
+- Docker setup (for docker-based machines)
+- libvirt setup (for libvirt-based machines)
+
+docker-compose.yml mounts the docker and libvirt sockets in the container, allowing you to launch docker and libvirt machines on the host. If you don't want this, comment it out in the file.
+
+#### Setup and running
+
+Clone the repository:
+
+```bash
+git clone https://github.com/dvolk/ada2025
+cd ada2025
+```
+
+Create the adanet network (skip this if you've done it above):
+
+```
+docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.1 adanet
+```
+
+Build and start the Docker containers:
+
+```bash
+docker-compose up -d --build
+```
+
+Your Ada2025 app should now be up and running at http://localhost:5000.
+
+The randomized admin password is printed on the console on first startup.
+
+Remember to stop the services once you're done:
+
+```bash
+docker-compose down
+```
+
+### Docker and libvirt machine prerequisites (relevant for both standard and docker web app deployment methods)
 
 *This is needed for running Ada machines on docker/libvirt, not for running the ada web app itself.*
 
@@ -147,7 +168,7 @@ sudo usermod -aG libvirt $USER
 
 Remember to log out and back in for these changes to take effect.
 
-## Docker setup (for docker-based machines)
+### Docker setup (for docker-based machines)
 
 *This is needed for running Ada machines on docker, not for running the ada web app itself.*
 
@@ -159,7 +180,7 @@ cd machines/docker_example
 docker build . -f Dockerfile -t workspace
 ```
 
-## libvirt setup (for libvirt-based machines)
+#### libvirt setup (for libvirt-based machines)
 
 *This is needed for running Ada machines on libvirt, not for running the ada web app itself.*
 
@@ -170,52 +191,35 @@ Follow these steps to prepare a libvirt virtual machine:
 3. SSH into the virtual machine and execute setup.bash.
 4. Shut down the virtual machine.
 
-# Docker Installation (Alternative)
+### Optional Configuration
 
-As an alternative to manually installing Ada2025, you can use Docker and Docker Compose to simplify the process. This method is especially recommended if you are planning to deploy the application in a containerized environment.
-
-## Prerequisites
-Before proceeding, ensure that you have installed:
-
-- Docker
-- Docker Compose
-
-please also see the sections above:
-
-- Docker setup (for docker-based machines)
-- libvirt setup (for libvirt-based machines)
-
-docker-compose.yml mounts the docker and libvirt sockets in the container, allowing you to launch docker and libvirt machines on the host. If you don't want this, comment it out in the file.
-
-## Steps
-
-Clone the repository:
+You can also set the following optional environment variables to further configure Ada2025:
 
 ```bash
-git clone https://github.com/dvolk/ada2025
-cd ada2025
+ADA2025_MAIL_SENDER # set to the email of the sender
+ADA2025_MAIL_SERVER # set to the mail server hostname
+ADA2025_MAIL_PORT # set to the mail server port
+ADA2025_MAIL_USERNAME # mail server username
+ADA2025_MAIL_PASSWORD # mail server password/app password
+ADA2025_MAIL_USE_TLS # True or False if you want to use TLS
+ADA2025_MAIL_USE_SSL # True or False if you want to use SSL
+ADA2025_SENTRY_DSN  # set to DSN to have sentry.io integration
+ADA2025_SENTRY_ENVIRONMENT  # sentry.io environment string (eg. "dev" or "prod")
+ADA2025_FLASK_SECRET_KEY  # set to string or one will be randomly generated
+ADA2025_SQLALCHEMY_URL  # set to database URL if you don't want SQLite
+LOGIN_RECAPTCHA  # set to 1 if you want reCaptcha on the login screen
+RECAPTCHA_SITE_KEY  # your reCaptcha v2 site key
+RECAPTCHA_SECRET_KEY  # your reCaptcha secret key
+GOOGLE_OAUTH2_CLIENT_ID  # your Google OAuth2 client ID
+GOOGLE_OAUTH2_CLIENT_SECRET  # your Google OAuth2 client secret
+ADA2025_IRIS_IAM_OAUTH2_CLIENT_ID  # your IRIS IAM OAuth2 client ID
+ADA2025_IRIS_IAM_OAUTH2_CLIENT_SECRET  # your IRIS IAM OAuth2 client secret
 ```
 
-Create the adanet network (skip this if you've done it above):
+Apply database migrations:
 
 ```
-docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.1 adanet
-```
-
-Build and start the Docker containers:
-
-```bash
-docker-compose up -d --build
-```
-
-Your Ada2025 app should now be up and running at http://localhost:5000.
-
-The randomized admin password is printed on the console on first startup.
-
-Remember to stop the services once you're done:
-
-```bash
-docker-compose down
+flask db upgrade
 ```
 
 ## Additional Guides
