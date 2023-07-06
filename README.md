@@ -216,9 +216,9 @@ Remember to log out and back in for these changes to take effect.
 Create a Docker bridge network and build the example Docker desktop container:
 
 ```bash
-docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.1 adanet
+sudo docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.1 adanet
 cd machines/docker_example
-docker build . -f Dockerfile -t workspace
+sudo docker build . -f Dockerfile -t workspace
 ```
 
 ### Libvirt setup (for libvirt-based machines)
