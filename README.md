@@ -104,13 +104,6 @@ Before proceeding, ensure that you have installed:
 sudo apt install docker.io docker-compose
 ```
 
-please also see the sections below:
-
-- Docker setup (for docker-based machines)
-- libvirt setup (for libvirt-based machines)
-
-docker-compose.yml mounts the docker and libvirt sockets in the container, allowing you to launch docker and libvirt machines on the host. If you don't want this, comment it out in the file.
-
 #### Setup and running
 
 Clone the repository:
@@ -125,6 +118,8 @@ Create the adanet network (skip this if you've done it above):
 ```
 docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.1 adanet
 ```
+
+Note that docker-compose.yml will mount the docker and libvirt sockets in the container, allowing you to launch docker and libvirt machines on the host. If you don't want this, comment it out in the file.
 
 Build and start the Docker containers:
 
