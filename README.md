@@ -70,7 +70,7 @@ Clone the repository and install the required Python packages:
 ```bash
 git clone https://github.com/dvolk/ada2025
 cd ada2025
-python3 -m venv env
+sudo python3 -m venv env
 source env/bin/activate
 pip3 install -r requirements.txt
 pybabel compile -d translations
@@ -115,19 +115,23 @@ cd ada2025
 
 Create the adanet network (skip this if you've done it above):
 
-```
-docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.1 adanet
+```bash
+sudo docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.1 adanet
 ```
 
 Build and start the Docker containers:
 
 ```bash
-docker-compose up -d --build # note that docker-compose.yml will mount the docker and libvirt sockets in the container, allowing you to launch docker and libvirt machines on the host. If you don't want this, comment it out in the file.
+sudo docker-compose up -d --build # note that docker-compose.yml will mount the docker and libvirt sockets in the container, allowing you to launch docker and libvirt machines on the host. If you don't want this, comment it out in the file.
 ```
 
 Your Ada2025 app should now be up and running at http://localhost:5000.
 
-The randomized admin password is printed on the console on first startup.
+The randomized admin password is printed on the console on first startup. Note that when using docker-compose you may need to run the following command in order to view this information:
+
+```bash
+sudo docker-compose logs app
+```
 
 Remember to stop the services once you're done:
 
