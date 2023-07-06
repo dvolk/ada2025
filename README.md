@@ -48,7 +48,7 @@ Follow these steps to get Ada2025 running on your machine:
 
 ### Standard deployment
 
-#### Prerequisites
+### Prerequisites
 
 Before proceeding with the installation of the web application, ensure that you have the following prerequisites:
 
@@ -102,6 +102,12 @@ This can be done using the following command:
 
 ```bash
 sudo apt -y install docker.io docker-compose
+```
+
+You also need to install `libvirt-daemon-system` using:
+
+```bash
+sudo apt -y install libvirt-daemon-system
 ```
 
 #### Setup and running
