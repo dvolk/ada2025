@@ -46,7 +46,7 @@ Follow these steps to get Ada2025 running on your machine:
 
 ## Web App
 
-### Standard Deployment
+### Standard deployment
 
 #### Prerequisites
 
@@ -88,7 +88,7 @@ Then, open your web browser and navigate to http://localhost:5000.
 
 The randomized admin password is printed on the console on first startup.
 
-### Docker Deployment (Alternative)
+### Docker deployment (alternative)
 
 As an alternative to manually installing Ada2025, you can use Docker and Docker Compose to simplify the process. This method is especially recommended if you are planning to deploy the application in a containerized environment.
 
@@ -102,7 +102,7 @@ Before proceeding, ensure that you have installed:
 sudo apt install docker.io docker-compose
 ```
 
-#### Setup and Running
+#### Setup and running
 
 Clone the repository:
 
@@ -133,7 +133,7 @@ Remember to stop the services once you're done:
 docker-compose down
 ```
 
-### Optional Configuration
+### Optional configuration
 
 You can also set the following optional environment variables to further configure Ada2025:
 
@@ -164,7 +164,7 @@ Apply database migrations:
 flask db upgrade
 ```
 
-## Enabling docker and libvirt machines 
+## Enabling Docker and Libvirt Machines 
 **__This section is relevant for both standard AND docker web app deployment methods.__**
 
 ### Prerequisites
