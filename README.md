@@ -189,7 +189,7 @@ For Docker and libvirt setup, ensure that Docker and libvirt are installed on yo
 
   ```bash
   sudo apt update
-  sudo apt -y nstall docker.io
+  sudo apt -y install docker.io
   ```
 
   For detailed instructions, follow the official [Docker installation guide](https://docs.docker.com/get-docker/).
