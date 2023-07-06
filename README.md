@@ -122,7 +122,7 @@ docker network create --driver bridge --subnet=10.10.10.0/24 --gateway=10.10.10.
 Build and start the Docker containers:
 
 ```bash
-docker-compose up -d --build # Note that docker-compose.yml will mount the docker and libvirt sockets in the container, allowing you to launch docker and libvirt machines on the host. If you don't want this, comment it out in the file.
+docker-compose up -d --build # note that docker-compose.yml will mount the docker and libvirt sockets in the container, allowing you to launch docker and libvirt machines on the host. If you don't want this, comment it out in the file.
 ```
 
 Your Ada2025 app should now be up and running at http://localhost:5000.
