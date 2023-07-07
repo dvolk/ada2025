@@ -2400,7 +2400,6 @@ def login():
     # POST path
     if request.method == "POST":
         audit = create_audit("login")
-
         if LOGIN_RECAPTCHA:
             if not recaptcha.verify():
                 finish_audit(audit, "recaptcha failed")
