@@ -2456,7 +2456,13 @@ def login():
                 user.sesh_id = gen_token(2)
                 login_user(user)
                 finish_audit(audit, "ok", user=user)
-                return redirect(url_for("index"))
+                next_url = request.form.get("next")
+                logging.info(next_url)
+                if next_url == "None":
+                    next_url = "index"
+                else:
+                    next_url = next_url[1:]
+                return redirect(url_for(next_url))
             else:
                 finish_audit(audit, "bad password")
                 flash(gettext("Invalid username or password."), "danger")
