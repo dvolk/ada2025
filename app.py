@@ -1337,6 +1337,20 @@ class Machine(db.Model):
     def __repr__(self):
         return f"<{self.display_name}>"
 
+    def make_url(self):
+        prefix = "http://"
+        mt = self.machine_template
+        ed = mt.extra_data
+        if ed.get("has_https"):
+            prefix = "https://"
+        if self.hostname:
+            return prefix + self.hostname
+        else:
+            return prefix + self.ip
+
+    def make_access_url(self):
+        return self.make_url() + "/" + self.access_token
+
 
 class ProtectedMachineModelView(ProtectedModelView):
     column_list = (
@@ -1348,6 +1362,7 @@ class ProtectedMachineModelView(ProtectedModelView):
         "creation_date",
         "owner",
         "machine_template",
+        "screenshot",
     )
     form_columns = (
         "name",
@@ -1377,10 +1392,20 @@ class ProtectedMachineModelView(ProtectedModelView):
     )
     column_filters = ("state", "owner", "machine_template")
     column_auto_select_related = True
+
+    def _list_thumbnail(view, context, model, name):
+        if not model.state == MachineState.READY:
+            return ""
+
+        return Markup(
+            f'<a target="_blank" href="{model.make_access_url()}"><img style="max-height: 50px;" src="{model.make_url()}/screenshots/screenshot-thumb.png"></a>'
+        )
+
     column_formatters = {
         "owner": _color_formatter,
         "state": _color_formatter,
         "machine_template": _color_formatter,
+        "screenshot": _list_thumbnail,
     }
 
     @action(
@@ -1802,6 +1827,8 @@ def inject_globals():
         "hostname": hostname,
         "LOGIN_RECAPTCHA": LOGIN_RECAPTCHA,
         "switch_group_form": switch_group_form,
+        "Machine": Machine,
+        "MachineState": MachineState,
     }
 
 
