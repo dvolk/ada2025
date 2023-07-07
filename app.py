@@ -2125,7 +2125,12 @@ def google_authorize():
             ),
             "danger",
         )
-        return redirect(url_for("login"))
+
+        resp = make_response(redirect(url_for("login")))
+        # prevents a loop where the user cannot login due to a nonexistent page being in the "next" cookie
+        resp.set_cookie("next","index")
+
+        return resp
 
 
 @app.route("/iris_iam_authorize")
@@ -2192,7 +2197,12 @@ def iris_iam_authorize():
             ),
             "danger",
         )
-        return redirect(url_for("login"))
+        
+        resp = make_response(redirect(url_for("login")))
+        # prevents a loop where the user cannot login due to a nonexistent page being in the "next" cookie
+        resp.set_cookie("next","index")
+
+        return resp
 
 
 @app.route("/impersonate/<user_id>")
