@@ -35,17 +35,19 @@
 {% endblock %}
 
 {% block body %}
-  {{ super() }}
-  <h1 class="w3-center">Ada 2025 flask-admin interface</h1>
-  <p class="w3-center">Use the menu above to access the Ada database</p>
-  <h2 class="w3-center">Machine gallery</h2>
-  <div style="margin-top: 1em;" class="row-fluid">
-    <div class="masonry">
-      {% for m in Machine.query.filter_by(state=MachineState.READY).all() %}
-        <a target="_blank" href="{{ m.make_access_url() }}">
-          <img src="{{ m.make_url() + '/screenshots/screenshot-thumb.png' }}">
-        </a>
-      {% endfor %}
+  {% if current_user.is_authenticated and current_user.is_admin %}
+    {{ super() }}
+    <h1 class="w3-center">Ada 2025 flask-admin interface</h1>
+    <p class="w3-center">Use the menu above to access the Ada database</p>
+    <h2 class="w3-center">Machine gallery</h2>
+    <div style="margin-top: 1em;" class="row-fluid">
+      <div class="masonry">
+        {% for m in Machine.query.filter_by(state=MachineState.READY).all() %}
+          <a target="_blank" href="{{ m.make_access_url() }}">
+            <img src="{{ m.make_url() + '/screenshots/screenshot-thumb.png' }}">
+          </a>
+        {% endfor %}
+      </div>
     </div>
-  </div>
+  {% endif %}
 {% endblock body %}
