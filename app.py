@@ -2387,6 +2387,11 @@ def login():
     # POST path
     if request.method == "POST":
         audit = create_audit("login")
+        next_url = request.form.get("next")
+        if next_url == "None":
+            next_url = "index"
+        else:
+            next_url = next_url[1:]
         if LOGIN_RECAPTCHA:
             if not recaptcha.verify():
                 finish_audit(audit, "recaptcha failed")
@@ -2456,12 +2461,6 @@ def login():
                 user.sesh_id = gen_token(2)
                 login_user(user)
                 finish_audit(audit, "ok", user=user)
-                next_url = request.form.get("next")
-                logging.info(next_url)
-                if next_url == "None":
-                    next_url = "index"
-                else:
-                    next_url = next_url[1:]
                 return redirect(url_for(next_url))
             else:
                 finish_audit(audit, "bad password")
