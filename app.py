@@ -30,6 +30,7 @@ from flask import (
     request,
     abort,
     has_request_context,
+    make_response
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
@@ -2111,7 +2112,8 @@ def google_authorize():
         login_user(user)
         finish_audit(audit, "ok")
 
-        return redirect(url_for("welcome"))
+        next_uri = request.cookies.get("next")
+        return redirect(url_for(next_uri))
 
     except Exception as e:
         finish_audit(audit, "error")
@@ -2177,7 +2179,8 @@ def iris_iam_authorize():
         login_user(user)
         finish_audit(audit, "ok")
 
-        return redirect(url_for("welcome"))
+        next_uri = request.cookies.get("next")
+        return redirect(url_for(next_uri))
 
     except Exception as e:
         finish_audit(audit, "error")
@@ -2387,11 +2390,7 @@ def login():
     # POST path
     if request.method == "POST":
         audit = create_audit("login")
-        next_url = request.form.get("next")
-        if next_url == "None":
-            next_url = "index"
-        else:
-            next_url = next_url[1:]
+
         if LOGIN_RECAPTCHA:
             if not recaptcha.verify():
                 finish_audit(audit, "recaptcha failed")
@@ -2461,6 +2460,7 @@ def login():
                 user.sesh_id = gen_token(2)
                 login_user(user)
                 finish_audit(audit, "ok", user=user)
+                next_url = request.cookies.get("next")
                 return redirect(url_for(next_url))
             else:
                 finish_audit(audit, "bad password")
@@ -2472,7 +2472,13 @@ def login():
             flash(gettext("Invalid username or password."), "danger")
 
     # GET path
-    return render_template(
+    next_url = request.args.get('next')
+    if next_url == None:
+        next_url = "index"
+    else:
+        next_url = next_url[1:]
+    
+    resp = make_response(render_template(
         "login.jinja2",
         title=gettext("Login"),
         form=form,
@@ -2480,6 +2486,9 @@ def login():
         show_iris_iam_button=show_iris_iam_button,
         show_stfc_logo=True,
     )
+    )
+    resp.set_cookie('next', next_url)
+    return resp
 
 
 class RegistrationForm(FlaskForm):
@@ -3083,7 +3092,10 @@ def rename_machine():
 @profile_complete_required
 def admin():
     if not current_user.is_admin:
-        return redirect(url_for("login"))
+        resp = make_response(redirect(url_for("login")))
+        # prevents a loop where the user cannot login due to "admin" being in the "next" cookie when they are not an admin
+        resp.set_cookie("next","index")
+        return resp
 
     return render_template(
         "admin.jinja2",
