@@ -102,6 +102,7 @@ Before proceeding, ensure that you have installed:
 This can be done using the following command:
 
 ```bash
+sudo apt update
 sudo apt -y install docker.io docker-compose
 ```
 
