@@ -2484,10 +2484,12 @@ def login():
                 user.sesh_id = gen_token(2)
                 login_user(user)
                 share_accept_token = session.get('share_accept_token')
-                if share_accept_token == None:
-                    resp = redirect(url_for("index"))
-                else:
-                    resp = redirect(url_for("share_accept", machine_share_token=share_accept_token))
+                resp = redirect(url_for("index"))
+                if share_accept_token != None:
+                    try:
+                        resp = redirect(url_for("share_accept", machine_share_token=share_accept_token))
+                    except:
+                        resp = redirect(url_for("index"))
                     session.pop('share_accept_token')
                 finish_audit(audit, "ok", user=user)
                 return resp
