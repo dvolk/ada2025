@@ -30,6 +30,7 @@ from flask import (
     request,
     abort,
     has_request_context,
+    session
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
@@ -2138,7 +2139,7 @@ def google_authorize():
         login_user(user)
         finish_audit(audit, "ok")
 
-        return redirect(url_for("welcome"))
+        return determine_redirect(session.get('share_accept_token'))
 
     except Exception as e:
         finish_audit(audit, "error")
@@ -2204,7 +2205,7 @@ def iris_iam_authorize():
         login_user(user)
         finish_audit(audit, "ok")
 
-        return redirect(url_for("welcome"))
+        return determine_redirect(session.get('share_accept_token'))
 
     except Exception as e:
         finish_audit(audit, "error")
@@ -2482,8 +2483,9 @@ def login():
                 # log user in
                 user.sesh_id = gen_token(2)
                 login_user(user)
+                resp = determine_redirect(session.get('share_accept_token'))
                 finish_audit(audit, "ok", user=user)
-                return redirect(url_for("index"))
+                return resp
             else:
                 finish_audit(audit, "bad password")
                 flash(gettext("Invalid username or password."), "danger")
@@ -2494,6 +2496,11 @@ def login():
             flash(gettext("Invalid username or password."), "danger")
 
     # GET path
+    next_url = request.args.get('next')
+    if is_next_uri_share_accept(next_url):
+        res = re.search(r"[A-Za-z0-9]{16}$", next_url)
+        session['share_accept_token'] = res.group(0)
+
     return render_template(
         "login.jinja2",
         title=gettext("Login"),
@@ -4975,6 +4982,30 @@ def clean_up_db():
                 # Could also restart?
         db.session.commit()
 
+def is_next_uri_share_accept(endpoint):
+    is_share_accept_link = False
+    if endpoint == None:
+        pass
+    elif len(re.findall(r"^share_accept/[A-Za-z0-9]{16}$",endpoint[1:])) == 1:
+        is_share_accept_link = True
+    return is_share_accept_link
+
+def determine_redirect(share_accept_token_in_session):
+    """
+    determines where a user should be redirected to upon login based on if there is a share token in the URL
+
+    if there is then we use the share token to add the machine to their list of machines
+
+    otherwise, just send them to the welcome page
+    """
+    resp = redirect(url_for("welcome"))
+    if share_accept_token_in_session != None:
+        try:
+            resp = redirect(url_for("share_accept", machine_share_token=share_accept_token_in_session))
+        except:
+            pass
+        session.pop('share_accept_token')
+    return resp
 
 def main(debug=False):
     with app.app_context():
