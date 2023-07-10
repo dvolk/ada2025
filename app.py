@@ -4976,12 +4976,12 @@ def clean_up_db():
 
 def construct_url(endpoint):
     is_share_accept_link = False
-    endpoint_split = endpoint.split("/")
-    if endpoint != None and endpoint_split[0] == "share_accept":
+    num_instances_share_accept = len(re.findall(r"^share_accept/.*",endpoint))
+    if num_instances_share_accept == 1:
         is_share_accept_link = True
 
     if is_share_accept_link:
-        share_token = endpoint_split[1]
+        share_token = endpoint.split("/")[1]
         url = "share_accept/" + share_token
     else:
         try: url = url_for(endpoint)
