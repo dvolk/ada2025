@@ -4985,7 +4985,7 @@ def is_next_uri_share_accept(endpoint):
     is_share_accept_link = False
     if endpoint == None:
         pass
-    elif len(re.findall(r"^share_accept/.*",endpoint[1:])) == 1:
+    elif len(re.findall(r"^share_accept/[A-Za-z0-9]{16}$",endpoint[1:])) == 1:
         is_share_accept_link = True
     return is_share_accept_link
 
