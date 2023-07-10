@@ -2139,7 +2139,7 @@ def google_authorize():
         login_user(user)
         finish_audit(audit, "ok")
 
-        return redirect(url_for("welcome"))
+        return determine_redirect(session.get('share_accept_token'))
 
     except Exception as e:
         finish_audit(audit, "error")
@@ -2205,7 +2205,7 @@ def iris_iam_authorize():
         login_user(user)
         finish_audit(audit, "ok")
 
-        return redirect(url_for("welcome"))
+        return determine_redirect(session.get('share_accept_token'))
 
     except Exception as e:
         finish_audit(audit, "error")
@@ -4988,6 +4988,13 @@ def is_next_uri_share_accept(endpoint):
     return is_share_accept_link
 
 def determine_redirect(share_accept_token):
+    """
+    determines where a user should be redirected to upon login based on if there is a share token in the URL
+
+    if there is then we use the share token to add the machine to their list of machines
+
+    otherwise, just send them to the welcome page
+    """
     resp = redirect(url_for("index"))
     if share_accept_token != None:
         try:
