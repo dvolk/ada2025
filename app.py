@@ -2497,7 +2497,7 @@ def login():
 
     # GET path
     next_url = request.args.get('next')
-    if next_url != None and is_next_uri_share_accept(next_url):
+    if is_next_uri_share_accept(next_url):
         session['share_accept_token'] = next_url.split("/")[2]
 
     return render_template(
@@ -4982,7 +4982,9 @@ def clean_up_db():
         db.session.commit()
 
 def is_next_uri_share_accept(endpoint):
-    is_share_accept_link = False 
+    is_share_accept_link = False
+    if endpoint == None:
+        return is_share_accept_link
     if len(re.findall(r"^share_accept/.*",endpoint[1:])) == 1:
         is_share_accept_link = True
     return is_share_accept_link
