@@ -4984,8 +4984,8 @@ def clean_up_db():
 def is_next_uri_share_accept(endpoint):
     is_share_accept_link = False
     if endpoint == None:
-        return is_share_accept_link
-    if len(re.findall(r"^share_accept/.*",endpoint[1:])) == 1:
+        pass
+    elif len(re.findall(r"^share_accept/.*",endpoint[1:])) == 1:
         is_share_accept_link = True
     return is_share_accept_link
 
