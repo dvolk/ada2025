@@ -2498,7 +2498,8 @@ def login():
     # GET path
     next_url = request.args.get('next')
     if is_next_uri_share_accept(next_url):
-        session['share_accept_token'] = next_url.split("/")[2]
+        res = re.search(r"[A-Za-z0-9]{16}$", next_url)
+        session['share_accept_token'] = res.group(0)
 
     return render_template(
         "login.jinja2",
