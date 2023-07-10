@@ -4990,7 +4990,7 @@ def is_next_uri_share_accept(endpoint):
         is_share_accept_link = True
     return is_share_accept_link
 
-def determine_redirect(share_accept_token):
+def determine_redirect(share_accept_token_in_session):
     """
     determines where a user should be redirected to upon login based on if there is a share token in the URL
 
@@ -4999,9 +4999,9 @@ def determine_redirect(share_accept_token):
     otherwise, just send them to the welcome page
     """
     resp = redirect(url_for("welcome"))
-    if share_accept_token != None:
+    if share_accept_token_in_session != None:
         try:
-            resp = redirect(url_for("share_accept", machine_share_token=share_accept_token))
+            resp = redirect(url_for("share_accept", machine_share_token=share_accept_token_in_session))
         except:
             pass
         session.pop('share_accept_token')
