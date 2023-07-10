@@ -2483,14 +2483,7 @@ def login():
                 # log user in
                 user.sesh_id = gen_token(2)
                 login_user(user)
-                share_accept_token = session.get('share_accept_token')
-                resp = redirect(url_for("index"))
-                if share_accept_token != None:
-                    try:
-                        resp = redirect(url_for("share_accept", machine_share_token=share_accept_token))
-                    except:
-                        resp = redirect(url_for("index"))
-                    session.pop('share_accept_token')
+                resp = determine_redirect(session.get('share_accept_token'))
                 finish_audit(audit, "ok", user=user)
                 return resp
             else:
@@ -2503,9 +2496,9 @@ def login():
             flash(gettext("Invalid username or password."), "danger")
 
     # GET path
-    next_url = request.args.get('next')[1:]
+    next_url = request.args.get('next')
     if next_url != None and is_next_uri_share_accept(next_url):
-        session['share_accept_token'] = next_url.split("/")[1]
+        session['share_accept_token'] = next_url.split("/")[2]
 
     return render_template(
         "login.jinja2",
@@ -4990,9 +4983,19 @@ def clean_up_db():
 
 def is_next_uri_share_accept(endpoint):
     is_share_accept_link = False 
-    if len(re.findall(r"^share_accept/.*",endpoint)) == 1:
+    if len(re.findall(r"^share_accept/.*",endpoint[1:])) == 1:
         is_share_accept_link = True
     return is_share_accept_link
+
+def determine_redirect(share_accept_token):
+    resp = redirect(url_for("index"))
+    if share_accept_token != None:
+        try:
+            resp = redirect(url_for("share_accept", machine_share_token=share_accept_token))
+        except:
+            resp = redirect(url_for("index"))
+        session.pop('share_accept_token')
+    return resp
 
 def main(debug=False):
     with app.app_context():
