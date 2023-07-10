@@ -30,6 +30,7 @@ from flask import (
     request,
     abort,
     has_request_context,
+    session
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
@@ -2482,8 +2483,14 @@ def login():
                 # log user in
                 user.sesh_id = gen_token(2)
                 login_user(user)
+                share_accept_token = session.get('share_accept_token')
+                if share_accept_token == None:
+                    resp = redirect(url_for("index"))
+                else:
+                    resp = redirect(url_for("share_accept", machine_share_token=share_accept_token))
+                    session.pop('share_accept_token')
                 finish_audit(audit, "ok", user=user)
-                return redirect(url_for("index"))
+                return resp
             else:
                 finish_audit(audit, "bad password")
                 flash(gettext("Invalid username or password."), "danger")
@@ -2494,6 +2501,10 @@ def login():
             flash(gettext("Invalid username or password."), "danger")
 
     # GET path
+    next_url = request.args.get('next')[1:]
+    if next_url != None and is_next_uri_share_accept(next_url):
+        session['share_accept_token'] = next_url.split("/")[1]
+
     return render_template(
         "login.jinja2",
         title=gettext("Login"),
@@ -4975,6 +4986,11 @@ def clean_up_db():
                 # Could also restart?
         db.session.commit()
 
+def is_next_uri_share_accept(endpoint):
+    is_share_accept_link = False 
+    if len(re.findall(r"^share_accept/.*",endpoint)) == 1:
+        is_share_accept_link = True
+    return is_share_accept_link
 
 def main(debug=False):
     with app.app_context():
