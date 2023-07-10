@@ -4984,8 +4984,8 @@ def construct_url(endpoint):
         share_token = endpoint_split[1]
         url = "share_accept/" + share_token
     else:
-        url = url_for(endpoint)
-
+        try: url = url_for(endpoint)
+        except: url = url_for("index")
     return url
 
 def main(debug=False):
