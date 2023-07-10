@@ -2113,7 +2113,7 @@ def google_authorize():
         finish_audit(audit, "ok")
 
         next_uri = request.cookies.get("next")
-        return redirect(url_for(next_uri))
+        return redirect(construct_url(next_uri))
 
     except Exception as e:
         finish_audit(audit, "error")
@@ -2185,7 +2185,7 @@ def iris_iam_authorize():
         finish_audit(audit, "ok")
 
         next_uri = request.cookies.get("next")
-        return redirect(url_for(next_uri))
+        return redirect(construct_url(next_uri))
 
     except Exception as e:
         finish_audit(audit, "error")
@@ -2470,7 +2470,7 @@ def login():
                 login_user(user)
                 finish_audit(audit, "ok", user=user)
                 next_url = request.cookies.get("next")
-                return redirect(url_for(next_url))
+                return redirect(construct_url(next_url))
             else:
                 finish_audit(audit, "bad password")
                 flash(gettext("Invalid username or password."), "danger")
@@ -4974,6 +4974,18 @@ def clean_up_db():
                 # Could also restart?
         db.session.commit()
 
+def construct_url(endpoint):
+    is_share_accept_link = False
+    if endpoint != None and "share_accept" in endpoint:
+        is_share_accept_link = True
+
+    if is_share_accept_link:
+        share_token = endpoint.split("/")[1]
+        url = "share_accept/" + share_token
+    else:
+        url = url_for(endpoint)
+
+    return url
 
 def main(debug=False):
     with app.app_context():
