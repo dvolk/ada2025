@@ -4993,7 +4993,7 @@ def determine_redirect(share_accept_token):
         try:
             resp = redirect(url_for("share_accept", machine_share_token=share_accept_token))
         except:
-            resp = redirect(url_for("index"))
+            resp = redirect(url_for("welcome"))
         session.pop('share_accept_token')
     return resp
 
