@@ -4997,12 +4997,12 @@ def determine_redirect(share_accept_token):
 
     otherwise, just send them to the welcome page
     """
-    resp = redirect(url_for("index"))
+    resp = redirect(url_for("welcome"))
     if share_accept_token != None:
         try:
             resp = redirect(url_for("share_accept", machine_share_token=share_accept_token))
         except:
-            resp = redirect(url_for("welcome"))
+            pass
         session.pop('share_accept_token')
     return resp
 
