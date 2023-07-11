@@ -184,7 +184,7 @@
                     </form>
                   {% endif %}
 
-                  {% if machine.owner == current_user and machine.state !=  MachineState.PROVISIONING %}
+                  {% if machine.owner == current_user and machine.state in [MachineState.READY, MachineState.FAILED] %}
                     <button
                        onclick='confirm_deletion({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
                        class="w3-button w3-red w3-round"
@@ -196,7 +196,7 @@
                     </form>
                   {% endif %}
 
-                  {% if machine.owner == current_user and machine.state ==  MachineState.PROVISIONING %}
+                  {% if machine.owner == current_user and machine.state not in [MachineState.READY, MachineState.FAILED] %}
                     <button
                        class="w3-button w3-red w3-round"
                        title='{{ gettext("Stop and remove machine") }}' disabled>
