@@ -3787,7 +3787,7 @@ def stop_machine2(machine_id, audit_id=None):
 
 
 @app.route("/unshare_machine_from_self", methods=["POST"])
-@limiter.limit("100 per day, 10 per minute, 1/3 seconds")
+@limiter.limit("60 per minute")
 @login_required
 @profile_complete_required
 def unshare_machine_from_self():
