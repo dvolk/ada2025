@@ -3713,13 +3713,12 @@ def stop_machine():
 
     # sanity checks
     audit = create_audit("stop machine", user=current_user)
-    machine_id = request.form.get("machine_id")
-    machine, audit = get_machine_from_id(machine_id, audit)
+    machine, audit = get_machine_from_id(request.form.get("machine_id"), audit)
 
     if not current_user.is_admin and not current_user == machine.owner:
         finish_audit(audit, "bad user")
         logging.warning(
-            f"user {current_user.id} is not the owner of machine {machine_id} nor admin"
+            f"user {current_user.id} is not the owner of machine {machine.id} nor admin"
         )
         abort(403)
     if machine.state in [
@@ -3728,7 +3727,7 @@ def stop_machine():
         MachineState.DELETING,
     ]:
         logging.warning(
-            f"machine {machine_id} is not in correct state for deletion: {machine.state}"
+            f"machine {machine.id} is not in correct state for deletion: {machine.state}"
         )
 
     # let's go
@@ -3774,14 +3773,13 @@ def stop_machine2(machine_id, audit_id=None):
 @profile_complete_required
 def unshare_machine_from_self():
     # sanity checks
-    audit = create_audit("stop machine", user=current_user)
-    machine_id = request.form.get("machine_id")
-    machine, audit = get_machine_from_id(machine_id, audit)
+    audit = create_audit("stop machine", user=current_user) 
+    machine, audit = get_machine_from_id(request.form.get("machine_id"), audit)
 
     if current_user == machine.owner:
         finish_audit(audit, "bad user")
         logging.warning(
-            f"user {current_user.id} is the owner of machine {machine_id}."
+            f"user {current_user.id} is the owner of machine {machine.id}."
         )
         abort(403)
 
