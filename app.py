@@ -3712,7 +3712,7 @@ def stop_machine():
     """
 
     # sanity checks
-    audit = create_audit("unshare machine from self", user=current_user) 
+    audit = create_audit("stop machine", user=current_user) 
     machine_id = request.form.get("machine_id")
 
     if not machine_id:
