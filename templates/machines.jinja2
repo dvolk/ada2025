@@ -196,6 +196,18 @@
                     </form>
                   {% endif %}
 
+                  {% if machine.owner != current_user %}
+                    <button
+                      onclick='confirm_unshare_from_self({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
+                       class="w3-button w3-red w3-round"
+                       title='{{ gettext("Remove machine from list of accessible machines.") }}'>
+                       {{ icon('trash') }}
+                    </button>
+                    <form style="display: inline" id="removal-form-{{ machine.id }}" action="/unshare_machine_from_self" method="POST">
+                      <input type="hidden" name="machine_id" value="{{ machine.id }}">
+                    </form>
+                  {% endif %}
+
                 </div>
               </div>
               <div class="w3-row">
@@ -257,6 +269,14 @@
         document.getElementById('stop-form-'+machine_id).submit();
       } else {
         alert('Machine will not be deleted.');
+      }
+    }
+
+    function confirm_unshare_from_self(machine_display_name, machine_id) {
+      if (confirm('You have selected to remove machine titled ' + machine_display_name + ' from your list of accessible machines (note that this will not remove other users\' access to the machine as you do not own the it). You will need a valid share link in order to access it again. Is this ok?')){
+        document.getElementById('removal-form-'+machine_id).submit();
+      } else {
+        alert('Machine will not be removed from your list of accessible machines.');
       }
     }
 
