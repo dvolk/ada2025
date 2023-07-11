@@ -173,7 +173,7 @@
                     </form>
                   {% endif %}
                   {% if machine.owner == current_user and machine.state == MachineState.READY and machine.machine_template.extra_data.get("can_shutdown", False) %}
-                    <button 
+                    <button
                        onclick='confirm_shutdown({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
                        class="w3-button w3-orange w3-round"
                        title='{{ gettext("Shut down machine") }}'>
@@ -203,18 +203,18 @@
                        {{ icon('trash') }}
                     </button>
                   {% endif %}
-                  
+
                   {% if machine.owner != current_user %}
                     <button
                       onclick='confirm_unshare_from_self({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
-                       class="w3-button w3-red w3-round"
+                       class="w3-button w3-light-gray w3-round"
                        title='{{ gettext("Remove machine from list of accessible machines.") }}'>
-                       {{ icon('trash') }}
+                       {{ icon('minus') }}
                     </button>
                     <form style="display: inline" id="removal-form-{{ machine.id }}" action="/unshare_machine_from_self" method="POST">
                       <input type="hidden" name="machine_id" value="{{ machine.id }}">
                     </form>
-                  {% endif %}                  
+                  {% endif %}
 
                 </div>
               </div>
