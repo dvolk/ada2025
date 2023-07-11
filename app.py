@@ -30,7 +30,7 @@ from flask import (
     request,
     abort,
     has_request_context,
-    session
+    session,
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
@@ -2139,7 +2139,7 @@ def google_authorize():
         login_user(user)
         finish_audit(audit, "ok")
 
-        return determine_redirect(session.get('share_accept_token'))
+        return determine_redirect(session.get("share_accept_token"))
 
     except Exception as e:
         finish_audit(audit, "error")
@@ -2205,7 +2205,7 @@ def iris_iam_authorize():
         login_user(user)
         finish_audit(audit, "ok")
 
-        return determine_redirect(session.get('share_accept_token'))
+        return determine_redirect(session.get("share_accept_token"))
 
     except Exception as e:
         finish_audit(audit, "error")
@@ -2483,7 +2483,7 @@ def login():
                 # log user in
                 user.sesh_id = gen_token(2)
                 login_user(user)
-                resp = determine_redirect(session.get('share_accept_token'))
+                resp = determine_redirect(session.get("share_accept_token"))
                 finish_audit(audit, "ok", user=user)
                 return resp
             else:
@@ -2496,10 +2496,10 @@ def login():
             flash(gettext("Invalid username or password."), "danger")
 
     # GET path
-    next_url = request.args.get('next')
+    next_url = request.args.get("next")
     if is_next_uri_share_accept(next_url):
         res = re.search(r"[A-Za-z0-9]{16}$", next_url)
-        session['share_accept_token'] = res.group(0)
+        session["share_accept_token"] = res.group(0)
 
     return render_template(
         "login.jinja2",
@@ -2675,11 +2675,11 @@ def register():
 
             flash(f"Sorry, the form could not be validated:<br/> {error_msg}", "danger")
             return render_template(
-                    "register.jinja2",
-                    form=form,
-                    title=gettext("Register account"),
-                    show_stfc_logo=True,
-                )
+                "register.jinja2",
+                form=form,
+                title=gettext("Register account"),
+                show_stfc_logo=True,
+            )
 
     return render_template(
         "register.jinja2",
@@ -3712,7 +3712,7 @@ def stop_machine():
     """
 
     # sanity checks
-    audit = create_audit("stop machine", user=current_user) 
+    audit = create_audit("stop machine", user=current_user)
     machine_id = request.form.get("machine_id")
 
     if not machine_id:
@@ -3792,7 +3792,7 @@ def stop_machine2(machine_id, audit_id=None):
 @profile_complete_required
 def unshare_machine_from_self():
     # sanity checks
-    audit = create_audit("unshare machine from self", user=current_user) 
+    audit = create_audit("unshare machine from self", user=current_user)
     machine_id = request.form.get("machine_id")
 
     if not machine_id:
@@ -3820,9 +3820,11 @@ def unshare_machine_from_self():
             f"user {current_user.id} is the owner of machine {machine.id} - can't unshare from self."
         )
         abort(403)
-    
+
     # perform action
-    logging.info(f"Removing access for user {current_user} from machine with machine id {machine.id}")
+    logging.info(
+        f"Removing access for user {current_user} from machine with machine id {machine.id}"
+    )
     machine.shared_users.remove(current_user)
     db.session.commit()
 
@@ -5026,13 +5028,15 @@ def clean_up_db():
                 # Could also restart?
         db.session.commit()
 
+
 def is_next_uri_share_accept(endpoint):
     is_share_accept_link = False
     if endpoint == None:
         pass
-    elif len(re.findall(r"^share_accept/[A-Za-z0-9]{16}$",endpoint[1:])) == 1:
+    elif len(re.findall(r"^share_accept/[A-Za-z0-9]{16}$", endpoint[1:])) == 1:
         is_share_accept_link = True
     return is_share_accept_link
+
 
 def determine_redirect(share_accept_token_in_session):
     """
@@ -5045,11 +5049,16 @@ def determine_redirect(share_accept_token_in_session):
     resp = redirect(url_for("welcome"))
     if share_accept_token_in_session != None:
         try:
-            resp = redirect(url_for("share_accept", machine_share_token=share_accept_token_in_session))
+            resp = redirect(
+                url_for(
+                    "share_accept", machine_share_token=share_accept_token_in_session
+                )
+            )
         except:
             pass
-        session.pop('share_accept_token')
+        session.pop("share_accept_token")
     return resp
+
 
 def main(debug=False):
     with app.app_context():
