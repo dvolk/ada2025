@@ -3712,8 +3712,27 @@ def stop_machine():
     """
 
     # sanity checks
-    audit = create_audit("stop machine", user=current_user)
-    machine = get_machine_from_id(request.form.get("machine_id"), audit.id)
+    audit = create_audit("unshare machine from self", user=current_user) 
+    machine_id = request.form.get("machine_id")
+
+    if not machine_id:
+        finish_audit(audit, "machine_id missing")
+        logging.warning(f"machine_id parameter missing: {machine_id}")
+        abort(404)
+
+    try:
+        machine_id = int(machine_id)
+    except Exception:
+        finish_audit(audit, "machine_id bad")
+        logging.warning(f"machine_id not int: {machine_id}")
+        abort(404)
+
+    machine = Machine.query.filter_by(id=machine_id).first()
+    if not machine:
+        finish_audit(audit, "machine not found")
+        abort(404)
+
+    update_audit(audit, machine=machine)
 
     if not current_user.is_admin and not current_user == machine.owner:
         finish_audit(audit, "bad user")
@@ -3774,7 +3793,26 @@ def stop_machine2(machine_id, audit_id=None):
 def unshare_machine_from_self():
     # sanity checks
     audit = create_audit("unshare machine from self", user=current_user) 
-    machine = get_machine_from_id(request.form.get("machine_id"), audit.id)
+    machine_id = request.form.get("machine_id")
+
+    if not machine_id:
+        finish_audit(audit, "machine_id missing")
+        logging.warning(f"machine_id parameter missing: {machine_id}")
+        abort(404)
+
+    try:
+        machine_id = int(machine_id)
+    except Exception:
+        finish_audit(audit, "machine_id bad")
+        logging.warning(f"machine_id not int: {machine_id}")
+        abort(404)
+
+    machine = Machine.query.filter_by(id=machine_id).first()
+    if not machine:
+        finish_audit(audit, "machine not found")
+        abort(404)
+
+    update_audit(audit, machine=machine)
 
     if current_user == machine.owner:
         finish_audit(audit, "bad user")
@@ -3783,6 +3821,7 @@ def unshare_machine_from_self():
         )
         abort(403)
     
+    # perform action
     logging.info(f"Removing access for user {current_user} from machine with machine id {machine.id}")
     machine.shared_users.remove(current_user)
     db.session.commit()
@@ -5011,31 +5050,6 @@ def determine_redirect(share_accept_token_in_session):
             pass
         session.pop('share_accept_token')
     return resp
-
-def get_machine_from_id(machine_id, audit_id):
-    # common sanity checks
-    audit = Audit.query.filter_by(id=audit_id).first()
-    if not machine_id:
-        finish_audit(audit, "machine_id missing")
-        logging.warning(f"machine_id parameter missing: {machine_id}")
-        abort(404)
-
-    try:
-        machine_id = int(machine_id)
-    except Exception:
-        finish_audit(audit, "machine_id bad")
-        logging.warning(f"machine_id not int: {machine_id}")
-        abort(404)
-
-    machine = Machine.query.filter_by(id=machine_id).first()
-    if not machine:
-        finish_audit(audit, "machine not found")
-        abort(404)
-
-    update_audit(audit, machine=machine)
-
-    # return machine
-    return machine
 
 def main(debug=False):
     with app.app_context():
