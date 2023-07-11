@@ -3713,7 +3713,7 @@ def stop_machine():
 
     # sanity checks
     audit = create_audit("stop machine", user=current_user)
-    machine, audit = get_machine_from_id(request.form.get("machine_id"), audit)
+    machine = get_machine_from_id(request.form.get("machine_id"), audit.id)
 
     if not current_user.is_admin and not current_user == machine.owner:
         finish_audit(audit, "bad user")
@@ -3774,12 +3774,12 @@ def stop_machine2(machine_id, audit_id=None):
 def unshare_machine_from_self():
     # sanity checks
     audit = create_audit("stop machine", user=current_user) 
-    machine, audit = get_machine_from_id(request.form.get("machine_id"), audit)
+    machine = get_machine_from_id(request.form.get("machine_id"), audit.id)
 
     if current_user == machine.owner:
         finish_audit(audit, "bad user")
         logging.warning(
-            f"user {current_user.id} is the owner of machine {machine.id}."
+            f"user {current_user.id} is the owner of machine {machine.id} - can't unshare from self."
         )
         abort(403)
 
@@ -5005,8 +5005,9 @@ def determine_redirect(share_accept_token_in_session):
         session.pop('share_accept_token')
     return resp
 
-def get_machine_from_id(machine_id, audit):
+def get_machine_from_id(machine_id, audit_id):
     # common sanity checks
+    audit = Audit.query.filter_by(id=audit_id).first()
     if not machine_id:
         finish_audit(audit, "machine_id missing")
         logging.warning(f"machine_id parameter missing: {machine_id}")
@@ -5027,7 +5028,7 @@ def get_machine_from_id(machine_id, audit):
     update_audit(audit, machine=machine)
 
     # return machine and audit
-    return machine, audit
+    return machine
 
 def main(debug=False):
     with app.app_context():
