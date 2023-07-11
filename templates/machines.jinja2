@@ -184,11 +184,22 @@
                     </form>
                   {% endif %}
 
-                  {% if machine.owner == current_user %}
+                  {% if machine.owner == current_user and machine.state !=  MachineState.PROVISIONING %}
                     <button
                        onclick='confirm_deletion({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
                        class="w3-button w3-red w3-round"
                        title='{{ gettext("Stop and remove machine") }}'>
+                       {{ icon('trash') }}
+                    </button>
+                    <form style="display: inline" id="stop-form-{{ machine.id }}" action="/stop_machine" method="POST">
+                      <input type="hidden" name="machine_id" value="{{ machine.id }}">
+                    </form>
+                  {% endif %}
+
+                  {% if machine.owner == current_user and machine.state ==  MachineState.PROVISIONING %}
+                    <button
+                       class="w3-button w3-red w3-round"
+                       title='{{ gettext("Stop and remove machine") }}' disabled>
                        {{ icon('trash') }}
                     </button>
                     <form style="display: inline" id="stop-form-{{ machine.id }}" action="/stop_machine" method="POST">
