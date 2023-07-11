@@ -202,9 +202,6 @@
                        title='{{ gettext("Stop and remove machine") }}' disabled>
                        {{ icon('trash') }}
                     </button>
-                    <form style="display: inline" id="stop-form-{{ machine.id }}" action="/stop_machine" method="POST">
-                      <input type="hidden" name="machine_id" value="{{ machine.id }}">
-                    </form>
                   {% endif %}
 
                 </div>
