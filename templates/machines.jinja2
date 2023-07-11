@@ -13,7 +13,7 @@
 
       <span id="contentSpan">
         {{ info(gettext("This lists all templates that are available to the group you are in: {g}"), g=current_user.group.name) }}
-
+        {{ info(gettext("Machine creation usually takes between one and ten minutes.")) }}
         <p>
           {% set mts = current_user.group.machine_templates %}
           {% for mt in mts %}
