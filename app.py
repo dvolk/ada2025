@@ -3774,7 +3774,16 @@ def stop_machine2(machine_id, audit_id=None):
 @profile_complete_required
 def unshare_machine_from_self():
     # sanity checks
-    pass
+    audit = create_audit("stop machine", user=current_user)
+    machine_id = request.form.get("machine_id")
+    machine, audit = get_machine_from_id(machine_id, audit)
+
+    if current_user == machine.owner:
+        finish_audit(audit, "bad user")
+        logging.warning(
+            f"user {current_user.id} is the owner of machine {machine_id}."
+        )
+        abort(403)
 
 
 @log_function_call
