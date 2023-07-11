@@ -43,7 +43,7 @@
     <div style="margin-top: 1em;" class="row-fluid">
       <div class="masonry">
         {% for m in Machine.query.filter_by(state=MachineState.READY).all() %}
-          <a target="_blank" href="{{ m.make_access_url() }}">
+          <a target="_blank" href="{{ m.make_url() + '/screenshots/screenshot.png' }}">
             <img src="{{ m.make_url() + '/screenshots/screenshot-thumb.png' }}">
           </a>
         {% endfor %}
