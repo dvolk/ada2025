@@ -13,7 +13,7 @@
 
       <span id="contentSpan">
         {{ info(gettext("This lists all templates that are available to the group you are in: {g}"), g=current_user.group.name) }}
-
+        {{ info(gettext("Machine creation usually takes between one and ten minutes.")) }}
         <p>
           {% set mts = current_user.group.machine_templates %}
           {% for mt in mts %}
@@ -184,7 +184,7 @@
                     </form>
                   {% endif %}
 
-                  {% if machine.owner == current_user %}
+                  {% if machine.owner == current_user and machine.state in [MachineState.READY, MachineState.FAILED] %}
                     <button
                        onclick='confirm_deletion({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
                        class="w3-button w3-red w3-round"
@@ -195,6 +195,26 @@
                       <input type="hidden" name="machine_id" value="{{ machine.id }}">
                     </form>
                   {% endif %}
+
+                  {% if machine.owner == current_user and machine.state not in [MachineState.READY, MachineState.FAILED] %}
+                    <button
+                       class="w3-button w3-red w3-round"
+                       title='{{ gettext("Stop and remove machine") }}' disabled>
+                       {{ icon('trash') }}
+                    </button>
+                  {% endif %}
+                  
+                  {% if machine.owner != current_user %}
+                    <button
+                      onclick='confirm_unshare_from_self({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
+                       class="w3-button w3-red w3-round"
+                       title='{{ gettext("Remove machine from list of accessible machines.") }}'>
+                       {{ icon('trash') }}
+                    </button>
+                    <form style="display: inline" id="removal-form-{{ machine.id }}" action="/unshare_machine_from_self" method="POST">
+                      <input type="hidden" name="machine_id" value="{{ machine.id }}">
+                    </form>
+                  {% endif %}                  
 
                 </div>
               </div>
@@ -257,6 +277,14 @@
         document.getElementById('stop-form-'+machine_id).submit();
       } else {
         alert('Machine will not be deleted.');
+      }
+    }
+
+    function confirm_unshare_from_self(machine_display_name, machine_id) {
+      if (confirm('You have selected to remove machine titled ' + machine_display_name + ' from your list of accessible machines (note that this will not remove other users\' access to the machine as you do not own the it). You will need a valid share link in order to access it again. Is this ok?')){
+        document.getElementById('removal-form-'+machine_id).submit();
+      } else {
+        alert('Machine will not be removed from your list of accessible machines.');
       }
     }
 

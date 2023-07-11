@@ -30,6 +30,7 @@ from flask import (
     request,
     abort,
     has_request_context,
+    session,
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
@@ -2138,7 +2139,7 @@ def google_authorize():
         login_user(user)
         finish_audit(audit, "ok")
 
-        return redirect(url_for("welcome"))
+        return determine_redirect(session.get("share_accept_token"))
 
     except Exception as e:
         finish_audit(audit, "error")
@@ -2204,7 +2205,7 @@ def iris_iam_authorize():
         login_user(user)
         finish_audit(audit, "ok")
 
-        return redirect(url_for("welcome"))
+        return determine_redirect(session.get("share_accept_token"))
 
     except Exception as e:
         finish_audit(audit, "error")
@@ -2482,8 +2483,9 @@ def login():
                 # log user in
                 user.sesh_id = gen_token(2)
                 login_user(user)
+                resp = determine_redirect(session.get("share_accept_token"))
                 finish_audit(audit, "ok", user=user)
-                return redirect(url_for("index"))
+                return resp
             else:
                 finish_audit(audit, "bad password")
                 flash(gettext("Invalid username or password."), "danger")
@@ -2494,6 +2496,11 @@ def login():
             flash(gettext("Invalid username or password."), "danger")
 
     # GET path
+    next_url = request.args.get("next")
+    if is_next_uri_share_accept(next_url):
+        res = re.search(r"[A-Za-z0-9]{16}$", next_url)
+        session["share_accept_token"] = res.group(0)
+
     return render_template(
         "login.jinja2",
         title=gettext("Login"),
@@ -2668,11 +2675,11 @@ def register():
 
             flash(f"Sorry, the form could not be validated:<br/> {error_msg}", "danger")
             return render_template(
-                    "register.jinja2",
-                    form=form,
-                    title=gettext("Register account"),
-                    show_stfc_logo=True,
-                )
+                "register.jinja2",
+                form=form,
+                title=gettext("Register account"),
+                show_stfc_logo=True,
+            )
 
     return render_template(
         "register.jinja2",
@@ -3730,17 +3737,18 @@ def stop_machine():
     if not current_user.is_admin and not current_user == machine.owner:
         finish_audit(audit, "bad user")
         logging.warning(
-            f"user {current_user.id} is not the owner of machine {machine_id} nor admin"
+            f"user {current_user.id} is not the owner of machine {machine.id} nor admin"
         )
         abort(403)
-    if machine.state in [
-        MachineState.PROVISIONING,
-        MachineState.DELETED,
-        MachineState.DELETING,
+    if machine.state not in [
+        MachineState.READY,
+        MachineState.FAILED,
     ]:
         logging.warning(
-            f"machine {machine_id} is not in correct state for deletion: {machine.state}"
+            f"machine {machine.id} is not in correct state for deletion: {machine.state}"
         )
+        flash(gettext("Machine cannot be stopped in its current state."), category="danger")
+        return redirect(url_for("machines"))
 
     # let's go
     stop_machine2(machine.id, audit.id)
@@ -3777,6 +3785,52 @@ def stop_machine2(machine_id, audit_id=None):
     db.session.commit()
 
     threading.Thread(target=target, args=(machine.id, audit.id)).start()
+
+
+@app.route("/unshare_machine_from_self", methods=["POST"])
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def unshare_machine_from_self():
+    # sanity checks
+    audit = create_audit("unshare machine from self", user=current_user)
+    machine_id = request.form.get("machine_id")
+
+    if not machine_id:
+        finish_audit(audit, "machine_id missing")
+        logging.warning(f"machine_id parameter missing: {machine_id}")
+        abort(404)
+
+    try:
+        machine_id = int(machine_id)
+    except Exception:
+        finish_audit(audit, "machine_id bad")
+        logging.warning(f"machine_id not int: {machine_id}")
+        abort(404)
+
+    machine = Machine.query.filter_by(id=machine_id).first()
+    if not machine:
+        finish_audit(audit, "machine not found")
+        abort(404)
+
+    update_audit(audit, machine=machine)
+
+    if current_user == machine.owner:
+        finish_audit(audit, "bad user")
+        logging.warning(
+            f"user {current_user.id} is the owner of machine {machine.id} - can't unshare from self."
+        )
+        abort(403)
+
+    # perform action
+    logging.info(
+        f"Removing access for user {current_user} from machine with machine id {machine.id}"
+    )
+    machine.shared_users.remove(current_user)
+    db.session.commit()
+
+    flash(gettext("Removed machine from list"), category="success")
+    return redirect(url_for("machines"))
 
 
 @log_function_call
@@ -4974,6 +5028,37 @@ def clean_up_db():
                 j.state = DataTransferJobState.FAILED
                 # Could also restart?
         db.session.commit()
+
+
+def is_next_uri_share_accept(endpoint):
+    is_share_accept_link = False
+    if endpoint == None:
+        pass
+    elif len(re.findall(r"^share_accept/[A-Za-z0-9]{16}$", endpoint[1:])) == 1:
+        is_share_accept_link = True
+    return is_share_accept_link
+
+
+def determine_redirect(share_accept_token_in_session):
+    """
+    determines where a user should be redirected to upon login based on if there is a share token in the URL
+
+    if there is then we use the share token to add the machine to their list of machines
+
+    otherwise, just send them to the welcome page
+    """
+    resp = redirect(url_for("welcome"))
+    if share_accept_token_in_session != None:
+        try:
+            resp = redirect(
+                url_for(
+                    "share_accept", machine_share_token=share_accept_token_in_session
+                )
+            )
+        except:
+            pass
+        session.pop("share_accept_token")
+    return resp
 
 
 def main(debug=False):
