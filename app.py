@@ -3712,7 +3712,7 @@ def stop_machine():
     """
 
     # sanity checks
-    audit = create_audit("stop machine", user=current_user)
+    audit = create_audit("stop machine", user=current_user) 
     machine_id = request.form.get("machine_id")
 
     if not machine_id:
@@ -3737,7 +3737,7 @@ def stop_machine():
     if not current_user.is_admin and not current_user == machine.owner:
         finish_audit(audit, "bad user")
         logging.warning(
-            f"user {current_user.id} is not the owner of machine {machine_id} nor admin"
+            f"user {current_user.id} is not the owner of machine {machine.id} nor admin"
         )
         abort(403)
     if machine.state not in [
@@ -3745,7 +3745,7 @@ def stop_machine():
         MachineState.FAILED,
     ]:
         logging.warning(
-            f"machine {machine_id} is not in correct state for deletion: {machine.state}"
+            f"machine {machine.id} is not in correct state for deletion: {machine.state}"
         )
         flash(gettext("Machine cannot be stopped in its current state."), category="danger")
         return redirect(url_for("machines"))
@@ -3785,6 +3785,50 @@ def stop_machine2(machine_id, audit_id=None):
     db.session.commit()
 
     threading.Thread(target=target, args=(machine.id, audit.id)).start()
+
+
+@app.route("/unshare_machine_from_self", methods=["POST"])
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def unshare_machine_from_self():
+    # sanity checks
+    audit = create_audit("unshare machine from self", user=current_user) 
+    machine_id = request.form.get("machine_id")
+
+    if not machine_id:
+        finish_audit(audit, "machine_id missing")
+        logging.warning(f"machine_id parameter missing: {machine_id}")
+        abort(404)
+
+    try:
+        machine_id = int(machine_id)
+    except Exception:
+        finish_audit(audit, "machine_id bad")
+        logging.warning(f"machine_id not int: {machine_id}")
+        abort(404)
+
+    machine = Machine.query.filter_by(id=machine_id).first()
+    if not machine:
+        finish_audit(audit, "machine not found")
+        abort(404)
+
+    update_audit(audit, machine=machine)
+
+    if current_user == machine.owner:
+        finish_audit(audit, "bad user")
+        logging.warning(
+            f"user {current_user.id} is the owner of machine {machine.id} - can't unshare from self."
+        )
+        abort(403)
+    
+    # perform action
+    logging.info(f"Removing access for user {current_user} from machine with machine id {machine.id}")
+    machine.shared_users.remove(current_user)
+    db.session.commit()
+
+    flash(gettext("Removed machine from list"), category="success")
+    return redirect(url_for("machines"))
 
 
 @log_function_call
