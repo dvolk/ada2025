@@ -3714,25 +3714,7 @@ def stop_machine():
     # sanity checks
     audit = create_audit("stop machine", user=current_user)
     machine_id = request.form.get("machine_id")
-
-    if not machine_id:
-        finish_audit(audit, "machine_id missing")
-        logging.warning(f"machine_id parameter missing: {machine_id}")
-        abort(404)
-
-    try:
-        machine_id = int(machine_id)
-    except Exception:
-        finish_audit(audit, "machine_id bad")
-        logging.warning(f"machine_id not int: {machine_id}")
-        abort(404)
-
-    machine = Machine.query.filter_by(id=machine_id).first()
-    if not machine:
-        finish_audit(audit, "machine not found")
-        abort(404)
-
-    update_audit(audit, machine=machine)
+    machine, audit = get_machine_from_id(machine_id, audit)
 
     if not current_user.is_admin and not current_user == machine.owner:
         finish_audit(audit, "bad user")
@@ -3784,6 +3766,15 @@ def stop_machine2(machine_id, audit_id=None):
     db.session.commit()
 
     threading.Thread(target=target, args=(machine.id, audit.id)).start()
+
+
+@app.route("/unshare_machine_from_self", methods=["POST"])
+@limiter.limit("100 per day, 10 per minute, 1/3 seconds")
+@login_required
+@profile_complete_required
+def unshare_machine_from_self():
+    # sanity checks
+    pass
 
 
 @log_function_call
@@ -5006,6 +4997,30 @@ def determine_redirect(share_accept_token_in_session):
             pass
         session.pop('share_accept_token')
     return resp
+
+def get_machine_from_id(machine_id, audit):
+    # common sanity checks
+    if not machine_id:
+        finish_audit(audit, "machine_id missing")
+        logging.warning(f"machine_id parameter missing: {machine_id}")
+        abort(404)
+
+    try:
+        machine_id = int(machine_id)
+    except Exception:
+        finish_audit(audit, "machine_id bad")
+        logging.warning(f"machine_id not int: {machine_id}")
+        abort(404)
+
+    machine = Machine.query.filter_by(id=machine_id).first()
+    if not machine:
+        finish_audit(audit, "machine not found")
+        abort(404)
+
+    update_audit(audit, machine=machine)
+
+    # return machine and audit
+    return machine, audit
 
 def main(debug=False):
     with app.app_context():
