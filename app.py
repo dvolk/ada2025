@@ -3782,6 +3782,13 @@ def unshare_machine_from_self():
             f"user {current_user.id} is the owner of machine {machine.id} - can't unshare from self."
         )
         abort(403)
+    
+    logging.info(f"Removing access for user {current_user} from machine with machine id {machine.id}")
+    machine.shared_users.remove(current_user)
+    db.session.commit()
+
+    flash(gettext("Removed machine from list"), category="success")
+    return redirect(url_for("machines"))
 
 
 @log_function_call
