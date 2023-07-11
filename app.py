@@ -5034,7 +5034,7 @@ def get_machine_from_id(machine_id, audit_id):
 
     update_audit(audit, machine=machine)
 
-    # return machine and audit
+    # return machine
     return machine
 
 def main(debug=False):
