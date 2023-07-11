@@ -184,7 +184,7 @@
                     </form>
                   {% endif %}
 
-                  {% if machine.owner == current_user %}
+                  {% if machine.owner == current_user and machine.state in [MachineState.READY, MachineState.FAILED] %}
                     <button
                        onclick='confirm_deletion({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
                        class="w3-button w3-red w3-round"
@@ -196,6 +196,14 @@
                     </form>
                   {% endif %}
 
+                  {% if machine.owner == current_user and machine.state not in [MachineState.READY, MachineState.FAILED] %}
+                    <button
+                       class="w3-button w3-red w3-round"
+                       title='{{ gettext("Stop and remove machine") }}' disabled>
+                       {{ icon('trash') }}
+                    </button>
+                  {% endif %}
+                  
                   {% if machine.owner != current_user %}
                     <button
                       onclick='confirm_unshare_from_self({{ machine.display_name|tojson|safe }}, {{ machine.id }})'
@@ -206,7 +214,7 @@
                     <form style="display: inline" id="removal-form-{{ machine.id }}" action="/unshare_machine_from_self" method="POST">
                       <input type="hidden" name="machine_id" value="{{ machine.id }}">
                     </form>
-                  {% endif %}
+                  {% endif %}                  
 
                 </div>
               </div>

@@ -3740,14 +3740,15 @@ def stop_machine():
             f"user {current_user.id} is not the owner of machine {machine.id} nor admin"
         )
         abort(403)
-    if machine.state in [
-        MachineState.PROVISIONING,
-        MachineState.DELETED,
-        MachineState.DELETING,
+    if machine.state not in [
+        MachineState.READY,
+        MachineState.FAILED,
     ]:
         logging.warning(
             f"machine {machine.id} is not in correct state for deletion: {machine.state}"
         )
+        flash(gettext("Machine cannot be stopped in its current state."), category="danger")
+        return redirect(url_for("machines"))
 
     # let's go
     stop_machine2(machine.id, audit.id)
