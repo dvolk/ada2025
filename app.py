@@ -2597,7 +2597,6 @@ def passwordless_login(login_token):
         return redirect(url_for("login"))
 
     username = decoded_data[0][1:-1]
-    logging.info(username)
     user = (
                 db.session.query(User)
                 .filter(
@@ -2605,6 +2604,11 @@ def passwordless_login(login_token):
                 )
                 .first()
             )
+    
+    if not user:
+        flash("User doesn't exist.", "danger")
+        return redirect(url_for("login"))
+
     login_user(user)
     flash("You have been logged in successfully. You can set a new password below.")
     return redirect(url_for("settings"))
