@@ -2510,6 +2510,75 @@ def login():
         show_stfc_logo=True,
     )
 
+class ResetPasswordForm(FlaskForm):
+    username = StringField(
+        lazy_gettext("Username or email of account to reset password for"),
+        validators=[DataRequired(), Length(min=2, max=32)],
+    )
+    submit = SubmitField("Request Reset")
+
+@app.route("/reset_password", methods=["GET", "POST"])
+@limiter.limit("60 per hour")
+def reset_password():
+    audit = create_audit("reset password")
+    form = ResetPasswordForm()
+
+    if request.method == "POST":
+        if LOGIN_RECAPTCHA:
+            if not recaptcha.verify():
+                finish_audit(audit, "recaptcha failed")
+                flash(gettext("Could not verify captcha. Try again."), "danger")
+                return render_template(
+                    "reset_password.jinja2",
+                    title=gettext("Reset password"),
+                    form=form,
+                    show_stfc_logo=True,
+                )
+            
+        if form.validate_on_submit():
+            user = (
+                db.session.query(User)
+                .filter(
+                    or_(
+                        User.username == form.username.data,
+                        User.email == form.username.data,
+                    )
+                )
+                .first()
+            )
+
+            if user:
+                email_to = user.email
+                logging.info(f"Sending password reset email to: {email_to}")
+                login_link = "PLACEHOLDER"
+                site_root = request.url_root
+                msg = Message(
+                    "Ada Data Analysis forgotten password",
+                    sender=MAIL_SENDER,
+                    recipients=[email_to],
+                )
+                msg.body = f"""Hi,
+
+You recently indicated that you have forgotten your password to Ada Data Analysis.
+
+You may log in and reset your password at the following link: 
+                
+{login_link}
+
+You're receiving this email because you've registered on {site_root}.
+"""
+                mail.send(msg)
+        flash(gettext("An email has been sent to the account at the given email address (if it exists)"), "info")
+        return redirect(url_for('reset_password'))
+
+    # GET path
+    return render_template(
+        "reset_password.jinja2",
+        title=gettext("Reset password"),
+        form=form,
+        show_stfc_logo=True,
+    )
+
 
 class RegistrationForm(FlaskForm):
     username_min = 2
@@ -3747,7 +3816,10 @@ def stop_machine():
         logging.warning(
             f"machine {machine.id} is not in correct state for deletion: {machine.state}"
         )
-        flash(gettext("Machine cannot be stopped in its current state."), category="danger")
+        flash(
+            gettext("Machine cannot be stopped in its current state."),
+            category="danger",
+        )
         return redirect(url_for("machines"))
 
     # let's go
