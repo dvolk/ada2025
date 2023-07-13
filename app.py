@@ -168,6 +168,7 @@ migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
+used_passwordless_login_tokens = []
 
 admin = Admin(
     url="/flaskyadmin",
@@ -2593,20 +2594,21 @@ You're receiving this email because you've registered on {site_root}.
 @limiter.limit("60 per hour")
 def passwordless_login(login_token):
     audit = create_audit("passwordless login")
-    if current_user.is_authenticated:
-        logging.info(f"User attempted to use passwordless login, but there is already a current user: {current_user}")
-        finish_audit(audit, "user already logged in")
-        return redirect(url_for("login"))
 
     secret_key = os.getenv("ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY") or "test_secret_key"
     s = URLSafeTimedSerializer(secret_key)
     decoded_data = s.loads(login_token)
     token_creation_time = datetime.datetime.strptime(decoded_data[1], "%Y-%m-%d %H:%M:%S.%f")
-    
-    if int((datetime.datetime.utcnow() - token_creation_time).total_seconds()/60) > 30: # ensure token is not more than 30 minutes old
+
+    if int((datetime.datetime.utcnow() - token_creation_time).total_seconds()/60) > 30 or login_token in used_passwordless_login_tokens: # ensure token is not more than 30 minutes old and hasn't been used
         flash("That login link has expired. Please login below or request another login link on the \"Forgot Password\" page.", "danger")
         logging.info(f"Attempted use of expired login token")
         finish_audit(audit, "passwordless login token expired")
+        return redirect(url_for("login"))
+
+    if current_user.is_authenticated:
+        logging.info(f"User attempted to use passwordless login, but there is already a current user: {current_user}")
+        finish_audit(audit, "user already logged in")
         return redirect(url_for("login"))
 
     username = decoded_data[0][1:-1]
@@ -2626,6 +2628,7 @@ def passwordless_login(login_token):
 
     login_user(user)
     logging.info(f"Logged user {current_user} in using passwordless login")
+    used_passwordless_login_tokens.append(login_token)
     flash("You have been logged in successfully. You can set a new password below.")
     finish_audit(audit, "logged user in using passwordless login")
     return redirect(url_for("settings"))
