@@ -170,6 +170,7 @@ GOOGLE_OAUTH2_CLIENT_ID  # your Google OAuth2 client ID
 GOOGLE_OAUTH2_CLIENT_SECRET  # your Google OAuth2 client secret
 ADA2025_IRIS_IAM_OAUTH2_CLIENT_ID  # your IRIS IAM OAuth2 client ID
 ADA2025_IRIS_IAM_OAUTH2_CLIENT_SECRET  # your IRIS IAM OAuth2 client secret
+ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY # passwordless login encoding key
 ```
 
 Apply database migrations:
