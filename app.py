@@ -2512,12 +2512,16 @@ def login():
         show_stfc_logo=True,
     )
 
+
 class ForgotPasswordForm(FlaskForm):
     username = StringField(
-        lazy_gettext("Username or email of account that you have forgotten the password to"),
+        lazy_gettext(
+            "Username or email of account that you have forgotten the password to"
+        ),
         validators=[DataRequired(), Length(min=2, max=32)],
     )
     submit = SubmitField("Forgot Password")
+
 
 @app.route("/forgot_password", methods=["GET", "POST"])
 @limiter.limit("60 per hour")
@@ -2536,7 +2540,7 @@ def forgot_password():
                     form=form,
                     show_stfc_logo=True,
                 )
-            
+
         if form.validate_on_submit():
             user = (
                 db.session.query(User)
@@ -2552,12 +2556,18 @@ def forgot_password():
             if user:
                 email_to = user.email
                 logging.info(f"Sending password forgot email to: {email_to}")
-                secret_key = os.getenv("ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY") or "test_secret_key"
+                secret_key = (
+                    os.getenv("ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY")
+                    or "test_secret_key"
+                )
                 s = URLSafeTimedSerializer(secret_key)
                 data_to_encode = [str(user), str(datetime.datetime.utcnow())]
                 encoded_data = s.dumps(data_to_encode)
                 site_root = request.url_root
-                login_link = site_root + url_for("passwordless_login", login_token=encoded_data)[1:]
+                login_link = (
+                    site_root
+                    + url_for("passwordless_login", login_token=encoded_data)[1:]
+                )
                 msg = Message(
                     "Ada Data Analysis forgotten password",
                     sender=MAIL_SENDER,
@@ -2577,10 +2587,19 @@ You're receiving this email because you've registered on {site_root}.
                 logging.info(f"Emailed {email_to} a passwordless login link")
                 finish_audit(audit, "Emailed user login link")
             else:
-                logging.info(f"Account doesn't exist - not sending passwordless login link")
-                finish_audit(audit, "nonexistent account; no passwordless login link sent")
-        flash(gettext("An email has been sent to the account associated with the given username or email address (if it exists)"), "info")
-        return redirect(url_for('forgot_password'))
+                logging.info(
+                    f"Account doesn't exist - not sending passwordless login link"
+                )
+                finish_audit(
+                    audit, "nonexistent account; no passwordless login link sent"
+                )
+        flash(
+            gettext(
+                "An email has been sent to the account associated with the given username or email address (if it exists)"
+            ),
+            "info",
+        )
+        return redirect(url_for("forgot_password"))
 
     # GET path
     return render_template(
@@ -2590,6 +2609,7 @@ You're receiving this email because you've registered on {site_root}.
         show_stfc_logo=True,
     )
 
+
 @app.route("/passwordless_login/<login_token>")
 @limiter.limit("60 per hour")
 def passwordless_login(login_token):
@@ -2598,28 +2618,39 @@ def passwordless_login(login_token):
     secret_key = os.getenv("ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY") or "test_secret_key"
     s = URLSafeTimedSerializer(secret_key)
     decoded_data = s.loads(login_token)
-    token_creation_time = datetime.datetime.strptime(decoded_data[1], "%Y-%m-%d %H:%M:%S.%f")
+    token_creation_time = datetime.datetime.strptime(
+        decoded_data[1], "%Y-%m-%d %H:%M:%S.%f"
+    )
 
-    if int((datetime.datetime.utcnow() - token_creation_time).total_seconds()/60) > 30 or login_token in used_passwordless_login_tokens: # ensure token is not more than 30 minutes old and hasn't been used
-        flash("That login link has expired. Please login below or request another login link on the \"Forgot Password\" page.", "danger")
+    if (
+        int((datetime.datetime.utcnow() - token_creation_time).total_seconds() / 60)
+        > 30
+        or login_token in used_passwordless_login_tokens
+    ):  # ensure token is not more than 30 minutes old and hasn't been used
+        flash(
+            'That login link has expired. Please login below or request another login link on the "Forgot Password" page.',
+            "danger",
+        )
         logging.info(f"Attempted use of expired login token")
         finish_audit(audit, "passwordless login token expired")
         return redirect(url_for("login"))
 
     if current_user.is_authenticated:
-        logging.info(f"User attempted to use passwordless login, but there is already a current user: {current_user}")
+        logging.info(
+            f"User attempted to use passwordless login, but there is already a current user: {current_user}"
+        )
         finish_audit(audit, "user already logged in")
         return redirect(url_for("login"))
 
     username = decoded_data[0][1:-1]
     user = (
-                db.session.query(User)
-                .filter(
-                    User.username == username,
-                )
-                .first()
-            )
-    
+        db.session.query(User)
+        .filter(
+            User.username == username,
+        )
+        .first()
+    )
+
     if not user:
         flash("User doesn't exist.", "danger")
         logging.info(f"User {username} doesn't exist")
@@ -2632,6 +2663,7 @@ def passwordless_login(login_token):
     flash("You have been logged in successfully. You can set a new password below.")
     finish_audit(audit, "logged user in using passwordless login")
     return redirect(url_for("settings"))
+
 
 class RegistrationForm(FlaskForm):
     username_min = 2
