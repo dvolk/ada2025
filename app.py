@@ -2593,7 +2593,7 @@ def passwordless_login(login_token):
     token_creation_time = datetime.datetime.strptime(decoded_data[1], "%Y-%m-%d %H:%M:%S.%f")
     
     if int((datetime.datetime.utcnow() - token_creation_time).total_seconds()/60) > 30: # ensure token is not more than 30 minutes old
-        flash("That login link has expired. Please login below or request another login link on the \"Forgot Password\" page", "danger")
+        flash("That login link has expired. Please login below or request another login link on the \"Forgot Password\" page.", "danger")
         return redirect(url_for("login"))
 
     username = decoded_data[0][1:-1]
