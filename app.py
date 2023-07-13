@@ -2511,18 +2511,18 @@ def login():
         show_stfc_logo=True,
     )
 
-class ResetPasswordForm(FlaskForm):
+class ForgotPasswordForm(FlaskForm):
     username = StringField(
-        lazy_gettext("Username or email of account to reset password for"),
+        lazy_gettext("Username or email of account that you have forgotten the password to"),
         validators=[DataRequired(), Length(min=2, max=32)],
     )
-    submit = SubmitField("Request Reset")
+    submit = SubmitField("Forgot Password")
 
-@app.route("/reset_password", methods=["GET", "POST"])
+@app.route("/forgot_password", methods=["GET", "POST"])
 @limiter.limit("60 per hour")
-def reset_password():
-    audit = create_audit("reset password")
-    form = ResetPasswordForm()
+def forgot_password():
+    audit = create_audit("forgot password")
+    form = ForgotPasswordForm()
 
     if request.method == "POST":
         if LOGIN_RECAPTCHA:
@@ -2530,8 +2530,8 @@ def reset_password():
                 finish_audit(audit, "recaptcha failed")
                 flash(gettext("Could not verify captcha. Try again."), "danger")
                 return render_template(
-                    "reset_password.jinja2",
-                    title=gettext("Reset password"),
+                    "forgot_password.jinja2",
+                    title=gettext("Forgot password"),
                     form=form,
                     show_stfc_logo=True,
                 )
@@ -2550,7 +2550,7 @@ def reset_password():
 
             if user:
                 email_to = user.email
-                logging.info(f"Sending password reset email to: {email_to}")
+                logging.info(f"Sending password forgot email to: {email_to}")
                 secret_key = os.getenv("ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY") or "test_secret_key"
                 s = URLSafeTimedSerializer(secret_key)
                 data_to_encode = [str(user), str(datetime.datetime.utcnow())]
@@ -2566,7 +2566,7 @@ def reset_password():
 
 You recently indicated that you have forgotten your password to Ada Data Analysis.
 
-You may log in and reset your password at the following link: 
+You may log in and reset your password using the following link: 
                 
 {login_link}
 
@@ -2574,12 +2574,12 @@ You're receiving this email because you've registered on {site_root}.
 """
                 mail.send(msg)
         flash(gettext("An email has been sent to the account associated with the given username or email address (if it exists)"), "info")
-        return redirect(url_for('reset_password'))
+        return redirect(url_for('forgot_password'))
 
     # GET path
     return render_template(
-        "reset_password.jinja2",
-        title=gettext("Reset password"),
+        "forgot_password.jinja2",
+        title=gettext("Forgot password"),
         form=form,
         show_stfc_logo=True,
     )
