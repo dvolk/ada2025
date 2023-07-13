@@ -2590,7 +2590,24 @@ def passwordless_login(login_token):
     secret_key = os.getenv("ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY") or "test_secret_key"
     s = URLSafeTimedSerializer(secret_key)
     decoded_data = s.loads(login_token)
-    return decoded_data
+    token_creation_time = datetime.datetime.strptime(decoded_data[1], "%Y-%m-%d %H:%M:%S.%f")
+    
+    if int((datetime.datetime.utcnow() - token_creation_time).total_seconds()/60) > 30: # ensure token is not more than 30 minutes old
+        flash("That login link has expired. Please login below or request another login link on the \"Forgot Password\" page", "danger")
+        return redirect(url_for("login"))
+
+    username = decoded_data[0][1:-1]
+    logging.info(username)
+    user = (
+                db.session.query(User)
+                .filter(
+                    User.username == username,
+                )
+                .first()
+            )
+    login_user(user)
+    flash("You have been logged in successfully. You can set a new password below.")
+    return redirect(url_for("settings"))
 
 class RegistrationForm(FlaskForm):
     username_min = 2
