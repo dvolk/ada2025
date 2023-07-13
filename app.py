@@ -2568,7 +2568,7 @@ You may log in and reset your password at the following link:
 You're receiving this email because you've registered on {site_root}.
 """
                 mail.send(msg)
-        flash(gettext("An email has been sent to the account associated the given username or email address (if it exists)"), "info")
+        flash(gettext("An email has been sent to the account associated with the given username or email address (if it exists)"), "info")
         return redirect(url_for('reset_password'))
 
     # GET path
