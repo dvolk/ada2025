@@ -2573,6 +2573,11 @@ You may log in and reset your password using the following link:
 You're receiving this email because you've registered on {site_root}.
 """
                 mail.send(msg)
+                logging.info(f"Emailed {email_to} a passwordless login link")
+                finish_audit(audit, "Emailed user login link")
+            else:
+                logging.info(f"Account doesn't exist - not sending passwordless login link")
+                finish_audit(audit, "nonexistent account; no passwordless login link sent")
         flash(gettext("An email has been sent to the account associated with the given username or email address (if it exists)"), "info")
         return redirect(url_for('forgot_password'))
 
@@ -2587,7 +2592,10 @@ You're receiving this email because you've registered on {site_root}.
 @app.route("/passwordless_login/<login_token>")
 @limiter.limit("60 per hour")
 def passwordless_login(login_token):
+    audit = create_audit("passwordless login")
     if current_user.is_authenticated:
+        logging.info(f"User attempted to use passwordless login, but there is already a current user: {current_user}")
+        finish_audit(audit, "user already logged in")
         return redirect(url_for("login"))
 
     secret_key = os.getenv("ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY") or "test_secret_key"
@@ -2597,6 +2605,8 @@ def passwordless_login(login_token):
     
     if int((datetime.datetime.utcnow() - token_creation_time).total_seconds()/60) > 30: # ensure token is not more than 30 minutes old
         flash("That login link has expired. Please login below or request another login link on the \"Forgot Password\" page.", "danger")
+        logging.info(f"Attempted use of expired login token")
+        finish_audit(audit, "passwordless login token expired")
         return redirect(url_for("login"))
 
     username = decoded_data[0][1:-1]
@@ -2610,10 +2620,14 @@ def passwordless_login(login_token):
     
     if not user:
         flash("User doesn't exist.", "danger")
+        logging.info(f"User {username} doesn't exist")
+        finish_audit(audit, "user doesn't exist")
         return redirect(url_for("login"))
 
     login_user(user)
+    logging.info(f"Logged user {current_user} in using passwordless login")
     flash("You have been logged in successfully. You can set a new password below.")
+    finish_audit(audit, "logged user in using passwordless login")
     return redirect(url_for("settings"))
 
 class RegistrationForm(FlaskForm):
