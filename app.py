@@ -19,6 +19,7 @@ import re
 import html
 import hashlib
 from functools import cache
+from itsdangerous.url_safe import URLSafeTimedSerializer
 
 # flask and related imports
 from flask import (
@@ -2550,8 +2551,12 @@ def reset_password():
             if user:
                 email_to = user.email
                 logging.info(f"Sending password reset email to: {email_to}")
-                login_link = "PLACEHOLDER"
+                secret_key = os.getenv("ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY")
+                s = URLSafeTimedSerializer(secret_key)
+                data_to_encode = [str(user), str(datetime.datetime.utcnow())]
+                encoded_data = s.dumps(data_to_encode)
                 site_root = request.url_root
+                login_link = site_root + url_for("passwordless_login", login_token=encoded_data)[1:]
                 msg = Message(
                     "Ada Data Analysis forgotten password",
                     sender=MAIL_SENDER,
@@ -2579,6 +2584,13 @@ You're receiving this email because you've registered on {site_root}.
         show_stfc_logo=True,
     )
 
+@app.route("/passwordless_login/<login_token>")
+@limiter.limit("60 per hour")
+def passwordless_login(login_token):
+    secret_key = os.getenv("ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY")
+    s = URLSafeTimedSerializer(secret_key)
+    decoded_data = s.loads(login_token)
+    return decoded_data
 
 class RegistrationForm(FlaskForm):
     username_min = 2
