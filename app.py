@@ -2551,7 +2551,7 @@ def reset_password():
             if user:
                 email_to = user.email
                 logging.info(f"Sending password reset email to: {email_to}")
-                secret_key = os.getenv("ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY")
+                secret_key = os.getenv("ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY") or "test_secret_key"
                 s = URLSafeTimedSerializer(secret_key)
                 data_to_encode = [str(user), str(datetime.datetime.utcnow())]
                 encoded_data = s.dumps(data_to_encode)
@@ -2587,7 +2587,7 @@ You're receiving this email because you've registered on {site_root}.
 @app.route("/passwordless_login/<login_token>")
 @limiter.limit("60 per hour")
 def passwordless_login(login_token):
-    secret_key = os.getenv("ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY")
+    secret_key = os.getenv("ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY") or "test_secret_key"
     s = URLSafeTimedSerializer(secret_key)
     decoded_data = s.loads(login_token)
     return decoded_data
