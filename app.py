@@ -2558,71 +2558,38 @@ def forgot_password():
                 .first()
             )
 
-            if user:
+            flash(
+                gettext(
+                    "An email has been sent to the account associated with the given username or email address (if it exists)"
+                ),
+                "info",
+            )
 
-                def email_forgot_password_link(
-                    site_root, login_link, user_id, audit_id
-                ):
-                    with app.app_context():
-                        audit = get_audit(audit_id)
-                        user = (
-                            db.session.query(User)
-                            .filter(
-                                User.id == user_id,
-                            )
-                            .first()
-                        )
-                        email_to = user.email
-                        logging.info(f"Sending password forgot email to: {email_to}")
-                        msg = Message(
-                            "Ada Data Analysis forgotten password",
-                            sender=MAIL_SENDER,
-                            recipients=[email_to],
-                        )
-                        msg.body = f"""Hi,
-
-You recently indicated that you have forgotten your password to Ada Data Analysis.
-
-You may log in and reset your password using the following link: 
-                
-{login_link}
-
-Please note that if you didn't request this email, then you can safely ignore it.
-
-You're receiving this email because you've registered on {site_root}.
-"""
-                        mail.send(msg)
-                        logging.info(f"Emailed {email_to} an email login link")
-                        finish_audit(audit, "ok")
-
-                site_root = request.url_root
-                secret_key = (
-                    os.getenv("ADA2025_email_LOGIN_SECRET_KEY") or "test_secret_key"
-                )
-                s = URLSafeTimedSerializer(secret_key)
-                data_to_encode = [
-                    str(user.id),
-                    str(datetime.datetime.utcnow()),
-                    request.remote_addr,
-                ]
-                encoded_data = s.dumps(data_to_encode)
-                login_link = (
-                    site_root + url_for("email_login", login_token=encoded_data)[1:]
-                )
-                threading.Thread(
-                    target=email_forgot_password_link,
-                    args=(site_root, login_link, user.id, audit.id),
-                ).start()
-            else:
+            if not user:
                 logging.info(f"Account doesn't exist - not sending email login link")
                 finish_audit(audit, "no account")
-        flash(
-            gettext(
-                "An email has been sent to the account associated with the given username or email address (if it exists)"
-            ),
-            "info",
-        )
-        return redirect(url_for("forgot_password"))
+                return redirect(url_for("forgot_password"))
+
+            site_root = request.url_root
+            secret_key = (
+                os.getenv("ADA2025_email_LOGIN_SECRET_KEY") or "test_secret_key"
+            )
+            s = URLSafeTimedSerializer(secret_key)
+            data_to_encode = [
+                str(user.id),
+                str(datetime.datetime.utcnow()),
+                request.remote_addr,
+            ]
+            encoded_data = s.dumps(data_to_encode)
+            login_link = (
+                site_root + url_for("email_login", login_token=encoded_data)[1:]
+            )
+            threading.Thread(
+                target=email_forgot_password_link,
+                args=(site_root, login_link, user.id, audit.id),
+            ).start()
+
+            return redirect(url_for("forgot_password"))
 
     # GET path
     return render_template(
@@ -5226,6 +5193,40 @@ def is_next_uri_share_accept(endpoint):
     elif len(re.findall(r"^share_accept/[A-Za-z0-9]{16}$", endpoint[1:])) == 1:
         is_share_accept_link = True
     return is_share_accept_link
+
+
+def email_forgot_password_link(site_root, login_link, user_id, audit_id):
+    with app.app_context():
+        audit = get_audit(audit_id)
+        user = (
+            db.session.query(User)
+            .filter(
+                User.id == user_id,
+            )
+            .first()
+        )
+        email_to = user.email
+        logging.info(f"Sending password forgot email to: {email_to}")
+        msg = Message(
+            "Ada Data Analysis forgotten password",
+            sender=MAIL_SENDER,
+            recipients=[email_to],
+        )
+        msg.body = f"""Hi,
+
+You recently indicated that you have forgotten your password to Ada Data Analysis.
+
+You may log in and reset your password using the following link: 
+                
+{login_link}
+
+Please note that if you didn't request this email, then you can safely ignore it.
+
+You're receiving this email because you've registered on {site_root}.
+"""
+        mail.send(msg)
+        logging.info(f"Emailed {email_to} an email login link")
+        finish_audit(audit, "ok")
 
 
 def determine_redirect(share_accept_token_in_session):
