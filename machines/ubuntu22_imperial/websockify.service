@@ -6,9 +6,8 @@ After=network.target
 Type=simple
 User=ubuntu
 Environment="VNC_PORT=5901"
-ExecStart=/usr/bin/websockify --web /usr/share/novnc/ 5901 localhost:5900
-Restart=on-failure
-RestartSec=5s
+ExecStart=/usr/bin/websockify --idle-timeout 129600 --web /usr/share/novnc/ 5901 localhost:5900
+Restart=always
 
 [Install]
 WantedBy=multi-user.target
