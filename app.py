@@ -19,6 +19,7 @@ import re
 import html
 import hashlib
 from functools import cache
+from itsdangerous.url_safe import URLSafeTimedSerializer
 
 # flask and related imports
 from flask import (
@@ -166,6 +167,11 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
+
+used_email_login_tokens = []
+ADA2025_EMAIL_LOGIN_SECRET_KEY = os.getenv(
+    "ADA2025_EMAIL_LOGIN_SECRET_KEY"
+) or gen_token(32)
 
 
 admin = Admin(
@@ -1830,6 +1836,7 @@ def inject_globals():
         "switch_group_form": switch_group_form,
         "Machine": Machine,
         "MachineState": MachineState,
+        "MAIL_SENDER": MAIL_SENDER,
     }
 
 
@@ -1885,7 +1892,7 @@ babel = Babel(app, locale_selector=get_locale, timezone_selector=get_timezone)
 class LoginForm(FlaskForm):
     username = StringField(
         lazy_gettext("Username or email"),
-        validators=[DataRequired(), Length(min=2, max=32)],
+        validators=[DataRequired(), Length(min=2, max=200)],
     )
     password = PasswordField(
         lazy_gettext("Password"), validators=[DataRequired(), Length(min=8, max=100)]
@@ -2509,6 +2516,152 @@ def login():
         show_iris_iam_button=show_iris_iam_button,
         show_stfc_logo=True,
     )
+
+
+class ForgotPasswordForm(FlaskForm):
+    username = StringField(
+        lazy_gettext(
+            "Username or email of account that you have forgotten the password to"
+        ),
+        validators=[DataRequired(), Length(min=2, max=200)],
+    )
+    submit = SubmitField("Forgot Password")
+
+
+@app.route("/forgot_password", methods=["GET", "POST"])
+@limiter.limit("60 per hour")
+def forgot_password():
+    audit = create_audit("forgot password")
+    if not MAIL_SENDER:
+        finish_audit(audit, "no mail sender")
+        abort(404)
+
+    form = ForgotPasswordForm()
+
+    if request.method == "POST":
+        if LOGIN_RECAPTCHA:
+            if not recaptcha.verify():
+                finish_audit(audit, "recaptcha failed")
+                flash(gettext("Could not verify captcha. Try again."), "danger")
+                return render_template(
+                    "forgot_password.jinja2",
+                    title=gettext("Forgot password"),
+                    form=form,
+                    show_stfc_logo=True,
+                )
+
+        if form.validate_on_submit():
+            user = (
+                db.session.query(User)
+                .filter(
+                    or_(
+                        User.username == form.username.data,
+                        User.email == form.username.data,
+                    )
+                )
+                .first()
+            )
+
+            flash(
+                gettext(
+                    "An email has been sent to the account associated with the given username or email address (if it exists)"
+                ),
+                "info",
+            )
+
+            if not user:
+                logging.info(f"Account doesn't exist - not sending email login link")
+                finish_audit(audit, "no account")
+                return redirect(url_for("forgot_password"))
+
+            site_root = request.url_root
+            s = URLSafeTimedSerializer(ADA2025_EMAIL_LOGIN_SECRET_KEY)
+            data_to_encode = [
+                str(user.id),
+                str(datetime.datetime.utcnow()),
+                request.remote_addr,
+            ]
+            encoded_data = s.dumps(data_to_encode)
+            login_link = (
+                site_root + url_for("email_login", login_token=encoded_data)[1:]
+            )
+            threading.Thread(
+                target=email_forgot_password_link,
+                args=(site_root, login_link, user.id, audit.id),
+            ).start()
+
+            return redirect(url_for("forgot_password"))
+
+    # GET path
+    return render_template(
+        "forgot_password.jinja2",
+        title=gettext("Forgot password"),
+        form=form,
+        show_stfc_logo=True,
+    )
+
+
+@app.route("/email_login/<login_token>")
+@limiter.limit("60 per hour")
+def email_login(login_token):
+    audit = create_audit("email login")
+
+    s = URLSafeTimedSerializer(ADA2025_EMAIL_LOGIN_SECRET_KEY)
+    decoded_data = s.loads(login_token)
+    token_creation_time = datetime.datetime.strptime(
+        decoded_data[1], "%Y-%m-%d %H:%M:%S.%f"
+    )
+
+    if (
+        int((datetime.datetime.utcnow() - token_creation_time).total_seconds() / 60)
+        > 30
+        or login_token in used_email_login_tokens
+    ):  # ensure token is not more than 30 minutes old and hasn't been used
+        flash(
+            'That login link has expired. Please login below or request another login link on the "Forgot Password" page.',
+            "danger",
+        )
+        logging.info(f"Attempted use of expired login token")
+        finish_audit(audit, "token expired")
+        return redirect(url_for("login"))
+
+    original_ip = decoded_data[2]
+    if original_ip != request.remote_addr:
+        flash(
+            'Please use the email login link from the same IP address that you requested it from, or request a new one on the "Forgot Password" page.'
+        )
+        logging.info(f"Attempted to use login link from wrong IP")
+        finish_audit(audit, "wrong ip")
+        return redirect(url_for("login"))
+
+    if current_user.is_authenticated:
+        logging.info(
+            f"User attempted to use email login, but there is already a current user: {current_user}"
+        )
+        finish_audit(audit, "already logged in")
+        return redirect(url_for("login"))
+
+    user_id = decoded_data[0]
+    user = (
+        db.session.query(User)
+        .filter(
+            User.id == user_id,
+        )
+        .first()
+    )
+
+    if not user:
+        flash("User doesn't exist.", "danger")
+        logging.info(f"User {user_id} doesn't exist")
+        finish_audit(audit, "not user")
+        return redirect(url_for("login"))
+
+    login_user(user)
+    logging.info(f"Logged user {current_user} in using email login")
+    used_email_login_tokens.append(login_token)
+    flash("You have been logged in successfully. You can set a new password below.")
+    finish_audit(audit, "ok", user=current_user)
+    return redirect(url_for("settings"))
 
 
 class RegistrationForm(FlaskForm):
@@ -3747,7 +3900,10 @@ def stop_machine():
         logging.warning(
             f"machine {machine.id} is not in correct state for deletion: {machine.state}"
         )
-        flash(gettext("Machine cannot be stopped in its current state."), category="danger")
+        flash(
+            gettext("Machine cannot be stopped in its current state."),
+            category="danger",
+        )
         return redirect(url_for("machines"))
 
     # let's go
@@ -5037,6 +5193,44 @@ def is_next_uri_share_accept(endpoint):
     elif len(re.findall(r"^share_accept/[A-Za-z0-9]{16}$", endpoint[1:])) == 1:
         is_share_accept_link = True
     return is_share_accept_link
+
+
+def email_forgot_password_link(site_root, login_link, user_id, audit_id):
+    with app.app_context():
+        audit = get_audit(audit_id)
+        user = (
+            db.session.query(User)
+            .filter(
+                User.id == user_id,
+            )
+            .first()
+        )
+
+        if not user:
+            return
+
+        email_to = user.email
+        logging.info(f"Sending password forgot email to: {email_to}")
+        msg = Message(
+            "Ada Data Analysis forgotten password",
+            sender=MAIL_SENDER,
+            recipients=[email_to],
+        )
+        msg.body = f"""Hi,
+
+You recently indicated that you have forgotten your password to Ada Data Analysis.
+
+You may log in and reset your password using the following link: 
+                
+{login_link}
+
+Please note that if you didn't request this email, then you can safely ignore it.
+
+You're receiving this email because you've registered on {site_root}.
+"""
+        mail.send(msg)
+        logging.info(f"Emailed {email_to} an email login link")
+        finish_audit(audit, "ok")
 
 
 def determine_redirect(share_accept_token_in_session):
