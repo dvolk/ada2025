@@ -2590,7 +2590,11 @@ You're receiving this email because you've registered on {site_root}.
                     os.getenv("ADA2025_email_LOGIN_SECRET_KEY") or "test_secret_key"
                 )
                 s = URLSafeTimedSerializer(secret_key)
-                data_to_encode = [str(user.id), str(datetime.datetime.utcnow())]
+                data_to_encode = [
+                    str(user.id),
+                    str(datetime.datetime.utcnow()),
+                    request.remote_addr,
+                ]
                 encoded_data = s.dumps(data_to_encode)
                 login_link = (
                     site_root + url_for("email_login", login_token=encoded_data)[1:]
@@ -2641,6 +2645,15 @@ def email_login(login_token):
         )
         logging.info(f"Attempted use of expired login token")
         finish_audit(audit, "email login token expired")
+        return redirect(url_for("login"))
+
+    original_ip = decoded_data[2]
+    if original_ip != request.remote_addr:
+        flash(
+            "Please use the email login link from the same IP address that you requested it from, or request a new one on the \"Forgot Password\" page."
+        )
+        logging.info(f"Attempted to use login link from wrong IP")
+        finish_audit(audit, "wrong ip")
         return redirect(url_for("login"))
 
     if current_user.is_authenticated:
