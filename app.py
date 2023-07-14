@@ -3258,6 +3258,13 @@ def rename_machine():
     flash(f"Machine {old_display_name} renamed to {machine_new_display_name}")
     return redirect(url_for("machines"))
 
+@app.route("/poll_machine_state/<machine_id>")
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def poll_machine_state(machine_id):
+    machine = Machine.query.filter_by(id=machine_id).first()
+    return {"machine_state": str(machine.state)}
 
 @app.route("/admin")
 @limiter.limit("60 per minute")
