@@ -2531,10 +2531,10 @@ class ForgotPasswordForm(FlaskForm):
 @app.route("/forgot_password", methods=["GET", "POST"])
 @limiter.limit("60 per hour")
 def forgot_password():
-    audit = create_audit("forgot password")
     if not MAIL_SENDER:
-        finish_audit(audit, "no mail sender")
         abort(404)
+
+    audit = create_audit("forgot password")
 
     form = ForgotPasswordForm()
 
@@ -2547,7 +2547,6 @@ def forgot_password():
                     "forgot_password.jinja2",
                     title=gettext("Forgot password"),
                     form=form,
-                    show_stfc_logo=True,
                 )
 
         if form.validate_on_submit():
@@ -2565,12 +2564,11 @@ def forgot_password():
             flash(
                 gettext(
                     "An email has been sent to the account associated with the given username or email address (if it exists)"
-                ),
-                "info",
+                )
             )
 
             if not user:
-                logging.info(f"Account doesn't exist - not sending email login link")
+                logging.info("Account doesn't exist")
                 finish_audit(audit, "no account")
                 return redirect(url_for("forgot_password"))
 
@@ -2578,7 +2576,6 @@ def forgot_password():
             s = URLSafeTimedSerializer(ADA2025_EMAIL_LOGIN_SECRET_KEY)
             data_to_encode = [
                 str(user.id),
-                str(datetime.datetime.utcnow()),
                 request.remote_addr,
             ]
             encoded_data = s.dumps(data_to_encode)
@@ -2597,7 +2594,6 @@ def forgot_password():
         "forgot_password.jinja2",
         title=gettext("Forgot password"),
         form=form,
-        show_stfc_logo=True,
     )
 
 
@@ -2606,49 +2602,38 @@ def forgot_password():
 def email_login(login_token):
     audit = create_audit("email login")
 
-    s = URLSafeTimedSerializer(ADA2025_EMAIL_LOGIN_SECRET_KEY)
-    decoded_data = s.loads(login_token)
-    token_creation_time = datetime.datetime.strptime(
-        decoded_data[1], "%Y-%m-%d %H:%M:%S.%f"
-    )
-
-    if (
-        int((datetime.datetime.utcnow() - token_creation_time).total_seconds() / 60)
-        > 30
-        or login_token in used_email_login_tokens
-    ):  # ensure token is not more than 30 minutes old and hasn't been used
-        flash(
-            'That login link has expired. Please login below or request another login link on the "Forgot Password" page.',
-            "danger",
-        )
-        logging.info(f"Attempted use of expired login token")
-        finish_audit(audit, "token expired")
+    if current_user.is_authenticated:
+        finish_audit(audit, "already logged in", user=current_user)
         return redirect(url_for("login"))
 
-    original_ip = decoded_data[2]
+    s = URLSafeTimedSerializer(ADA2025_EMAIL_LOGIN_SECRET_KEY)
+    try:
+        if login_token in used_email_login_tokens:
+            raise Exception("Token used up")
+        user_id, original_ip = s.loads(login_token, max_age=1800)  # in seconds
+    except Exception as e:
+        logging.warning(f"token exception: {e}")
+        flash(
+            gettext(
+                'That link is invalid or expired. Please login below or request another login link on the "Forgot Password" page.'
+            ),
+            "danger",
+        )
+
+        finish_audit(audit, "invalid token")
+        return redirect(url_for("login"))
+
     if original_ip != request.remote_addr:
         flash(
-            'Please use the email login link from the same IP address that you requested it from, or request a new one on the "Forgot Password" page.'
+            gettext(
+                'Please use the email login link from the same device (IP address) that you requested it from, or request a new one on the "Forgot Password" page.'
+            ),
+            "danger",
         )
-        logging.info(f"Attempted to use login link from wrong IP")
         finish_audit(audit, "wrong ip")
         return redirect(url_for("login"))
 
-    if current_user.is_authenticated:
-        logging.info(
-            f"User attempted to use email login, but there is already a current user: {current_user}"
-        )
-        finish_audit(audit, "already logged in")
-        return redirect(url_for("login"))
-
-    user_id = decoded_data[0]
-    user = (
-        db.session.query(User)
-        .filter(
-            User.id == user_id,
-        )
-        .first()
-    )
+    user = User.query.filter_by(id=user_id).first()
 
     if not user:
         flash("User doesn't exist.", "danger")
@@ -2657,7 +2642,7 @@ def email_login(login_token):
         return redirect(url_for("login"))
 
     login_user(user)
-    logging.info(f"Logged user {current_user} in using email login")
+    logging.info(f"Logged user {current_user.id} in using email login")
     used_email_login_tokens.append(login_token)
     flash("You have been logged in successfully. You can set a new password below.")
     finish_audit(audit, "ok", user=current_user)
@@ -2758,7 +2743,6 @@ def register():
                 "register.jinja2",
                 form=form,
                 title=gettext("Register account"),
-                show_stfc_logo=True,
             )
 
         if form.validate_on_submit():
@@ -2791,7 +2775,6 @@ def register():
                     "register.jinja2",
                     form=form,
                     title=gettext("Register account"),
-                    show_stfc_logo=True,
                 )
 
             new_user = User(
@@ -2831,14 +2814,12 @@ def register():
                 "register.jinja2",
                 form=form,
                 title=gettext("Register account"),
-                show_stfc_logo=True,
             )
 
     return render_template(
         "register.jinja2",
         form=form,
         title=gettext("Register account"),
-        show_stfc_logo=True,
     )
 
 
@@ -5198,13 +5179,7 @@ def is_next_uri_share_accept(endpoint):
 def email_forgot_password_link(site_root, login_link, user_id, audit_id):
     with app.app_context():
         audit = get_audit(audit_id)
-        user = (
-            db.session.query(User)
-            .filter(
-                User.id == user_id,
-            )
-            .first()
-        )
+        user = User.query.filter_by(id=user_id).first()
 
         if not user:
             return
@@ -5218,15 +5193,13 @@ def email_forgot_password_link(site_root, login_link, user_id, audit_id):
         )
         msg.body = f"""Hi,
 
-You recently indicated that you have forgotten your password to Ada Data Analysis.
+We have received a request to reset your password for your account associated with this email address.
 
-You may log in and reset your password using the following link: 
-                
+If you made this request, please click on the link below to log in. If you didn't make this request, please ignore this email.
+
 {login_link}
 
-Please note that if you didn't request this email, then you can safely ignore it.
-
-You're receiving this email because you've registered on {site_root}.
+For your security, we recommend that you choose a unique password that you don't use on other websites or services.
 """
         mail.send(msg)
         logging.info(f"Emailed {email_to} an email login link")
@@ -5242,7 +5215,7 @@ def determine_redirect(share_accept_token_in_session):
     otherwise, just send them to the welcome page
     """
     resp = redirect(url_for("welcome"))
-    if share_accept_token_in_session != None:
+    if share_accept_token_in_session:
         try:
             resp = redirect(
                 url_for(
