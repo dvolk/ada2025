@@ -2534,11 +2534,11 @@ def forgot_password():
     if not MAIL_SENDER:
         abort(404)
 
-    audit = create_audit("forgot password")
-
     form = ForgotPasswordForm()
 
     if request.method == "POST":
+        audit = create_audit("forgot password")
+
         if LOGIN_RECAPTCHA:
             if not recaptcha.verify():
                 finish_audit(audit, "recaptcha failed")
