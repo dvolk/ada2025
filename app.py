@@ -2584,8 +2584,10 @@ def forgot_password():
             )
             threading.Thread(
                 target=email_forgot_password_link,
-                args=(site_root, login_link, user.id, audit.id),
+                args=(site_root, login_link, user.id),
             ).start()
+
+            finish_audit(audit, "ok")
 
             return redirect(url_for("forgot_password"))
 
@@ -5176,9 +5178,8 @@ def is_next_uri_share_accept(endpoint):
     return is_share_accept_link
 
 
-def email_forgot_password_link(site_root, login_link, user_id, audit_id):
+def email_forgot_password_link(site_root, login_link, user_id):
     with app.app_context():
-        audit = get_audit(audit_id)
         user = User.query.filter_by(id=user_id).first()
 
         if not user:
@@ -5203,7 +5204,6 @@ For your security, we recommend that you choose a unique password that you don't
 """
         mail.send(msg)
         logging.info(f"Emailed {email_to} an email login link")
-        finish_audit(audit, "ok")
 
 
 def determine_redirect(share_accept_token_in_session):
