@@ -2559,24 +2559,16 @@ def forgot_password():
             )
 
             if user:
-                email_to = user.email
-                logging.info(f"Sending password forgot email to: {email_to}")
-                secret_key = (
-                    os.getenv("ADA2025_email_LOGIN_SECRET_KEY") or "test_secret_key"
-                )
-                s = URLSafeTimedSerializer(secret_key)
-                data_to_encode = [str(user.id), str(datetime.datetime.utcnow())]
-                encoded_data = s.dumps(data_to_encode)
-                site_root = request.url_root
-                login_link = (
-                    site_root + url_for("email_login", login_token=encoded_data)[1:]
-                )
-                msg = Message(
-                    "Ada Data Analysis forgotten password",
-                    sender=MAIL_SENDER,
-                    recipients=[email_to],
-                )
-                msg.body = f"""Hi,
+                def email_forgot_password_link(site_root, login_link):
+                    with app.app_context():
+                        email_to = user.email
+                        logging.info(f"Sending password forgot email to: {email_to}")
+                        msg = Message(
+                            "Ada Data Analysis forgotten password",
+                            sender=MAIL_SENDER,
+                            recipients=[email_to],
+                        )
+                        msg.body = f"""Hi,
 
 You recently indicated that you have forgotten your password to Ada Data Analysis.
 
@@ -2588,9 +2580,20 @@ Please note that if you didn't request this email, then you can safely ignore it
 
 You're receiving this email because you've registered on {site_root}.
 """
-                mail.send(msg)
-                logging.info(f"Emailed {email_to} an email login link")
-                finish_audit(audit, "emailed login link")
+                        mail.send(msg)
+                        logging.info(f"Emailed {email_to} an email login link")
+                        finish_audit(audit, "emailed login link")
+                site_root = request.url_root
+                secret_key = (
+                            os.getenv("ADA2025_email_LOGIN_SECRET_KEY") or "test_secret_key"
+                        )
+                s = URLSafeTimedSerializer(secret_key)
+                data_to_encode = [str(user.id), str(datetime.datetime.utcnow())]
+                encoded_data = s.dumps(data_to_encode)
+                login_link = (
+                    site_root + url_for("email_login", login_token=encoded_data)[1:]
+                )
+                threading.Thread(target=email_forgot_password_link, args=(site_root,login_link)).start()
             else:
                 logging.info(f"Account doesn't exist - not sending email login link")
                 finish_audit(audit, "nonexistent account")
