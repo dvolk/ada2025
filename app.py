@@ -2560,8 +2560,18 @@ def forgot_password():
 
             if user:
 
-                def email_forgot_password_link(site_root, login_link):
+                def email_forgot_password_link(
+                    site_root, login_link, user_id, audit_id
+                ):
                     with app.app_context():
+                        audit = get_audit(audit_id)
+                        user = (
+                            db.session.query(User)
+                            .filter(
+                                User.id == user_id,
+                            )
+                            .first()
+                        )
                         email_to = user.email
                         logging.info(f"Sending password forgot email to: {email_to}")
                         msg = Message(
@@ -2600,7 +2610,8 @@ You're receiving this email because you've registered on {site_root}.
                     site_root + url_for("email_login", login_token=encoded_data)[1:]
                 )
                 threading.Thread(
-                    target=email_forgot_password_link, args=(site_root, login_link)
+                    target=email_forgot_password_link,
+                    args=(site_root, login_link, user.id, audit.id),
                 ).start()
             else:
                 logging.info(f"Account doesn't exist - not sending email login link")
