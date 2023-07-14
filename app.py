@@ -2669,7 +2669,7 @@ def email_login(login_token):
     logging.info(f"Logged user {current_user} in using email login")
     used_email_login_tokens.append(login_token)
     flash("You have been logged in successfully. You can set a new password below.")
-    finish_audit(audit, "successful email login")
+    finish_audit(audit, "successful email login", user=current_user)
     return redirect(url_for("settings"))
 
 
