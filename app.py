@@ -5205,6 +5205,10 @@ def email_forgot_password_link(site_root, login_link, user_id, audit_id):
             )
             .first()
         )
+
+        if not user:
+            return
+
         email_to = user.email
         logging.info(f"Sending password forgot email to: {email_to}")
         msg = Message(
