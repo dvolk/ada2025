@@ -2584,6 +2584,8 @@ You may log in and reset your password using the following link:
                 
 {login_link}
 
+Please note that if you didn't request this email, then you can safely ignore it.
+
 You're receiving this email because you've registered on {site_root}.
 """
                 mail.send(msg)
