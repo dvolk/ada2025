@@ -168,7 +168,7 @@ migrate = Migrate(app, db)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
-used_passwordless_login_tokens = []
+used_email_login_tokens = []
 
 admin = Admin(
     url="/flaskyadmin",
@@ -2560,7 +2560,7 @@ def forgot_password():
                 email_to = user.email
                 logging.info(f"Sending password forgot email to: {email_to}")
                 secret_key = (
-                    os.getenv("ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY")
+                    os.getenv("ADA2025_email_LOGIN_SECRET_KEY")
                     or "test_secret_key"
                 )
                 s = URLSafeTimedSerializer(secret_key)
@@ -2569,7 +2569,7 @@ def forgot_password():
                 site_root = request.url_root
                 login_link = (
                     site_root
-                    + url_for("passwordless_login", login_token=encoded_data)[1:]
+                    + url_for("email_login", login_token=encoded_data)[1:]
                 )
                 msg = Message(
                     "Ada Data Analysis forgotten password",
@@ -2587,14 +2587,14 @@ You may log in and reset your password using the following link:
 You're receiving this email because you've registered on {site_root}.
 """
                 mail.send(msg)
-                logging.info(f"Emailed {email_to} a passwordless login link")
+                logging.info(f"Emailed {email_to} an email login link")
                 finish_audit(audit, "Emailed user login link")
             else:
                 logging.info(
-                    f"Account doesn't exist - not sending passwordless login link"
+                    f"Account doesn't exist - not sending email login link"
                 )
                 finish_audit(
-                    audit, "nonexistent account; no passwordless login link sent"
+                    audit, "nonexistent account; no email login link sent"
                 )
         flash(
             gettext(
@@ -2613,12 +2613,12 @@ You're receiving this email because you've registered on {site_root}.
     )
 
 
-@app.route("/passwordless_login/<login_token>")
+@app.route("/email_login/<login_token>")
 @limiter.limit("60 per hour")
-def passwordless_login(login_token):
-    audit = create_audit("passwordless login")
+def email_login(login_token):
+    audit = create_audit("email login")
 
-    secret_key = os.getenv("ADA2025_PASSWORDLESS_LOGIN_SECRET_KEY") or "test_secret_key"
+    secret_key = os.getenv("ADA2025_email_LOGIN_SECRET_KEY") or "test_secret_key"
     s = URLSafeTimedSerializer(secret_key)
     decoded_data = s.loads(login_token)
     token_creation_time = datetime.datetime.strptime(
@@ -2628,19 +2628,19 @@ def passwordless_login(login_token):
     if (
         int((datetime.datetime.utcnow() - token_creation_time).total_seconds() / 60)
         > 30
-        or login_token in used_passwordless_login_tokens
+        or login_token in used_email_login_tokens
     ):  # ensure token is not more than 30 minutes old and hasn't been used
         flash(
             'That login link has expired. Please login below or request another login link on the "Forgot Password" page.',
             "danger",
         )
         logging.info(f"Attempted use of expired login token")
-        finish_audit(audit, "passwordless login token expired")
+        finish_audit(audit, "email login token expired")
         return redirect(url_for("login"))
 
     if current_user.is_authenticated:
         logging.info(
-            f"User attempted to use passwordless login, but there is already a current user: {current_user}"
+            f"User attempted to use email login, but there is already a current user: {current_user}"
         )
         finish_audit(audit, "user already logged in")
         return redirect(url_for("login"))
@@ -2661,10 +2661,10 @@ def passwordless_login(login_token):
         return redirect(url_for("login"))
 
     login_user(user)
-    logging.info(f"Logged user {current_user} in using passwordless login")
-    used_passwordless_login_tokens.append(login_token)
+    logging.info(f"Logged user {current_user} in using email login")
+    used_email_login_tokens.append(login_token)
     flash("You have been logged in successfully. You can set a new password below.")
-    finish_audit(audit, "logged user in using passwordless login")
+    finish_audit(audit, "logged user in using email login")
     return redirect(url_for("settings"))
 
 
