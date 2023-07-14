@@ -2527,9 +2527,11 @@ class ForgotPasswordForm(FlaskForm):
 @app.route("/forgot_password", methods=["GET", "POST"])
 @limiter.limit("60 per hour")
 def forgot_password():
-    if not MAIL_SENDER:
-        abort(404)
     audit = create_audit("forgot password")
+    if not MAIL_SENDER:
+        finish_audit(audit, "no mail sender")
+        abort(404)
+
     form = ForgotPasswordForm()
 
     if request.method == "POST":
@@ -2590,13 +2592,13 @@ You're receiving this email because you've registered on {site_root}.
 """
                 mail.send(msg)
                 logging.info(f"Emailed {email_to} an email login link")
-                finish_audit(audit, "Emailed user login link")
+                finish_audit(audit, "emailed login link")
             else:
                 logging.info(
                     f"Account doesn't exist - not sending email login link"
                 )
                 finish_audit(
-                    audit, "nonexistent account; no email login link sent"
+                    audit, "nonexistent account"
                 )
         flash(
             gettext(
@@ -2644,7 +2646,7 @@ def email_login(login_token):
         logging.info(
             f"User attempted to use email login, but there is already a current user: {current_user}"
         )
-        finish_audit(audit, "user already logged in")
+        finish_audit(audit, "already logged in")
         return redirect(url_for("login"))
 
     user_id = decoded_data[0]
@@ -2666,7 +2668,7 @@ def email_login(login_token):
     logging.info(f"Logged user {current_user} in using email login")
     used_email_login_tokens.append(login_token)
     flash("You have been logged in successfully. You can set a new password below.")
-    finish_audit(audit, "logged user in using email login")
+    finish_audit(audit, "successful email login")
     return redirect(url_for("settings"))
 
 
