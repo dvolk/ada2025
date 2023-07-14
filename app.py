@@ -1888,7 +1888,7 @@ babel = Babel(app, locale_selector=get_locale, timezone_selector=get_timezone)
 class LoginForm(FlaskForm):
     username = StringField(
         lazy_gettext("Username or email"),
-        validators=[DataRequired(), Length(min=2, max=32)],
+        validators=[DataRequired(), Length(min=2, max=200)],
     )
     password = PasswordField(
         lazy_gettext("Password"), validators=[DataRequired(), Length(min=8, max=100)]
@@ -2519,7 +2519,7 @@ class ForgotPasswordForm(FlaskForm):
         lazy_gettext(
             "Username or email of account that you have forgotten the password to"
         ),
-        validators=[DataRequired(), Length(min=2, max=32)],
+        validators=[DataRequired(), Length(min=2, max=200)],
     )
     submit = SubmitField("Forgot Password")
 
