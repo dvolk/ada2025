@@ -169,6 +169,10 @@ login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
 used_email_login_tokens = []
+ADA2025_EMAIL_LOGIN_SECRET_KEY = os.getenv(
+    "ADA2025_EMAIL_LOGIN_SECRET_KEY"
+) or gen_token(32)
+
 
 admin = Admin(
     url="/flaskyadmin",
@@ -2571,10 +2575,7 @@ def forgot_password():
                 return redirect(url_for("forgot_password"))
 
             site_root = request.url_root
-            secret_key = (
-                os.getenv("ADA2025_email_LOGIN_SECRET_KEY") or "test_secret_key"
-            )
-            s = URLSafeTimedSerializer(secret_key)
+            s = URLSafeTimedSerializer(ADA2025_EMAIL_LOGIN_SECRET_KEY)
             data_to_encode = [
                 str(user.id),
                 str(datetime.datetime.utcnow()),
@@ -2605,8 +2606,7 @@ def forgot_password():
 def email_login(login_token):
     audit = create_audit("email login")
 
-    secret_key = os.getenv("ADA2025_email_LOGIN_SECRET_KEY") or "test_secret_key"
-    s = URLSafeTimedSerializer(secret_key)
+    s = URLSafeTimedSerializer(ADA2025_EMAIL_LOGIN_SECRET_KEY)
     decoded_data = s.loads(login_token)
     token_creation_time = datetime.datetime.strptime(
         decoded_data[1], "%Y-%m-%d %H:%M:%S.%f"
