@@ -2527,6 +2527,8 @@ class ForgotPasswordForm(FlaskForm):
 @app.route("/forgot_password", methods=["GET", "POST"])
 @limiter.limit("60 per hour")
 def forgot_password():
+    if not MAIL_SENDER:
+        abort(404)
     audit = create_audit("forgot password")
     form = ForgotPasswordForm()
 
