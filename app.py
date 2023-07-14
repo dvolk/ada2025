@@ -2564,7 +2564,7 @@ def forgot_password():
                     or "test_secret_key"
                 )
                 s = URLSafeTimedSerializer(secret_key)
-                data_to_encode = [str(user), str(datetime.datetime.utcnow())]
+                data_to_encode = [str(user.id), str(datetime.datetime.utcnow())]
                 encoded_data = s.dumps(data_to_encode)
                 site_root = request.url_root
                 login_link = (
@@ -2645,18 +2645,18 @@ def passwordless_login(login_token):
         finish_audit(audit, "user already logged in")
         return redirect(url_for("login"))
 
-    username = decoded_data[0][1:-1]
+    user_id = decoded_data[0]
     user = (
         db.session.query(User)
         .filter(
-            User.username == username,
+            User.id == user_id,
         )
         .first()
     )
 
     if not user:
         flash("User doesn't exist.", "danger")
-        logging.info(f"User {username} doesn't exist")
+        logging.info(f"User {user_id} doesn't exist")
         finish_audit(audit, "user doesn't exist")
         return redirect(url_for("login"))
 
