@@ -2562,16 +2562,14 @@ def forgot_password():
                 email_to = user.email
                 logging.info(f"Sending password forgot email to: {email_to}")
                 secret_key = (
-                    os.getenv("ADA2025_email_LOGIN_SECRET_KEY")
-                    or "test_secret_key"
+                    os.getenv("ADA2025_email_LOGIN_SECRET_KEY") or "test_secret_key"
                 )
                 s = URLSafeTimedSerializer(secret_key)
                 data_to_encode = [str(user.id), str(datetime.datetime.utcnow())]
                 encoded_data = s.dumps(data_to_encode)
                 site_root = request.url_root
                 login_link = (
-                    site_root
-                    + url_for("email_login", login_token=encoded_data)[1:]
+                    site_root + url_for("email_login", login_token=encoded_data)[1:]
                 )
                 msg = Message(
                     "Ada Data Analysis forgotten password",
@@ -2594,12 +2592,8 @@ You're receiving this email because you've registered on {site_root}.
                 logging.info(f"Emailed {email_to} an email login link")
                 finish_audit(audit, "emailed login link")
             else:
-                logging.info(
-                    f"Account doesn't exist - not sending email login link"
-                )
-                finish_audit(
-                    audit, "nonexistent account"
-                )
+                logging.info(f"Account doesn't exist - not sending email login link")
+                finish_audit(audit, "nonexistent account")
         flash(
             gettext(
                 "An email has been sent to the account associated with the given username or email address (if it exists)"
