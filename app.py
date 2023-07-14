@@ -2650,7 +2650,7 @@ def email_login(login_token):
     original_ip = decoded_data[2]
     if original_ip != request.remote_addr:
         flash(
-            "Please use the email login link from the same IP address that you requested it from, or request a new one on the \"Forgot Password\" page."
+            'Please use the email login link from the same IP address that you requested it from, or request a new one on the "Forgot Password" page.'
         )
         logging.info(f"Attempted to use login link from wrong IP")
         finish_audit(audit, "wrong ip")
