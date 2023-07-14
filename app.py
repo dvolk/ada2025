@@ -2593,7 +2593,7 @@ You're receiving this email because you've registered on {site_root}.
 """
                         mail.send(msg)
                         logging.info(f"Emailed {email_to} an email login link")
-                        finish_audit(audit, "emailed login link")
+                        finish_audit(audit, "ok")
 
                 site_root = request.url_root
                 secret_key = (
@@ -2615,7 +2615,7 @@ You're receiving this email because you've registered on {site_root}.
                 ).start()
             else:
                 logging.info(f"Account doesn't exist - not sending email login link")
-                finish_audit(audit, "nonexistent account")
+                finish_audit(audit, "no account")
         flash(
             gettext(
                 "An email has been sent to the account associated with the given username or email address (if it exists)"
@@ -2655,7 +2655,7 @@ def email_login(login_token):
             "danger",
         )
         logging.info(f"Attempted use of expired login token")
-        finish_audit(audit, "email login token expired")
+        finish_audit(audit, "token expired")
         return redirect(url_for("login"))
 
     original_ip = decoded_data[2]
@@ -2686,14 +2686,14 @@ def email_login(login_token):
     if not user:
         flash("User doesn't exist.", "danger")
         logging.info(f"User {user_id} doesn't exist")
-        finish_audit(audit, "user doesn't exist")
+        finish_audit(audit, "not user")
         return redirect(url_for("login"))
 
     login_user(user)
     logging.info(f"Logged user {current_user} in using email login")
     used_email_login_tokens.append(login_token)
     flash("You have been logged in successfully. You can set a new password below.")
-    finish_audit(audit, "successful email login", user=current_user)
+    finish_audit(audit, "ok", user=current_user)
     return redirect(url_for("settings"))
 
 
