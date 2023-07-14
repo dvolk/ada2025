@@ -1832,6 +1832,7 @@ def inject_globals():
         "switch_group_form": switch_group_form,
         "Machine": Machine,
         "MachineState": MachineState,
+        "MAIL_SENDER": MAIL_SENDER,
     }
 
 
