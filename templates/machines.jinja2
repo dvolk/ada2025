@@ -296,6 +296,26 @@
       }
     }
 
+    async function get_machine_state(machine_id){
+        var response = await fetch(document.location.origin + '/poll_machine_state/' + machine_id);
+        var json = await response.json();
+        return json.machine_state;
+    }
+
+    function poll_machine_state(machine_id){
+      machine_state = get_machine_state(machine_id)
+      machine_state.then(state => {
+        if (state == "MachineState.PROVISIONING") {
+          const timeout = setTimeout(poll_machine_state, 1000, machine_id)
+        }
+        else if (state == "MachineState.FAILED") {
+          // setup view to show correct buttons
+        }
+        else if (state == "MachineState.READY")
+          // setup view to show correct buttons
+      })
+    }
+
    function renameObject(objectName, objectId) {
        var newName = prompt("Enter a new name for " + objectName + ":", objectName);
        if (newName !== null && newName !== objectName) {
