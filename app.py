@@ -3264,6 +3264,8 @@ def rename_machine():
 @profile_complete_required
 def poll_machine_state(machine_id):
     machine = Machine.query.filter_by(id=machine_id).first()
+    if not machine:
+        return {"machine_state": None}
     return {"machine_state": str(machine.state)}
 
 @app.route("/admin")
