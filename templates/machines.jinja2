@@ -317,6 +317,7 @@
       })
     }
 
+    // call poll_machine_state for all machines in the list
     {% for machine in user_machines %}
     poll_machine_state({{ machine.id }})
     {% endfor %}
