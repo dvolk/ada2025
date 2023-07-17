@@ -305,21 +305,24 @@
     function poll_machine_state(machine_id){
       machine_state = get_machine_state(machine_id)
       machine_state.then(state => {
-        if (!["MachineState.READY", "MachineState.FAILED"].includes(state)) {
-          const timeout = setTimeout(poll_machine_state, 1000, machine_id)
+        if (state == "MachineState.READY") {
+          // setup view to show correct buttons
         }
         else if (state == "MachineState.FAILED") {
           // setup view to show correct buttons
         }
-        else if (state == "MachineState.READY") {
+        else if (state == "MachineState.STOPPED") {
           // setup view to show correct buttons
+        }
+        else {
+          const timeout = setTimeout(poll_machine_state, 1000, machine_id)
         }
       })
     }
 
-    // call poll_machine_state for all machines in the list that are in a transitional state
+    // call poll_machine_state initially for all machines in the list that are in a transitional state
     {% for machine in user_machines %}
-      {% if machine.state not in [MachineState.READY, MachineState.FAILED] %}
+      {% if machine.state not in [MachineState.READY, MachineState.FAILED, MachineState.STOPPED] %}
         poll_machine_state({{ machine.id }})
       {% endif %}
     {% endfor %}
