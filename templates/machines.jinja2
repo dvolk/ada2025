@@ -305,7 +305,7 @@
     function poll_machine_state(machine_id){
       machine_state = get_machine_state(machine_id)
       machine_state.then(state => {
-        if (["MachineState.PROVISIONING", "MachineState.STARTING", "MachineState.STOPPING"].includes(state)) {
+        if (!["MachineState.READY", "MachineState.FAILED"].includes(state)) {
           const timeout = setTimeout(poll_machine_state, 1000, machine_id)
         }
         else if (state == "MachineState.FAILED") {
@@ -317,9 +317,11 @@
       })
     }
 
-    // call poll_machine_state for all machines in the list
+    // call poll_machine_state for all machines in the list that are in a transitional state
     {% for machine in user_machines %}
-    poll_machine_state({{ machine.id }})
+      {% if machine.state not in [MachineState.READY, MachineState.FAILED] %}
+        poll_machine_state({{ machine.id }})
+      {% endif %}
     {% endfor %}
 
    function renameObject(objectName, objectId) {
