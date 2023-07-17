@@ -111,6 +111,7 @@
                       {{ icon("external-link") }} {{ gettext('Open') }}
                     </a>
                   {% elif machine.state == MachineState.PROVISIONING %}
+                    <script>poll_machine_state("{{ machine.id }}")</script>
                     <button
                       title="Machine is being prepared. Refresh page to update status"
                       class="w3-button w3-blue w3-round" disabled>
@@ -123,12 +124,14 @@
                       {{ icon("external-link") }} {{ gettext('Stopped') }}
                     </button>
                   {% elif machine.state == MachineState.STOPPING %}
+                    <script>poll_machine_state("{{ machine.id }}")</script>
                     <button
                       title="Machine is shut down. Power on the machine to visit it"
                       class="w3-button w3-blue w3-round" disabled>
                       <i class="fa-solid fa-spinner fa-spin"></i> {{ gettext('Stopping') }}
                     </button>
                   {% elif machine.state == MachineState.STARTING %}
+                    <script>poll_machine_state("{{ machine.id }}")</script>
                     <button
                       title="Machine is shut down. Power on the machine to visit it"
                       class="w3-button w3-blue w3-round" disabled>
@@ -305,14 +308,15 @@
     function poll_machine_state(machine_id){
       machine_state = get_machine_state(machine_id)
       machine_state.then(state => {
-        if (state == "MachineState.PROVISIONING") {
+        if (["MachineState.PROVISIONING", "MachineState.STARTING", "MachineState.STOPPING"].includes(state)) {
           const timeout = setTimeout(poll_machine_state, 1000, machine_id)
         }
         else if (state == "MachineState.FAILED") {
           // setup view to show correct buttons
         }
-        else if (state == "MachineState.READY")
+        else if (state == "MachineState.READY") {
           // setup view to show correct buttons
+        }
       })
     }
 
