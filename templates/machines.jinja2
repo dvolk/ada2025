@@ -304,19 +304,30 @@
 
     function poll_machine_state(machine_id){
       machine_state = get_machine_state(machine_id)
+      var notif_text = null;
       machine_state.then(state => {
         if (state == "MachineState.READY") {
-          // setup view to show correct buttons
+          notif_text = "Your machine is ready."
         }
         else if (state == "MachineState.FAILED") {
-          // setup view to show correct buttons
+          notif_text = "Your machine has failed. Please try again or contact us for support."
         }
         else if (state == "MachineState.STOPPED") {
-          // setup view to show correct buttons
+          notif_text = "Your machine has been stopped successfully."
         }
         else {
           const timeout = setTimeout(poll_machine_state, 1000, machine_id)
         }
+
+        if (notif_text != null) {
+            Notification.requestPermission().then(perm => {
+            if(perm === 'granted') {
+              new Notification(notif_text)
+            }
+            location.reload();
+          })
+        }
+
       })
     }
 
