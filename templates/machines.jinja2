@@ -272,6 +272,8 @@
 
 {% block javascript %}
   <script>
+    Notification.requestPermission()
+
     function confirm_deletion(machine_display_name, machine_id) {
       if (confirm('You have selected to stop and remove machine titled ' + machine_display_name + '. This action is irreversible. Is this ok?')){
         document.getElementById('stop-form-'+machine_id).submit();
