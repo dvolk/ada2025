@@ -2338,7 +2338,7 @@ def settings():
                         "Sorry, that email can't be used. Please choose another or contact us for support."
                     )
             if form.password.data:
-                if form.password.data != form.confirm_password.data:
+                if form.password.data != form.password_confirm.data:
                     error_msg = gettext("The passwords you entered don't match.")
                 if len(form.password.data) < 8:
                     error_msg = gettext("New password has to be at least 8 characters.")
