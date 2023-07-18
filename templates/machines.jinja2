@@ -273,7 +273,6 @@
 {% block javascript %}
   <script>
     Notification.requestPermission()
-    var notification;
 
     function confirm_deletion(machine_display_name, machine_id) {
       if (confirm('You have selected to stop and remove machine titled ' + machine_display_name + '. This action is irreversible. Is this ok?')){
@@ -325,7 +324,7 @@
         if (notif_text != null) {
             Notification.requestPermission().then(perm => {
             if(perm === 'granted') {
-              notification = new Notification(notif_text)
+              var notification = new Notification(notif_text)
             }
             location.reload();
           })
