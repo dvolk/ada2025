@@ -316,7 +316,7 @@
           notif_text = "Your machine has been stopped successfully."
         }
         else {
-          const timeout = setTimeout(poll_machine_state, 1000, machine_id)
+          const timeout = setTimeout(poll_machine_state, 10000, machine_id)
         }
 
         if (notif_text != null) {
