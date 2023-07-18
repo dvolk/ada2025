@@ -307,7 +307,7 @@
       var notif_text = null;
       machine_state.then(state => {
         if (state == "MachineState.READY") {
-          notif_text = "Your machine is ready."
+          notif_text = "Your machine is ready to use."
         }
         else if (state == "MachineState.FAILED") {
           notif_text = "Your machine has failed. Please try again or contact us for support."
