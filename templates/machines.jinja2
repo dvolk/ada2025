@@ -297,7 +297,7 @@
     }
 
     async function get_machine_state(machine_id){
-        var response = await fetch(document.location.origin + '/poll_machine_state/' + machine_id);
+        var response = await fetch(document.location.origin + '/get_machine_state/' + machine_id);
         var json = await response.json();
         return json.machine_state;
     }
