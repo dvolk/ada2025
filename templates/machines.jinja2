@@ -296,6 +296,48 @@
       }
     }
 
+    async function get_machine_state(machine_id){
+        var response = await fetch(document.location.origin + '/get_machine_state/' + machine_id);
+        var json = await response.json();
+        return json.machine_state;
+    }
+
+    function poll_machine_state(machine_id){
+      machine_state = get_machine_state(machine_id)
+      var notif_text = null;
+      machine_state.then(state => {
+        if (state == "MachineState.READY") {
+          notif_text = "Your machine is ready to use."
+        }
+        else if (state == "MachineState.FAILED") {
+          notif_text = "Your machine has failed. Please try again or contact us for support."
+        }
+        else if (state == "MachineState.STOPPED") {
+          notif_text = "Your machine has been stopped successfully."
+        }
+        else {
+          const timeout = setTimeout(poll_machine_state, 10000, machine_id)
+        }
+
+        if (notif_text != null) {
+            Notification.requestPermission().then(perm => {
+            if(perm === 'granted') {
+              new Notification(notif_text)
+            }
+            location.reload();
+          })
+        }
+
+      })
+    }
+
+    // call poll_machine_state initially for all machines in the list that are in a transitional state
+    {% for machine in user_machines %}
+      {% if machine.state not in [MachineState.READY, MachineState.FAILED, MachineState.STOPPED] %}
+        poll_machine_state({{ machine.id }})
+      {% endif %}
+    {% endfor %}
+
    function renameObject(objectName, objectId) {
        var newName = prompt("Enter a new name for " + objectName + ":", objectName);
        if (newName !== null && newName !== objectName) {
