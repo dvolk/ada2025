@@ -3171,32 +3171,7 @@ def machines():
     The machine page displays and controls the user's machines
     """
 
-    # Query for user's owned machines
-    owned_machines_query = db.session.query(Machine).filter(
-        and_(
-            Machine.owner == current_user,
-            ~Machine.state.in_([MachineState.DELETED, MachineState.DELETING]),
-        )
-    )
-
-    # Query for machines shared with the user
-    shared_machines_query = (
-        db.session.query(Machine)
-        .join(shared_user_machine)
-        .filter(
-            and_(
-                shared_user_machine.c.user_id == current_user.id,
-                ~Machine.state.in_([MachineState.DELETED, MachineState.DELETING]),
-            )
-        )
-    )
-
-    # Combine the two queries with a UNION operation and order the result
-    user_machines = (
-        owned_machines_query.union(shared_machines_query)
-        .order_by(Machine.id.desc())
-        .all()
-    )
+    user_machines = get_user_machines()
 
     return render_template(
         "machines.jinja2",
@@ -5263,6 +5238,35 @@ def determine_redirect(share_accept_token_in_session):
         session.pop("share_accept_token")
     return resp
 
+def get_user_machines():
+    # Query for user's owned machines
+    owned_machines_query = db.session.query(Machine).filter(
+        and_(
+            Machine.owner == current_user,
+            ~Machine.state.in_([MachineState.DELETED, MachineState.DELETING]),
+        )
+    )
+
+    # Query for machines shared with the user
+    shared_machines_query = (
+        db.session.query(Machine)
+        .join(shared_user_machine)
+        .filter(
+            and_(
+                shared_user_machine.c.user_id == current_user.id,
+                ~Machine.state.in_([MachineState.DELETED, MachineState.DELETING]),
+            )
+        )
+    )
+
+    # Combine the two queries with a UNION operation and order the result
+    user_machines = (
+        owned_machines_query.union(shared_machines_query)
+        .order_by(Machine.id.desc())
+        .all()
+    )
+
+    return user_machines
 
 def main(debug=False):
     with app.app_context():
