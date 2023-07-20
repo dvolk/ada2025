@@ -10,7 +10,7 @@
   <div class="w3-container w3-pale-yellow">
   <p class="w3-large">{{ gettext("You can share this link with users to give them access to the machine:") }}</p>
 
-  <h2>{{ icon('link') }} <a style="text-decoration: underline;" href="/share_accept/{{ machine.share_token }}">{{ gettext("Share link") }}</a></h2>
+  <h2>{{ icon('link') }} <a style="text-decoration: underline;" href="/share_accept/{{ timed_share_token }}">{{ gettext("Share link") }}</a></h2>
   {{ idea(gettext("Right click on the link and select <i>copy link address.</i>")) }}
   </div>
 
@@ -18,6 +18,69 @@
   {% if current_user == machine.owner %}
     <p>{{ gettext("As the owner you can revoke all shares and generate a new share link:") }}</p>
 
-    <p><a class="w3-btn w3-red w3-round" href="/share_revoke/{{ machine.id }}">{{ icon('link-slash') }} {{ gettext("Revoke share") }}</a></p>
+    <p><a class="w3-btn w3-red w3-round" href="/share_revoke/{{ machine.id }}">{{ icon('link-slash') }} {{ gettext("Revoke all shares") }}</a></p>
+
+    <div class="w3-container w3-light-gray">
+    {{ info("You can see the users that have access to this machine below:") }}
+    <p>
+      <table class="w3-table-all">
+        <thead>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Name</th>
+          <th style="text-align: right">Actions</th>
+        </thead>
+        {% for u in machine.shared_users %}
+          <tr class="{% if u.is_enabled %} w3-pale-green {% else %} w3-pale-red {% endif %}">
+            <td style="vertical-align: middle;">
+              {{ u.username }}
+            </td>
+            <td style="vertical-align: middle;">
+              {% if u.provider == "google" %}
+                <i class="fa-brands fa-fw fa-google"></i>
+              {% endif %}
+              {{ u.email }}
+            </td>
+            <td style="vertical-align: middle;">
+              {{ u.given_name }} {{ u.family_name }}
+            </td>
+            <td style="vertical-align: middle; text-align: right">
+              <a href="#"
+                  title="Remove user from machine"
+                  class="w3-button w3-grey w3-round user-remove"
+                  data-user-id="{{ u.id }}">
+                  {{ icon('user-xmark') }}
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </table>
+    </p>
+  </div>
   {% endif %}
+  <br/>
+{% endblock %}
+
+{% block javascript %}
+
+<script type="text/javascript">
+ document.addEventListener('DOMContentLoaded', function() {
+     const sendPostRequest = (url, userId) => {
+         fetch(url, {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ user_id: userId, machine_id: {{ machine.id }} })
+         })
+             .then(response => location.reload())
+             .catch(error => console.error('Error:', error));
+     };
+     document.querySelectorAll('.user-remove').forEach(item => {
+         item.addEventListener('click', event => {
+             event.preventDefault();
+             sendPostRequest('/unshare_machine', item.dataset.userId);
+         });
+     });
+ });
+</script>
+
 {% endblock %}
