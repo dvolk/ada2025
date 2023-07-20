@@ -3622,7 +3622,7 @@ def share_accept(timed_share_token):
 
     s = URLSafeTimedSerializer(ADA2025_SHARE_TOKEN_SECRET_KEY)
     try:
-        share_token = s.loads(timed_share_token, max_age=1800) # in seconds
+        share_token = s.loads(timed_share_token, max_age=1800)  # in seconds
     except Exception as e:
         logging.warning(f"token exception: {e}")
         flash(
