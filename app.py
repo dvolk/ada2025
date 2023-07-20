@@ -3631,8 +3631,8 @@ def share_accept(timed_share_token):
     )
 
     if (
-        (datetime.datetime.utcnow() - token_creation_time).total_seconds() / 60 > 30
-    ):  # ensure that share token was not generated more than 30 minutes ago
+        datetime.datetime.utcnow() - token_creation_time
+    ).total_seconds() / 60 > 30:  # ensure that share token was not generated more than 30 minutes ago
         flash(
             "That share link has expired. Please request a new one from the machine's owner."
         )
@@ -4016,6 +4016,7 @@ def unshare_machine_from_self():
     flash(gettext("Removed machine from list"), category="success")
     return redirect(url_for("machines"))
 
+
 @app.route("/unshare_machine", methods=["POST"])
 @limiter.limit("60 per minute")
 @login_required
@@ -4041,6 +4042,7 @@ def unshare_machine():
     db.session.commit()
 
     return "OK"
+
 
 @log_function_call
 def run_machine_command(machine, command):
