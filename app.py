@@ -4016,6 +4016,31 @@ def unshare_machine_from_self():
     flash(gettext("Removed machine from list"), category="success")
     return redirect(url_for("machines"))
 
+@app.route("/unshare_machine", methods=["POST"])
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def unshare_machine():
+    user_id = request.json.get("user_id")
+    machine_id = request.json.get("machine_id")
+
+    if not user_id:
+        abort(404)
+
+    if not machine_id:
+        abort(404)
+
+    user = User.query.filter_by(id=user_id).first_or_404()
+    machine = Machine.query.filter_by(id=machine_id).first_or_404()
+
+    perm_ok = machine.owner == current_user
+    if not perm_ok:
+        abort(403)
+
+    machine.shared_users.remove(user)
+    db.session.commit()
+
+    return "OK"
 
 @log_function_call
 def run_machine_command(machine, command):
