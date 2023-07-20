@@ -173,6 +173,9 @@ ADA2025_EMAIL_LOGIN_SECRET_KEY = os.getenv(
     "ADA2025_EMAIL_LOGIN_SECRET_KEY"
 ) or gen_token(32)
 
+ADA2025_SHARE_TOKEN_SECRET_KEY = os.getenv(
+    "ADA2025_SHARE_TOKEN_SECRET_KEY"
+) or gen_token(32)
 
 admin = Admin(
     url="/flaskyadmin",
@@ -2338,7 +2341,7 @@ def settings():
                         "Sorry, that email can't be used. Please choose another or contact us for support."
                     )
             if form.password.data:
-                if form.password.data != form.confirm_password.data:
+                if form.password.data != form.password_confirm.data:
                     error_msg = gettext("The passwords you entered don't match.")
                 if len(form.password.data) < 8:
                     error_msg = gettext("New password has to be at least 8 characters.")
@@ -3242,6 +3245,19 @@ def rename_machine():
     return redirect(url_for("machines"))
 
 
+@app.route("/get_machine_state/<machine_id>")
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def get_machine_state(machine_id):
+    machine = Machine.query.filter_by(id=machine_id).first()
+    if not machine or not (
+        current_user in machine.shared_users or current_user == machine.owner
+    ):
+        return {"machine_state": None}
+    return {"machine_state": str(machine.state)}
+
+
 @app.route("/admin")
 @limiter.limit("60 per minute")
 @login_required
@@ -3583,19 +3599,39 @@ def share_machine(machine_id):
         flash("You can't share that machine", "danger")
         return redirect(url_for("welcome"))
 
-    return render_template("share.jinja2", title=gettext("Machines"), machine=machine)
+    s = URLSafeTimedSerializer(ADA2025_SHARE_TOKEN_SECRET_KEY)
+    timed_share_token = s.dumps(machine.share_token)
+
+    return render_template(
+        "share.jinja2",
+        title=gettext("Machines"),
+        machine=machine,
+        timed_share_token=timed_share_token,
+    )
 
 
-@app.route("/share_accept/<machine_share_token>")
+@app.route("/share_accept/<timed_share_token>")
 @limiter.limit("60 per hour")
 @login_required
 @profile_complete_required
-def share_accept(machine_share_token):
+def share_accept(timed_share_token):
     """
     This is the endpoint hit by the user accepting a share
     """
     audit = create_audit("share accept", user=current_user)
-    machine = Machine.query.filter_by(share_token=machine_share_token).first()
+
+    s = URLSafeTimedSerializer(ADA2025_SHARE_TOKEN_SECRET_KEY)
+    try:
+        share_token = s.loads(timed_share_token, max_age=1800)  # in seconds
+    except Exception as e:
+        logging.warning(f"token exception: {e}")
+        flash(
+            "That share link has expired. Please request a new one from the machine's owner."
+        )
+        finish_audit(audit, "invalid token")
+        return redirect(url_for("machines"))
+
+    machine = Machine.query.filter_by(share_token=share_token).first()
 
     if not machine:
         finish_audit(audit, "bad token")
@@ -3970,6 +4006,33 @@ def unshare_machine_from_self():
 
     flash(gettext("Removed machine from list"), category="success")
     return redirect(url_for("machines"))
+
+
+@app.route("/unshare_machine", methods=["POST"])
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def unshare_machine():
+    user_id = request.json.get("user_id")
+    machine_id = request.json.get("machine_id")
+
+    if not user_id:
+        abort(404)
+
+    if not machine_id:
+        abort(404)
+
+    user = User.query.filter_by(id=user_id).first_or_404()
+    machine = Machine.query.filter_by(id=machine_id).first_or_404()
+
+    perm_ok = machine.owner == current_user
+    if not perm_ok:
+        abort(403)
+
+    machine.shared_users.remove(user)
+    db.session.commit()
+
+    return "OK"
 
 
 @log_function_call
