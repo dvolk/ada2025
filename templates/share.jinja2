@@ -10,7 +10,7 @@
   <div class="w3-container w3-pale-yellow">
   <p class="w3-large">{{ gettext("You can share this link with users to give them access to the machine:") }}</p>
 
-  <h2>{{ icon('link') }} <a style="text-decoration: underline;" href="/share_accept/{{ machine.share_token }}">{{ gettext("Share link") }}</a></h2>
+  <h2>{{ icon('link') }} <a style="text-decoration: underline;" href="/share_accept/{{ timed_share_token }}">{{ gettext("Share link") }}</a></h2>
   {{ idea(gettext("Right click on the link and select <i>copy link address.</i>")) }}
   </div>
 
@@ -18,10 +18,10 @@
   {% if current_user == machine.owner %}
     <p>{{ gettext("As the owner you can revoke all shares and generate a new share link:") }}</p>
 
-    <p><a class="w3-btn w3-red w3-round" href="/share_revoke/{{ machine.id }}">{{ icon('link-slash') }} {{ gettext("Revoke share") }}</a></p>
+    <p><a class="w3-btn w3-red w3-round" href="/share_revoke/{{ machine.id }}">{{ icon('link-slash') }} {{ gettext("Revoke all shares") }}</a></p>
 
     <div class="w3-container w3-light-gray">
-    {{ info("You may remove/ban a specific user from your machine below:") }}
+    {{ info("You can see the users that have access to this machine below:") }}
     <p>
       <table class="w3-table-all">
         <thead>
@@ -50,12 +50,6 @@
                   class="w3-button w3-grey w3-round user-disable"
                   data-user-id="{{ u.id }}">
                   {{ icon('user-xmark') }}
-              </a>
-              <a href="#"
-                 title="Ban user from machine"
-                 class="w3-button w3-pale-red w3-round user-remove"
-                 data-user-id="{{ u.id }}">
-                 {{ icon('gavel') }}
               </a>
             </td>
           </tr>
