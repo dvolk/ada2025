@@ -173,6 +173,9 @@ ADA2025_EMAIL_LOGIN_SECRET_KEY = os.getenv(
     "ADA2025_EMAIL_LOGIN_SECRET_KEY"
 ) or gen_token(32)
 
+ADA2025_SHARE_TOKEN_SECRET_KEY = os.getenv(
+    "ADA2025_SHARE_TOKEN_SECRET_KEY"
+) or gen_token(32)
 
 admin = Admin(
     url="/flaskyadmin",
@@ -3596,19 +3599,48 @@ def share_machine(machine_id):
         flash("You can't share that machine", "danger")
         return redirect(url_for("welcome"))
 
-    return render_template("share.jinja2", title=gettext("Machines"), machine=machine)
+    s = URLSafeTimedSerializer(ADA2025_EMAIL_LOGIN_SECRET_KEY)
+    data_to_encode = [
+        machine.share_token,
+        str(datetime.datetime.utcnow()),
+    ]
+    timed_share_token = s.dumps(data_to_encode)
+
+    return render_template(
+        "share.jinja2",
+        title=gettext("Machines"),
+        machine=machine,
+        timed_share_token=timed_share_token,
+    )
 
 
-@app.route("/share_accept/<machine_share_token>")
+@app.route("/share_accept/<timed_share_token>")
 @limiter.limit("60 per hour")
 @login_required
 @profile_complete_required
-def share_accept(machine_share_token):
+def share_accept(timed_share_token):
     """
     This is the endpoint hit by the user accepting a share
     """
     audit = create_audit("share accept", user=current_user)
-    machine = Machine.query.filter_by(share_token=machine_share_token).first()
+
+    s = URLSafeTimedSerializer(ADA2025_EMAIL_LOGIN_SECRET_KEY)
+    decoded_data = s.loads(timed_share_token)
+    token_creation_time = datetime.datetime.strptime(
+        decoded_data[1], "%Y-%m-%d %H:%M:%S.%f"
+    )
+
+    if (
+        (datetime.datetime.utcnow() - token_creation_time).total_seconds() / 60 > 30
+    ):  # ensure that share token was not generated more than 30 minutes ago
+        flash(
+            "That share link has expired. Please request a new one from the machine's owner."
+        )
+        logging.info(f"Attempted use of expired share token")
+        finish_audit(audit, "token expired")
+        return redirect(url_for("machines"))
+
+    machine = Machine.query.filter_by(share_token=decoded_data[0]).first()
 
     if not machine:
         finish_audit(audit, "bad token")
