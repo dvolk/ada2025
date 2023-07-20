@@ -3626,7 +3626,8 @@ def share_accept(timed_share_token):
     except Exception as e:
         logging.warning(f"token exception: {e}")
         flash(
-            "That share link has expired. Please request a new one from the machine's owner."
+            "That share link has expired. Please request a new one from the machine's owner.",
+            "danger",
         )
         finish_audit(audit, "invalid token")
         return redirect(url_for("machines"))
