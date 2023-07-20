@@ -16,5 +16,8 @@ c.ServerApp.open_browser = False
 c.ServerApp.password = ""
 c.ServerApp.token = ""
 
+# prevent bug with xsrf cookie
+c.ServerApp.disable_check_xsrf = True
+
 # set the port
 c.ServerApp.port = 8889
