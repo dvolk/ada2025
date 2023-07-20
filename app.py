@@ -3599,12 +3599,8 @@ def share_machine(machine_id):
         flash("You can't share that machine", "danger")
         return redirect(url_for("welcome"))
 
-    s = URLSafeTimedSerializer(ADA2025_EMAIL_LOGIN_SECRET_KEY)
-    data_to_encode = [
-        machine.share_token,
-        str(datetime.datetime.utcnow()),
-    ]
-    timed_share_token = s.dumps(data_to_encode)
+    s = URLSafeTimedSerializer(ADA2025_SHARE_TOKEN_SECRET_KEY)
+    timed_share_token = s.dumps(machine.share_token)
 
     return render_template(
         "share.jinja2",
@@ -3624,23 +3620,18 @@ def share_accept(timed_share_token):
     """
     audit = create_audit("share accept", user=current_user)
 
-    s = URLSafeTimedSerializer(ADA2025_EMAIL_LOGIN_SECRET_KEY)
-    decoded_data = s.loads(timed_share_token)
-    token_creation_time = datetime.datetime.strptime(
-        decoded_data[1], "%Y-%m-%d %H:%M:%S.%f"
-    )
-
-    if (
-        datetime.datetime.utcnow() - token_creation_time
-    ).total_seconds() / 60 > 30:  # ensure that share token was not generated more than 30 minutes ago
+    s = URLSafeTimedSerializer(ADA2025_SHARE_TOKEN_SECRET_KEY)
+    try:
+        share_token = s.loads(timed_share_token, max_age=1800)
+    except Exception as e:
+        logging.warning(f"token exception: {e}")
         flash(
             "That share link has expired. Please request a new one from the machine's owner."
         )
-        logging.info(f"Attempted use of expired share token")
-        finish_audit(audit, "token expired")
+        finish_audit(audit, "invalid token")
         return redirect(url_for("machines"))
 
-    machine = Machine.query.filter_by(share_token=decoded_data[0]).first()
+    machine = Machine.query.filter_by(share_token=share_token).first()
 
     if not machine:
         finish_audit(audit, "bad token")
