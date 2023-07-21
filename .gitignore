@@ -3,3 +3,4 @@ instance
 __pycache__
 translations/messages.pot
 translations/**/*.mo
+*_nginx.conf
