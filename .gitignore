@@ -9,3 +9,4 @@ translations/**/*.mo
 *.crt
 *.key
 *.swp
+*_nginx.conf
