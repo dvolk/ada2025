@@ -137,6 +137,42 @@ Note that if you're using an external account provider, your name and email will
 
 You can also set or change your password.
 
+* Common tasks
+
+** Adding an environment to Jupyter Notebook or Lab
+
+You can add more environments to the web Jupyter Notebook or Lab:
+
+Please active the conda or virtual environment you want to add, and run the following commands:
+
+#+BEGIN_SRC bash
+conda install ipykernel
+#+END_SRC
+
+or
+
+#+BEGIN_SRC bash
+pip install ipykernel
+#+END_SRC
+
+then:
+
+#+BEGIN_SRC bash
+python -m ipykernel install --user --name=myenv
+#+END_SRC
+
+The new environment should now appear as an option to launch. You may have to reload the page before it appears.
+
+** Change the hostname of the machine
+
+Changing the name in the Ada web interface only changes the name in the web interface. If you would like to change the name of the machine on the machine itself, please run the following command:
+
+#+BEGIN_SRC bash
+sudo hostnamectl set-hostname your-new-hostname
+#+END_SRC
+
+You will have to reboot for this to be reflected system-wide (for example in the browser tab)
+
 * Feedback
 
 Thank you for using Ada. We always appreciate hearing from users about their experience, feedback and ideas.
