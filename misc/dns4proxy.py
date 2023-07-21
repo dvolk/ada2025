@@ -60,7 +60,7 @@ class MyResolver(BaseResolver):
     def resolve(self, request, handler):
         reply = request.reply()
         qname = request.q.qname
-        qn = str(qname)
+        qn = str(qname).lower()
 
         match_group = config.domain_regex.match(qn)
         client_ip = ip_address(handler.client_address[0])
