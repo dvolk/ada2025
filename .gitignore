@@ -3,3 +3,9 @@ instance
 __pycache__
 translations/messages.pot
 translations/**/*.mo
+*~
+*#
+*.cer
+*.crt
+*.key
+*.swp
