@@ -121,7 +121,7 @@ def main(password):
     logger = DNSLogger("request,reply,truncated,error", False, logf=logf)
     resolver = MyResolver()
     server = DNSServer(
-        resolver, port=5353, address="0.0.0.0", logger=logger, handler=DNSHandler
+        resolver, port=53, address="0.0.0.0", logger=logger, handler=DNSHandler
     )
     server.start_thread()
 
