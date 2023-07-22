@@ -4275,7 +4275,7 @@ class OpenStackService(VirtService):
 
                 if hostname_postfix := mt.extra_data.get("hostname_postfix"):
                     m.hostname = (
-                        misc.dnscrypto.encoded_ip(m.ip, ADA2025_DNS_SECRET_KEY)
+                        misc.dnscrypto.encode_ip(m.ip, ADA2025_DNS_SECRET_KEY)
                         + hostname_postfix
                     )
 
