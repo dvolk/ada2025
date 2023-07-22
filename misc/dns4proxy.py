@@ -38,6 +38,7 @@ class Config:
         with open(filename) as f:
             config = yaml.safe_load(f)
         print(config)
+        self.secret_key = config["secret_key"]
         self.networks = [Network(**c) for c in config["networks"]]
         self.networks_by_name = {n.name: n for n in self.networks}
         self.networks_by_resolved_subnet = {}
@@ -104,7 +105,7 @@ def logf(s):
 
 def main(password):
     global PASSWORD
-    PASSWORD = password
+    PASSWORD = config.secret_key
 
     # Set up logging to file
     logger = logging.getLogger()

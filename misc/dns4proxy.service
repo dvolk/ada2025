@@ -1,0 +1,13 @@
+[Unit]
+Description=ada2025 dns4proxy
+After=network.target
+
+[Service]
+WorkingDirectory=/root/ada2025/misc
+ExecStart=/root/ada2025/misc/env/bin/python dns4proxy.py
+Restart=always
+RestartSec=1
+LimitNOFILE=4096
+
+[Install]
+WantedBy=multi-user.target

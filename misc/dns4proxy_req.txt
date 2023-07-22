@@ -1,0 +1,4 @@
+argh==0.28.1
+dnslib==0.9.23
+pycryptodome==3.18.0
+PyYAML==6.0.1
