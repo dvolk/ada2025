@@ -99,6 +99,8 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
+import misc.dnscrypto
+
 
 def str_to_bool(s):
     return s and s.strip().lower() == "true"
@@ -176,6 +178,8 @@ ADA2025_EMAIL_LOGIN_SECRET_KEY = os.getenv(
 ADA2025_SHARE_TOKEN_SECRET_KEY = os.getenv(
     "ADA2025_SHARE_TOKEN_SECRET_KEY"
 ) or gen_token(32)
+
+ADA2025_DNS_SECRET_KEY = os.getenv("ADA2025_DNS_SECRET_KEY") or gen_token(32)
 
 admin = Admin(
     url="/flaskyadmin",
@@ -4270,7 +4274,10 @@ class OpenStackService(VirtService):
                     m.hostname = ""
 
                 if hostname_postfix := mt.extra_data.get("hostname_postfix"):
-                    m.hostname = m.ip.replace(".", "-") + hostname_postfix
+                    m.hostname = (
+                        misc.dnscrypto.encoded_ip(m.ip, ADA2025_DNS_SECRET_KEY)
+                        + hostname_postfix
+                    )
 
                 configure_nginx(m)
 

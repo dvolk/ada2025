@@ -1,8 +1,10 @@
+import argh
 from ipaddress import ip_network
+import dnscrypto
 
 
-def generate_server_block(ip):
-    server_name = ip.replace(".", "-") + ".machine.ada.oxfordfun.com"
+def generate_server_block(ip, password):
+    server_name = dnscrypto.encode_ip(ip, password) + ".machine.ada.oxfordfun.com"
     return f"""
 server {{
     listen 443 ssl;
@@ -29,6 +31,12 @@ network_list = [
     "172.16.100.0/22",
 ]
 
-for network in network_list:
-    for ip in ip_network(network):
-        print(generate_server_block(str(ip)))
+
+def main(password):
+    for network in network_list:
+        for ip in ip_network(network):
+            print(generate_server_block(str(ip), password))
+
+
+if __name__ == "__main__":
+    argh.dispatch_command(main)

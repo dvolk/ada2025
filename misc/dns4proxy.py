@@ -4,7 +4,6 @@ unless the client is in the direct networks list, in which case it
 answers with an ip parsed from the hostname.
 """
 
-import re
 import time
 from ipaddress import ip_network, ip_address
 import random
@@ -14,6 +13,9 @@ from logging.handlers import TimedRotatingFileHandler
 import yaml
 from dnslib import RR, QTYPE, RCODE, A
 from dnslib.server import DNSServer, DNSHandler, BaseResolver, DNSLogger
+import argh
+
+import dnscrypto
 
 
 class Network:
@@ -37,7 +39,6 @@ class Config:
             config = yaml.safe_load(f)
         print(config)
         self.domain_postfix = config["domain_postfix"]
-        self.domain_regex = re.compile(config["domain_regex"])
         self.networks = [Network(**c) for c in config["networks"]]
         self.networks_by_name = {n.name: n for n in self.networks}
         self.networks_by_resolved_subnet = {}
@@ -60,28 +61,30 @@ class MyResolver(BaseResolver):
     def resolve(self, request, handler):
         reply = request.reply()
         qname = request.q.qname
-        qn = str(qname).lower()
+        qn = str(qname)
 
-        match_group = config.domain_regex.match(qn)
+        parsed_host = qn[0:13].lower()
         client_ip = ip_address(handler.client_address[0])
 
-        if not match_group:
+        try:
+            parsed_ip = dnscrypto.decode_ip(parsed_host, PASSWORD)
+        except Exception as e:
+            logging.warning(f"no decoded ip for {parsed_host}: {str(e)}")
             reply.header.rcode = RCODE.NXDOMAIN
             return reply
-
-        # convert matched groups to IP format
-        parsed_ip = ".".join(match_group.groups())
 
         # validate the parsed IP
         try:
             ip_address(parsed_ip)
         except Exception:
+            logging.warning(f"bad decoded ip for {parsed_ip}")
             reply.header.rcode = RCODE.NXDOMAIN
             return reply
 
         net = config.network_from_resolved_ip(parsed_ip)
 
         if not net:
+            logging.warning(f"no network for ip for {parsed_ip}")
             reply.header.rcode = RCODE.NXDOMAIN
             return reply
 
@@ -100,7 +103,10 @@ def logf(s):
     logger.info(s)
 
 
-def main():
+def main(password):
+    global PASSWORD
+    PASSWORD = password
+
     # Set up logging to file
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)  # specify the level of logging details
@@ -116,7 +122,7 @@ def main():
     logger = DNSLogger("request,reply,truncated,error", False, logf=logf)
     resolver = MyResolver()
     server = DNSServer(
-        resolver, port=53, address="0.0.0.0", logger=logger, handler=DNSHandler
+        resolver, port=5353, address="0.0.0.0", logger=logger, handler=DNSHandler
     )
     server.start_thread()
 
@@ -129,4 +135,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    argh.dispatch_command(main)
