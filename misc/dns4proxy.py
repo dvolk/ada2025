@@ -103,7 +103,7 @@ def logf(s):
     logger.info(s)
 
 
-def main(password):
+def main():
     global PASSWORD
     PASSWORD = config.secret_key
 
