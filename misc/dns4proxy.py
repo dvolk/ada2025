@@ -38,7 +38,6 @@ class Config:
         with open(filename) as f:
             config = yaml.safe_load(f)
         print(config)
-        self.domain_postfix = config["domain_postfix"]
         self.networks = [Network(**c) for c in config["networks"]]
         self.networks_by_name = {n.name: n for n in self.networks}
         self.networks_by_resolved_subnet = {}
