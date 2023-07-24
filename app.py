@@ -3390,10 +3390,10 @@ def mk_safe_machine_name(username):
 
 class DataTransferForm(FlaskForm):
     data_source_type = SelectField(
-        lazy_gettext("Source Type"), validators=[DataRequired()], coerce=int
+        lazy_gettext("Data Source Type"), validators=[DataRequired()], coerce=int
     )
-    data_source_ds = SelectField(lazy_gettext("Source"), coerce=int)
-    data_source_machine = SelectField(lazy_gettext("Source"), coerce=int)
+    data_source_ds = SelectField(lazy_gettext("Data Source"), coerce=int)
+    data_source_machine = SelectField(lazy_gettext("Data Source"), coerce=int)
     destination_machine = SelectField(
         lazy_gettext("Destination Machine"), validators=[DataRequired()], coerce=int
     )
