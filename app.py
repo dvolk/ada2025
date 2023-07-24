@@ -622,6 +622,7 @@ class User(db.Model, UserMixin):
     )
 
     data_transfer_jobs = db.relationship("DataTransferJob", back_populates="user")
+    machine_data_transfer_jobs = db.relationship("MachineDataTransferJob", back_populates="user")
     problem_reports = db.relationship("ProblemReport", back_populates="user")
     audit_events = db.relationship("Audit", back_populates="user")
 
@@ -1018,6 +1019,30 @@ class DataTransferJob(db.Model):
 
     def __repr__(self):
         return f"<Data {self.data_source_id}>"
+
+
+class MachineDataTransferJob(db.Model):
+    """
+    The MachineDataTransferJob tracks a copy from a Machine into another Machine
+    """
+
+    id = db.Column(db.Integer, primary_key=True)
+    state = db.Column(db.Enum(DataTransferJobState), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    data_source_machine_id = db.Column(db.Integer, db.ForeignKey("machine.id"))
+    destination_machine_id = db.Column(db.Integer, db.ForeignKey("machine.id"))
+    creation_date = db.Column(
+        db.DateTime, default=datetime.datetime.utcnow, nullable=False
+    )
+
+    user = db.relationship("User", back_populates="machine_data_transfer_jobs")
+    problem_reports = db.relationship(
+        "ProblemReport", back_populates="machine_data_transfer_job"
+    )
+    audit_events = db.relationship("Audit", back_populates="machine_data_transfer_job")
+
+    def __repr__(self):
+        return f"<Data {self.machine_data_source_id}>"
 
 
 class ProtectedDataTransferJobModelView(ProtectedModelView):
@@ -1459,6 +1484,10 @@ class ProblemReport(db.Model):
     data_transfer_job = db.relationship(
         "DataTransferJob", back_populates="problem_reports"
     )
+    machine_data_transfer_job_id = db.Column(db.Integer, db.ForeignKey("machine_data_transfer_job.id"))
+    machine_data_transfer_job = db.relationship(
+        "MachineDataTransferJob", back_populates="problem_reports"
+    )
 
 
 class ProtectedProblemReportModelView(ProtectedModelView):
@@ -1499,6 +1528,8 @@ class Audit(db.Model):
     machine = db.relationship("Machine")
     data_transfer_job_id = db.Column(db.Integer, db.ForeignKey("data_transfer_job.id"))
     data_transfer_job = db.relationship("DataTransferJob")
+    machine_data_transfer_job_id = db.Column(db.Integer, db.ForeignKey("machine_data_transfer_job.id"))
+    machine_data_transfer_job = db.relationship("MachineDataTransferJob")
 
     def __repr__(self):
         return f"<////{self.id}//// {self.action} -> {self.state}>"
