@@ -907,7 +907,7 @@ class DataSource(db.Model):
     rsync to sync the data into the machine ip.
     """
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     import_name = db.Column(db.String(256), nullable=False)
     is_enabled = db.Column(db.Boolean, nullable=False, default=False)
     name = db.Column(db.String, unique=True, nullable=False)
