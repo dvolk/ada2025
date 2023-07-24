@@ -919,7 +919,7 @@ class DataSource(db.Model):
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
-    is_machine = db.Column(db.Boolean, nullable=True, default=False)
+    is_machine = db.Column(db.Boolean, nullable=False, default=False)
     machine_id = db.Column(db.Integer, db.ForeignKey("machine.id"), primary_key=True, nullable=True)
 
     users = db.relationship(
