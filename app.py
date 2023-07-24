@@ -1066,6 +1066,27 @@ class ProtectedDataTransferJobModelView(ProtectedModelView):
         "data_source": _color_formatter,
     }
 
+class ProtectedMachineDataTransferJobModelView(ProtectedModelView):
+    column_list = (
+        "id",
+        "state",
+        "user",
+        "data_source_machine_id",
+        "destination_machine_id",
+        "creation_date",
+    )
+    form_columns = ("state", "user", "data_source_machine_id", "destination_machine_id")
+    column_searchable_list = ("state",)
+    column_sortable_list = ("id", "state", "creation_date")
+    column_filters = ("state", "user", "data_source_machine_id", "destination_machine_id")
+    column_auto_select_related = True
+    column_formatters = {
+        "state": _color_formatter,
+        "user": _color_formatter,
+        "data_source_machine_id": _color_formatter,
+        "destination_machine_id": _color_formatter,
+    }
+
 
 class MachineProvider(db.Model):
     """
@@ -1639,6 +1660,7 @@ class ProtectedAuditModelView(ProtectedModelView):
 admin.add_view(ProtectedUserModelView(User, db.session))
 admin.add_view(ProtectedDataSourceModelView(DataSource, db.session))
 admin.add_view(ProtectedDataTransferJobModelView(DataTransferJob, db.session))
+admin.add_view(ProtectedMachineDataTransferJobModelView(MachineDataTransferJob, db.session))
 admin.add_view(ProtectedGroupModelView(Group, db.session))
 admin.add_view(ProtectedGroupWelcomePageModelView(GroupWelcomePage, db.session))
 admin.add_view(ProtectedMachineProviderModelView(MachineProvider, db.session))
