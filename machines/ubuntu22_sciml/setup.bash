@@ -315,4 +315,12 @@ chmod a+x /home/ubuntu/Desktop/spyder.desktop
 EOF
 
 
+# OPTIONAL: Install the nix package manager
+
+
+wget https://nixos.org/nix/install
+chmod a+x install
+yes | ./install --daemon
+
+
 ### THE END
