@@ -68,16 +68,16 @@
     </div>
     <div class="w3-container w3-pale-yellow">
         <p>
-            {{ form.source_type.label() }}
-            {{ form.source_type(class="w3-input w3-round w3-white", id="source-type-selector") }}
+            {{ form.data_source_type.label() }}
+            {{ form.data_source_type(class="w3-input w3-round w3-white", id="data-source-type-selector") }}
         </p>
         <p id="source">
-            {{ form.source_ds.label(id="source-label") }}
-            {{ form.source_ds(class="w3-input w3-round w3-white", id="source-selector") }}
+            {{ form.data_source_ds.label(id="data-source-label") }}
+            {{ form.data_source_ds(class="w3-input w3-round w3-white", id="data-source-selector") }}
         </p>
         <p>
-            {{ form.destination.label() }}
-            {{ form.destination(class="w3-input w3-round w3-white") }}
+            {{ form.destination_machine.label() }}
+            {{ form.destination_machine(class="w3-input w3-round w3-white") }}
         </p>
 
         {{ form.submit(class="w3-button w3-round w3-blue") }}
@@ -91,18 +91,18 @@
 
 {% block javascript %}
 <script>
-  function select_source_type(){
-    var selector = document.getElementById("source-type-selector")
+  function select_data_source_type(){
+    var selector = document.getElementById("data-source-type-selector")
     var st = selector.options[selector.selectedIndex].innerHTML;
-    document.getElementById('source-label').innerHTML = st;
+    document.getElementById('data-source-label').innerHTML = st;
     if (st == "Data Source") {
-      document.getElementById('source-selector').innerHTML = '{{ form.source_ds(class="w3-input w3-round w3-white", id="source-selector") }}'
+      document.getElementById('data-source-selector').innerHTML = '{{ form.data_source_ds(class="w3-input w3-round w3-white", id="source-selector") }}'
     }
     else if (st == "Machine") {
-      document.getElementById('source-selector').innerHTML = '{{ form.source_machine(class="w3-input w3-round w3-white", id="source-selector") }}'
+      document.getElementById('data-source-selector').innerHTML = '{{ form.data_source_machine(class="w3-input w3-round w3-white", id="source-selector") }}'
     }
   }
-  select_source_type();
-  document.getElementById("source-type-selector").onchange = select_source_type;
+  select_data_source_type();
+  document.getElementById("data-source-type-selector").onchange = select_data_source_type;
 </script>
 {% endblock %}

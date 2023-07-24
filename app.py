@@ -3389,11 +3389,13 @@ def mk_safe_machine_name(username):
 
 
 class DataTransferForm(FlaskForm):
-    data_source = SelectField(
-        lazy_gettext("Data Source"), validators=[DataRequired()], coerce=int
+    data_source_type = SelectField(
+        lazy_gettext("Source Type"), validators=[DataRequired()], coerce=int
     )
-    machine = SelectField(
-        lazy_gettext("Machine"), validators=[DataRequired()], coerce=int
+    data_source_ds = SelectField(lazy_gettext("Source"), coerce=int)
+    data_source_machine = SelectField(lazy_gettext("Source"), coerce=int)
+    destination_machine = SelectField(
+        lazy_gettext("Destination Machine"), validators=[DataRequired()], coerce=int
     )
     submit = SubmitField(lazy_gettext("Submit"))
 
@@ -3457,27 +3459,37 @@ def data():
         # a normal user can see their own stuff
         data_sources = current_user.data_sources
         machines = current_user.owned_machines + current_user.shared_machines
+    all_data_sources = data_sources + list(machines)
 
     # fill in the form select options
     form = DataTransferForm()
-    form.data_source.choices = [
+    form.data_source_type.choices = [(0, "Data Source"), (1, "Machine")]
+    form.data_source_ds.choices = [
         (ds.id, f"{ds.name} ({ds.data_size} MB)") for ds in data_sources
     ]
-    form.machine.choices = [
+    form.data_source_machine.choices = [
         (m.id, m.display_name) for m in machines if m.state == MachineState.READY
     ]
+    form.destination_machine.choices = form.data_source_machine.choices
 
     if request.method == "POST":
         audit = create_audit("data transfer", user=current_user)
-        if form.validate_on_submit():
-            machine = Machine.query.filter_by(id=form.machine.data).first()
-            data_source = DataSource.query.filter_by(id=form.data_source.data).first()
 
-            if not machine or not data_source:
+        if form.validate_on_submit() and (
+            form.data_source_ds.data or form.data_source_machine.data
+        ):
+            data_source_type = form.data_source_type.data
+            destination_machine = Machine.query.filter_by(id=form.destination.data).first()
+            if data_source_type == "Data Source":
+                data_source = DataSource.query.filter_by(id=form.source_ds.data).first()
+            elif data_source == "Machine":
+                data_source = Machine.query.filter_by(id=form.source_machine.data).first()
+
+            if not destination_machine or not data_source:
                 finish_audit(audit, "bad args")
                 abort(404)
 
-            if machine not in machines or data_source not in data_sources:
+            if destination_machine not in machines or data_source not in all_data_sources:
                 finish_audit(audit, "bad permissions")
                 abort(403)
 
@@ -3487,9 +3499,9 @@ def data():
                 state=DataTransferJobState.RUNNING,
                 user=current_user,
                 data_source=data_source,
-                machine=machine,
+                machine=destination_machine,
             )
-            update_audit(audit, machine=machine, data_transfer_job=job)
+            update_audit(audit, machine=destination_machine, data_transfer_job=job)
             db.session.add(job)
             db.session.commit()
             threading.Thread(
