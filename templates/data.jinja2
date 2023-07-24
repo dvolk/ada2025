@@ -72,8 +72,8 @@
             {{ form.data_source_type(class="w3-input w3-round w3-white", id="data-source-type-selector") }}
         </p>
         <p id="source">
-            {{ form.data_source_ds.label(id="data-source-label") }}
-            {{ form.data_source_ds(class="w3-input w3-round w3-white", id="data-source-selector") }}
+            {{ form.data_source_external.label(id="data-source-label") }}
+            {{ form.data_source_external(class="w3-input w3-round w3-white", id="data-source-selector") }}
         </p>
         <p>
             {{ form.destination_machine.label() }}
@@ -95,8 +95,8 @@
     var selector = document.getElementById("data-source-type-selector")
     var st = selector.options[selector.selectedIndex].innerHTML;
     document.getElementById('data-source-label').innerHTML = st;
-    if (st == "Data Source") {
-      document.getElementById('data-source-selector').innerHTML = '{{ form.data_source_ds(class="w3-input w3-round w3-white", id="source-selector") }}'
+    if (st == "External Data Source") {
+      document.getElementById('data-source-selector').innerHTML = '{{ form.data_source_external(class="w3-input w3-round w3-white", id="source-selector") }}'
     }
     else if (st == "Machine") {
       document.getElementById('data-source-selector').innerHTML = '{{ form.data_source_machine(class="w3-input w3-round w3-white", id="source-selector") }}'

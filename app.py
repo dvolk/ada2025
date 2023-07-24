@@ -3396,7 +3396,7 @@ class DataTransferForm(FlaskForm):
     data_source_type = SelectField(
         lazy_gettext("Data Source Type"), validators=[DataRequired()], coerce=int
     )
-    data_source_ds = SelectField(lazy_gettext("Data Source"), coerce=int)
+    data_source_external = SelectField(lazy_gettext("Data Source"), coerce=int)
     data_source_machine = SelectField(lazy_gettext("Data Source"), coerce=int)
     destination_machine = SelectField(
         lazy_gettext("Destination Machine"), validators=[DataRequired()], coerce=int
@@ -3467,8 +3467,8 @@ def data():
 
     # fill in the form select options
     form = DataTransferForm()
-    form.data_source_type.choices = [(0, "Data Source"), (1, "Machine")]
-    form.data_source_ds.choices = [
+    form.data_source_type.choices = [(0, "External Data Source"), (1, "Machine")]
+    form.data_source_external.choices = [
         (ds.id, f"{ds.name} ({ds.data_size} MB)") for ds in data_sources
     ]
     form.data_source_machine.choices = [
@@ -3480,11 +3480,11 @@ def data():
         audit = create_audit("data transfer", user=current_user)
 
         if form.validate_on_submit() and (
-            form.data_source_ds.data or form.data_source_machine.data
+            form.data_source_external.data or form.data_source_machine.data
         ):
             data_source_type = form.data_source_type.data
             destination_machine = Machine.query.filter_by(id=form.destination.data).first()
-            if data_source_type == "Data Source":
+            if data_source_type == "External Data Source":
                 data_source = DataSource.query.filter_by(id=form.source_ds.data).first()
             elif data_source == "Machine":
                 data_source = Machine.query.filter_by(id=form.source_machine.data).first()
