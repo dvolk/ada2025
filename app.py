@@ -3632,7 +3632,7 @@ def start_machine_data_transfer(data_source_machine_id, destination_machine_id):
         if result:
             logging.info(f"Machine data transfer from id={data_source_machine_id} to id={destination_machine_id} successful.")
         else:
-            logging.info(f"Machine data transfer from {data_source_machine_id} to {destination_machine_id} failed.")
+            logging.info(f"Machine data transfer from id={data_source_machine_id} to id={destination_machine_id} failed.")
 
 
 @app.route("/share_machine/<machine_id>")
