@@ -1036,7 +1036,7 @@ class MachineDataTransferJob(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     state = db.Column(db.Enum(DataTransferJobState), nullable=False, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-    data_source_machine_id = db.Column(db.Integer, db.ForeignKey("machine.id"))
+    machine_id = db.Column(db.Integer, db.ForeignKey("machine.id"))
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
