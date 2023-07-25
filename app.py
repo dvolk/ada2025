@@ -3486,6 +3486,18 @@ def data():
     machine_data_transfer_form.destination_machine.choices = data_transfer_form.machine.choices
 
     if request.method == "POST":
+        if machine_data_transfer_form.validate_on_submit():
+            data_source_machine_id = machine_data_transfer_form.data_source_machine.data
+            destination_machine_id = machine_data_transfer_form.destination_machine.data
+            if data_source_machine_id != destination_machine_id:
+                threading.Thread(
+                    target=start_machine_data_transfer, args=(data_source_machine_id, destination_machine_id)
+                ).start()
+                flash(gettext("Attempting machine data transfer."))
+            else:
+                flash(gettext("You can't transfer from a machine to itself!"), "danger")
+            return redirect(url_for("data"))
+
         audit = create_audit("data transfer", user=current_user)
         if data_transfer_form.validate_on_submit():
             machine = Machine.query.filter_by(id=data_transfer_form.machine.data).first()
@@ -3595,6 +3607,32 @@ def start_data_transfer(job_id, audit_id):
             finish_audit(audit, "error")
             job.state = DataTransferJobState.FAILED
         db.session.commit()
+
+
+@log_function_call
+def start_machine_data_transfer(data_source_machine_id, destination_machine_id):
+    with app.app_context():
+        logging.info(f"Starting machine data transfer from id={data_source_machine_id} to id={destination_machine_id}")
+        result = None
+        data_source_machine = Machine.query.filter_by(id=data_source_machine_id).first()
+        destination_machine = Machine.query.filter_by(id=destination_machine_id).first()
+
+        if not data_source_machine or not destination_machine:
+            logging.info("Bad args for machine data transfer.")
+            return
+
+        result = do_rsync(
+            f"ubuntu@{data_source_machine.ip}",
+            source_port=22,
+            source_dir="/home/ubuntu/outgoing_shares/",
+            dest_host=f"ubuntu@{destination_machine.ip}",
+            dest_dir="/home/ubuntu/incoming_shares/"
+        )
+
+        if result:
+            logging.info(f"Machine data transfer from id={data_source_machine_id} to id={destination_machine_id} successful.")
+        else:
+            logging.info(f"Machine data transfer from {data_source_machine_id} to {destination_machine_id} failed.")
 
 
 @app.route("/share_machine/<machine_id>")
