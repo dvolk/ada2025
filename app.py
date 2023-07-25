@@ -1054,6 +1054,26 @@ class MachineDataTransferJob(db.Model):
         return f"<Machine Data {self.machine_data_source_id}>"
 
 
+class ProtectedMachineDataTransferJobModelView(ProtectedModelView):
+    column_list = (
+        "id",
+        "state",
+        "user",
+        "machine",
+        "creation_date",
+    )
+    form_columns = ("state", "user", "machine")
+    column_searchable_list = ("state",)
+    column_sortable_list = ("id", "state", "creation_date")
+    column_filters = ("state", "user", "machine")
+    column_auto_select_related = True
+    column_formatters = {
+        "state": _color_formatter,
+        "user": _color_formatter,
+        "machine": _color_formatter,
+    }
+
+
 class ProtectedDataTransferJobModelView(ProtectedModelView):
     column_list = (
         "id",
@@ -1655,6 +1675,7 @@ class ProtectedAuditModelView(ProtectedModelView):
 admin.add_view(ProtectedUserModelView(User, db.session))
 admin.add_view(ProtectedDataSourceModelView(DataSource, db.session))
 admin.add_view(ProtectedDataTransferJobModelView(DataTransferJob, db.session))
+admin.add_view(ProtectedMachineDataTransferJobModelView(MachineDataTransferJob, db.session))
 admin.add_view(ProtectedGroupModelView(Group, db.session))
 admin.add_view(ProtectedGroupWelcomePageModelView(GroupWelcomePage, db.session))
 admin.add_view(ProtectedMachineProviderModelView(MachineProvider, db.session))
