@@ -3649,6 +3649,34 @@ def start_data_transfer(job_id, audit_id):
             job.state = DataTransferJobState.FAILED
         db.session.commit()
 
+@log_function_call
+def start_vm_data_transfer(job_id, audit_id):
+    """
+    Thread function that takes a job and runs the vm data transfer
+    """
+    with app.app_context():
+        audit = get_audit(audit_id)
+        result = None
+        job = MachineDataTransferJob.query.filter_by(id=job_id).first()
+        if not job:
+            finish_audit(audit, "bad job id")
+            logging.error(f"job {job_id} not found")
+        else:
+            result = do_rsync(
+                source_host=f"root@{job.data_source_machine.ip}",
+                source_port=job.data_source_machine.source_port,
+                source_dir="/root/outgoing_share/",
+                dest_host=f"root@{job.destination_machine.ip}",
+                dest_dir="/root/incoming_share/",
+            )
+
+        if result:
+            finish_audit(audit, "ok")
+            job.state = DataTransferJobState.DONE
+        else:
+            finish_audit(audit, "error")
+            job.state = DataTransferJobState.FAILED
+        db.session.commit()
 
 @app.route("/share_machine/<machine_id>")
 @limiter.limit("60 per minute")
