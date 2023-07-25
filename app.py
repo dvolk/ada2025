@@ -3402,6 +3402,16 @@ class DataTransferForm(FlaskForm):
     submit = SubmitField(lazy_gettext("Submit"))
 
 
+class MachineDataTransferForm(FlaskForm):
+    data_source_machine = SelectField(
+        lazy_gettext("Data Source Machine"), validators=[DataRequired()], coerce=int
+    )
+    destination_machine = SelectField(
+        lazy_gettext("Destination Machine"), validators=[DataRequired()], coerce=int
+    )
+    submit = SubmitField(lazy_gettext("Submit"))
+
+
 @app.route("/dismiss_datatransferjob", methods=["POST"])
 @limiter.limit("60 per minute")
 @login_required
@@ -3463,19 +3473,23 @@ def data():
         machines = current_user.owned_machines + current_user.shared_machines
 
     # fill in the form select options
-    form = DataTransferForm()
-    form.data_source.choices = [
+    data_transfer_form = DataTransferForm()
+    data_transfer_form.data_source.choices = [
         (ds.id, f"{ds.name} ({ds.data_size} MB)") for ds in data_sources
     ]
-    form.machine.choices = [
+    data_transfer_form.machine.choices = [
         (m.id, m.display_name) for m in machines if m.state == MachineState.READY
     ]
 
+    machine_data_transfer_form = MachineDataTransferForm()
+    machine_data_transfer_form.data_source_machine.choices = data_transfer_form.machine.choices
+    machine_data_transfer_form.destination_machine.choices = data_transfer_form.machine.choices
+
     if request.method == "POST":
         audit = create_audit("data transfer", user=current_user)
-        if form.validate_on_submit():
-            machine = Machine.query.filter_by(id=form.machine.data).first()
-            data_source = DataSource.query.filter_by(id=form.data_source.data).first()
+        if data_transfer_form.validate_on_submit():
+            machine = Machine.query.filter_by(id=data_transfer_form.machine.data).first()
+            data_source = DataSource.query.filter_by(id=data_transfer_form.data_source.data).first()
 
             if not machine or not data_source:
                 finish_audit(audit, "bad args")
@@ -3519,7 +3533,8 @@ def data():
         return render_template(
             "data.jinja2",
             title=gettext("Data"),
-            form=form,
+            data_transfer_form=data_transfer_form,
+            machine_data_transfer_form=machine_data_transfer_form,
             sorted_jobs=sorted_jobs,
         )
 
