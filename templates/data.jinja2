@@ -45,7 +45,6 @@
                     {{ icon('flag') }}
                 </a>
               </td>
-
             </tr>
           {% endfor %}
         </table>
@@ -84,6 +83,8 @@
   </form>
 
   {{ info(gettext("Here you can move data between your owned machines.")) }}
+
+  {{ idea(gettext("Data will be copied from /home/ubuntu/outgoing_shares/ on the source machine to /home/ubuntu/incoming_shares/ on the destination machine.")) }}
 
   <form action="/data" method="POST">
     {{ machine_data_transfer_form.hidden_tag() }}

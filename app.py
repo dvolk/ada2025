@@ -3482,8 +3482,10 @@ def data():
     ]
 
     machine_data_transfer_form = MachineDataTransferForm()
-    machine_data_transfer_form.data_source_machine.choices = data_transfer_form.machine.choices
-    machine_data_transfer_form.destination_machine.choices = data_transfer_form.machine.choices
+    machine_data_transfer_form.data_source_machine.choices = [
+        (m.id, m.display_name) for m in current_user.owned_machines if m.state == MachineState.READY
+    ]
+    machine_data_transfer_form.destination_machine.choices = machine_data_transfer_form.data_source_machine.choices
 
     if request.method == "POST":
         if machine_data_transfer_form.validate_on_submit():
