@@ -3455,10 +3455,10 @@ class DataTransferForm(FlaskForm):
     submit = SubmitField(lazy_gettext("Submit"))
 
 class MachineDataTransferForm(FlaskForm):
-    data_source = SelectField(
+    data_source_machine = SelectField(
         lazy_gettext("Data Source Machine"), validators=[DataRequired()], coerce=int
     )
-    machine = SelectField(
+    destination_machine = SelectField(
         lazy_gettext("Destination Machine"), validators=[DataRequired()], coerce=int
     )
     submit = SubmitField(lazy_gettext("Submit"))
@@ -3534,8 +3534,8 @@ def data():
     ]
 
     machine_data_transfer_form = MachineDataTransferForm()
-    machine_data_transfer_form.data_source.choices = data_transfer_form.machine.choices
-    machine_data_transfer_form.machine.choices = data_transfer_form.machine.choices
+    machine_data_transfer_form.data_source_machine.choices = data_transfer_form.machine.choices
+    machine_data_transfer_form.destination_machine.choices = data_transfer_form.machine.choices
 
 
     if request.method == "POST":
@@ -3569,10 +3569,10 @@ def data():
 
             flash(gettext("Starting data transfer. Refresh page to update status."))
             return redirect(url_for("data"))
-        elif machine_data_transfer_form().validate_on_submit:
+        elif machine_data_transfer_form.validate_on_submit:
             audit = create_audit("machine data transfer", user=current_user)
-            destination_machine = Machine.query.filter_by(id=machine_data_transfer_form.machine.data).first()
-            data_source_machine = Machine.query.filter_by(id=machine_data_transfer_form.data_source.data).first()
+            destination_machine = Machine.query.filter_by(id=machine_data_transfer_form.destination_machine.data).first()
+            data_source_machine = Machine.query.filter_by(id=machine_data_transfer_form.data_source_machine.data).first()
 
             if not destination_machine or not data_source_machine:
                 finish_audit(audit, "bad args")

@@ -90,12 +90,12 @@
     </div>
     <div class="w3-container w3-pale-red">
         <p>
-            {{ machine_data_transfer_form.data_source.label() }}
-            {{ machine_data_transfer_form.data_source(class="w3-input w3-round w3-white") }}
+            {{ machine_data_transfer_form.data_source_machine.label() }}
+            {{ machine_data_transfer_form.data_source_machine(class="w3-input w3-round w3-white") }}
         </p>
         <p>
-            {{ machine_data_transfer_form.machine.label() }}
-            {{ machine_data_transfer_form.machine(class="w3-input w3-round w3-white") }}
+            {{ machine_data_transfer_form.destination_machine.label() }}
+            {{ machine_data_transfer_form.destination_machine(class="w3-input w3-round w3-white") }}
         </p>
 
         {{ machine_data_transfer_form.submit(class="w3-button w3-round w3-blue") }}
