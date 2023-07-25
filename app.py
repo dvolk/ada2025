@@ -3539,8 +3539,8 @@ def data():
 
 
     if request.method == "POST":
-        audit = create_audit("data transfer", user=current_user)
         if data_transfer_form.validate_on_submit():
+            audit = create_audit("data transfer", user=current_user)
             machine = Machine.query.filter_by(id=data_transfer_form.machine.data).first()
             data_source = DataSource.query.filter_by(id=data_transfer_form.data_source.data).first()
 
@@ -3568,6 +3568,36 @@ def data():
             ).start()
 
             flash(gettext("Starting data transfer. Refresh page to update status."))
+            return redirect(url_for("data"))
+        elif machine_data_transfer_form().validate_on_submit:
+            audit = create_audit("machine data transfer", user=current_user)
+            destination_machine = Machine.query.filter_by(id=machine_data_transfer_form.machine.data).first()
+            data_source_machine = Machine.query.filter_by(id=machine_data_transfer_form.data_source.data).first()
+
+            if not destination_machine or not data_source_machine:
+                finish_audit(audit, "bad args")
+                abort(404)
+
+            if destination_machine not in machines or data_source_machine not in machines:
+                finish_audit(audit, "bad permissions")
+                abort(403)
+
+            # security checks ok
+
+            job = MachineDataTransferJob(
+                state=DataTransferJobState.RUNNING,
+                user=current_user,
+                data_source_machine=data_source_machine,
+                destination_machine=destination_machine,
+            )
+            #TODO: update_audit(audit, )
+            db.session.add(job)
+            db.session.commit()
+            threading.Thread(
+                target=start_machine_data_transfer, args=(job.id, audit.id)
+            ).start()
+
+            flash(gettext("Starting machine data transfer. Refresh page to update status."))
             return redirect(url_for("data"))
         else:
             finish_audit(audit, "bad form")
@@ -3650,7 +3680,7 @@ def start_data_transfer(job_id, audit_id):
         db.session.commit()
 
 @log_function_call
-def start_vm_data_transfer(job_id, audit_id):
+def start_machine_data_transfer(job_id, audit_id):
     """
     Thread function that takes a job and runs the vm data transfer
     """
