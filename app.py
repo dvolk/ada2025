@@ -1044,7 +1044,8 @@ class MachineDataTransferJob(db.Model):
     )
 
     user = db.relationship("User", back_populates="machine_data_transfer_jobs")
-    machine = db.relationship("Machine", back_populates="machine_data_transfer_jobs")
+    data_source_machine = db.relationship("Machine", back_populates="machine_data_transfer_jobs_source")
+    destination_machine = db.relationship("Machine", back_populates="machine_data_transfer_jobs_destination")
     problem_reports = db.relationship(
         "ProblemReport", back_populates="machine_data_transfer_job"
     )
@@ -1059,13 +1060,14 @@ class ProtectedMachineDataTransferJobModelView(ProtectedModelView):
         "id",
         "state",
         "user",
-        "machine",
+        "data_source_machine",
+        "destination_machine",
         "creation_date",
     )
-    form_columns = ("state", "user", "machine")
+    form_columns = ("state", "user", "data_source_machine", "destination_machine")
     column_searchable_list = ("state",)
     column_sortable_list = ("id", "state", "creation_date")
-    column_filters = ("state", "user", "machine")
+    column_filters = ("state", "user", "data_source_machine", "destination_machine")
     column_auto_select_related = True
     column_formatters = {
         "state": _color_formatter,
@@ -1399,8 +1401,11 @@ class Machine(db.Model):
     )
     machine_template = db.relationship("MachineTemplate", back_populates="machines")
     data_transfer_jobs = db.relationship("DataTransferJob", back_populates="machine")
-    machine_data_transfer_jobs = db.relationship(
-        "MachineDataTransferJob", back_populates="machine"
+    machine_data_transfer_jobs_source = db.relationship(
+        "MachineDataTransferJob", back_populates="data_source_machine"
+    )
+    machine_data_transfer_jobs_destination = db.relationship(
+        "MachineDataTransferJob", back_populates="destination_machine"
     )
     problem_reports = db.relationship("ProblemReport", back_populates="machine")
     audit_events = db.relationship("Audit", back_populates="machine")
