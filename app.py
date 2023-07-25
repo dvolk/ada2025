@@ -622,7 +622,9 @@ class User(db.Model, UserMixin):
     )
 
     data_transfer_jobs = db.relationship("DataTransferJob", back_populates="user")
-    machine_data_transfer_jobs = db.relationship("MachineDataTransferJob", back_populates="user")
+    machine_data_transfer_jobs = db.relationship(
+        "MachineDataTransferJob", back_populates="user"
+    )
     problem_reports = db.relationship("ProblemReport", back_populates="user")
     audit_events = db.relationship("Audit", back_populates="user")
 
@@ -1377,7 +1379,9 @@ class Machine(db.Model):
     )
     machine_template = db.relationship("MachineTemplate", back_populates="machines")
     data_transfer_jobs = db.relationship("DataTransferJob", back_populates="machine")
-    machine_data_transfer_jobs = db.relationship("MachineDataTransferJob", back_populates="machine")
+    machine_data_transfer_jobs = db.relationship(
+        "MachineDataTransferJob", back_populates="machine"
+    )
     problem_reports = db.relationship("ProblemReport", back_populates="machine")
     audit_events = db.relationship("Audit", back_populates="machine")
 
@@ -1492,7 +1496,9 @@ class ProblemReport(db.Model):
     data_transfer_job = db.relationship(
         "DataTransferJob", back_populates="problem_reports"
     )
-    machine_data_transfer_job_id = db.Column(db.Integer, db.ForeignKey("machine_data_transfer_job.id"))
+    machine_data_transfer_job_id = db.Column(
+        db.Integer, db.ForeignKey("machine_data_transfer_job.id")
+    )
     machine_data_transfer_job = db.relationship(
         "MachineDataTransferJob", back_populates="problem_reports"
     )
@@ -1536,7 +1542,9 @@ class Audit(db.Model):
     machine = db.relationship("Machine")
     data_transfer_job_id = db.Column(db.Integer, db.ForeignKey("data_transfer_job.id"))
     data_transfer_job = db.relationship("DataTransferJob")
-    machine_data_transfer_job_id = db.Column(db.Integer, db.ForeignKey("machine_data_transfer_job.id"))
+    machine_data_transfer_job_id = db.Column(
+        db.Integer, db.ForeignKey("machine_data_transfer_job.id")
+    )
     machine_data_transfer_job = db.relationship("MachineDataTransferJob")
 
     def __repr__(self):
@@ -3522,9 +3530,13 @@ def data():
 
     machine_data_transfer_form = MachineDataTransferForm()
     machine_data_transfer_form.data_source_machine.choices = [
-        (m.id, m.display_name) for m in current_user.owned_machines if m.state == MachineState.READY
+        (m.id, m.display_name)
+        for m in current_user.owned_machines
+        if m.state == MachineState.READY
     ]
-    machine_data_transfer_form.destination_machine.choices = machine_data_transfer_form.data_source_machine.choices
+    machine_data_transfer_form.destination_machine.choices = (
+        machine_data_transfer_form.data_source_machine.choices
+    )
 
     if request.method == "POST":
         if machine_data_transfer_form.validate_on_submit():
@@ -3532,7 +3544,8 @@ def data():
             destination_machine_id = machine_data_transfer_form.destination_machine.data
             if data_source_machine_id != destination_machine_id:
                 threading.Thread(
-                    target=start_machine_data_transfer, args=(data_source_machine_id, destination_machine_id)
+                    target=start_machine_data_transfer,
+                    args=(data_source_machine_id, destination_machine_id),
                 ).start()
                 flash(gettext("Attempting machine data transfer."))
             else:
@@ -3541,8 +3554,12 @@ def data():
 
         audit = create_audit("data transfer", user=current_user)
         if data_transfer_form.validate_on_submit():
-            machine = Machine.query.filter_by(id=data_transfer_form.machine.data).first()
-            data_source = DataSource.query.filter_by(id=data_transfer_form.data_source.data).first()
+            machine = Machine.query.filter_by(
+                id=data_transfer_form.machine.data
+            ).first()
+            data_source = DataSource.query.filter_by(
+                id=data_transfer_form.data_source.data
+            ).first()
 
             if not machine or not data_source:
                 finish_audit(audit, "bad args")
@@ -3653,7 +3670,9 @@ def start_data_transfer(job_id, audit_id):
 @log_function_call
 def start_machine_data_transfer(data_source_machine_id, destination_machine_id):
     with app.app_context():
-        logging.info(f"Starting machine data transfer from id={data_source_machine_id} to id={destination_machine_id}")
+        logging.info(
+            f"Starting machine data transfer from id={data_source_machine_id} to id={destination_machine_id}"
+        )
         result = None
         data_source_machine = Machine.query.filter_by(id=data_source_machine_id).first()
         destination_machine = Machine.query.filter_by(id=destination_machine_id).first()
@@ -3667,13 +3686,17 @@ def start_machine_data_transfer(data_source_machine_id, destination_machine_id):
             source_port=22,
             source_dir="/home/ubuntu/outgoing_shares/",
             dest_host=f"ubuntu@{destination_machine.ip}",
-            dest_dir="/home/ubuntu/incoming_shares/"
+            dest_dir="/home/ubuntu/incoming_shares/",
         )
 
         if result:
-            logging.info(f"Machine data transfer from id={data_source_machine_id} to id={destination_machine_id} successful.")
+            logging.info(
+                f"Machine data transfer from id={data_source_machine_id} to id={destination_machine_id} successful."
+            )
         else:
-            logging.info(f"Machine data transfer from id={data_source_machine_id} to id={destination_machine_id} failed.")
+            logging.info(
+                f"Machine data transfer from id={data_source_machine_id} to id={destination_machine_id} failed."
+            )
 
 
 @app.route("/share_machine/<machine_id>")
