@@ -622,9 +622,6 @@ class User(db.Model, UserMixin):
     )
 
     data_transfer_jobs = db.relationship("DataTransferJob", back_populates="user")
-    machine_data_transfer_jobs = db.relationship(
-        "MachineDataTransferJob", back_populates="user"
-    )
     problem_reports = db.relationship("ProblemReport", back_populates="user")
     audit_events = db.relationship("Audit", back_populates="user")
 
@@ -1007,13 +1004,21 @@ class DataTransferJob(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     data_source_id = db.Column(db.Integer, db.ForeignKey("data_source.id"))
     machine_id = db.Column(db.Integer, db.ForeignKey("machine.id"))
+    machine2_id = db.Column(db.Integer, db.ForeignKey("machine.id"))
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
 
     user = db.relationship("User", back_populates="data_transfer_jobs")
     data_source = db.relationship("DataSource", back_populates="data_transfer_jobs")
-    machine = db.relationship("Machine", back_populates="data_transfer_jobs")
+    machine = db.relationship(
+        "Machine", back_populates="data_transfer_jobs", foreign_keys=[machine_id]
+    )
+    machine2 = db.relationship(
+        "Machine",
+        back_populates="machine_transfer_dest_jobs",
+        foreign_keys=[machine2_id],
+    )
     problem_reports = db.relationship(
         "ProblemReport", back_populates="data_transfer_job"
     )
@@ -1023,56 +1028,25 @@ class DataTransferJob(db.Model):
         return f"<Data {self.data_source_id}>"
 
 
-class MachineDataTransferJobState(enum.Enum):
-    RUNNING = "RUNNING"
-    DONE = "DONE"
-    FAILED = "FAILED"
-    HIDDEN = "HIDDEN"
-
-
-class MachineDataTransferJob(db.Model):
-    """
-    The DataTransferJob tracks a copy from a Machine into another Machine
-    """
-
-    id = db.Column(db.Integer, primary_key=True)
-    state = db.Column(db.Enum(DataTransferJobState), nullable=False, index=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-    machine_id = db.Column(db.Integer, db.ForeignKey("machine.id"))
-    creation_date = db.Column(
-        db.DateTime, default=datetime.datetime.utcnow, nullable=False
-    )
-
-    user = db.relationship("User", back_populates="machine_data_transfer_jobs")
-    data_source_machine = db.relationship("Machine", back_populates="machine_data_transfer_jobs_source")
-    destination_machine = db.relationship("Machine", back_populates="machine_data_transfer_jobs_destination")
-    problem_reports = db.relationship(
-        "ProblemReport", back_populates="machine_data_transfer_job"
-    )
-    audit_events = db.relationship("Audit", back_populates="machine_data_transfer_job")
-
-    def __repr__(self):
-        return f"<Machine Data {self.machine_data_source_id}>"
-
-
-class ProtectedMachineDataTransferJobModelView(ProtectedModelView):
+class ProtectedDataTransferJobModelView(ProtectedModelView):
     column_list = (
         "id",
         "state",
         "user",
-        "data_source_machine",
-        "destination_machine",
+        "data_source",
+        "machine",
         "creation_date",
     )
-    form_columns = ("state", "user", "data_source_machine", "destination_machine")
+    form_columns = ("state", "user", "data_source", "machine")
     column_searchable_list = ("state",)
     column_sortable_list = ("id", "state", "creation_date")
-    column_filters = ("state", "user", "data_source_machine", "destination_machine")
+    column_filters = ("state", "user", "data_source", "machine")
     column_auto_select_related = True
     column_formatters = {
         "state": _color_formatter,
         "user": _color_formatter,
         "machine": _color_formatter,
+        "data_source": _color_formatter,
     }
 
 
@@ -1400,12 +1374,15 @@ class Machine(db.Model):
         "User", secondary=shared_user_machine, back_populates="shared_machines"
     )
     machine_template = db.relationship("MachineTemplate", back_populates="machines")
-    data_transfer_jobs = db.relationship("DataTransferJob", back_populates="machine")
-    machine_data_transfer_jobs_source = db.relationship(
-        "MachineDataTransferJob", back_populates="data_source_machine"
+    data_transfer_jobs = db.relationship(
+        "DataTransferJob",
+        foreign_keys=[DataTransferJob.machine_id],
+        back_populates="machine",
     )
-    machine_data_transfer_jobs_destination = db.relationship(
-        "MachineDataTransferJob", back_populates="destination_machine"
+    machine_transfer_dest_jobs = db.relationship(
+        "DataTransferJob",
+        foreign_keys=[DataTransferJob.machine2_id],
+        back_populates="machine2",
     )
     problem_reports = db.relationship("ProblemReport", back_populates="machine")
     audit_events = db.relationship("Audit", back_populates="machine")
@@ -1521,12 +1498,6 @@ class ProblemReport(db.Model):
     data_transfer_job = db.relationship(
         "DataTransferJob", back_populates="problem_reports"
     )
-    machine_data_transfer_job_id = db.Column(
-        db.Integer, db.ForeignKey("machine_data_transfer_job.id")
-    )
-    machine_data_transfer_job = db.relationship(
-        "MachineDataTransferJob", back_populates="problem_reports"
-    )
 
 
 class ProtectedProblemReportModelView(ProtectedModelView):
@@ -1567,10 +1538,6 @@ class Audit(db.Model):
     machine = db.relationship("Machine")
     data_transfer_job_id = db.Column(db.Integer, db.ForeignKey("data_transfer_job.id"))
     data_transfer_job = db.relationship("DataTransferJob")
-    machine_data_transfer_job_id = db.Column(
-        db.Integer, db.ForeignKey("machine_data_transfer_job.id")
-    )
-    machine_data_transfer_job = db.relationship("MachineDataTransferJob")
 
     def __repr__(self):
         return f"<////{self.id}//// {self.action} -> {self.state}>"
@@ -1680,7 +1647,6 @@ class ProtectedAuditModelView(ProtectedModelView):
 admin.add_view(ProtectedUserModelView(User, db.session))
 admin.add_view(ProtectedDataSourceModelView(DataSource, db.session))
 admin.add_view(ProtectedDataTransferJobModelView(DataTransferJob, db.session))
-admin.add_view(ProtectedMachineDataTransferJobModelView(MachineDataTransferJob, db.session))
 admin.add_view(ProtectedGroupModelView(Group, db.session))
 admin.add_view(ProtectedGroupWelcomePageModelView(GroupWelcomePage, db.session))
 admin.add_view(ProtectedMachineProviderModelView(MachineProvider, db.session))
@@ -3470,19 +3436,19 @@ class DataTransferForm(FlaskForm):
         lazy_gettext("Data Source"), validators=[DataRequired()], coerce=int
     )
     machine = SelectField(
-        lazy_gettext("Machine"), validators=[DataRequired()], coerce=int
-    )
-    submit = SubmitField(lazy_gettext("Submit"))
-
-
-class MachineDataTransferForm(FlaskForm):
-    data_source_machine = SelectField(
-        lazy_gettext("Data Source Machine"), validators=[DataRequired()], coerce=int
-    )
-    destination_machine = SelectField(
         lazy_gettext("Destination Machine"), validators=[DataRequired()], coerce=int
     )
-    submit = SubmitField(lazy_gettext("Submit"))
+    submit_data_transfer = SubmitField(lazy_gettext("Submit"))
+
+
+class MachineTransferForm(FlaskForm):
+    machine = SelectField(
+        lazy_gettext("Source Machine"), validators=[DataRequired()], coerce=int
+    )
+    machine2 = SelectField(
+        lazy_gettext("Destination Machine"), validators=[DataRequired()], coerce=int
+    )
+    submit_machine_transfer = SubmitField(lazy_gettext("Submit"))
 
 
 @app.route("/dismiss_datatransferjob", methods=["POST"])
@@ -3536,50 +3502,136 @@ def machine_format_dtj(machine):
 @login_required
 @profile_complete_required
 def data():
+    # admin or normal user
     if current_user.is_admin:
-        # the admin can see everything
+        # the admin can use all data sources
         data_sources = DataSource.query.all()
-        machines = Machine.query.filter_by(state=MachineState.READY)
+        # the admin can copy data sources into any machine
+        machines = (
+            Machine.query.filter(Machine.state == MachineState.READY)
+            .order_by(desc(Machine.id))
+            .all()
+        )
+
+        # the admin can transfer their shared folder from/to their own machines
+        # (due to ssh key limitations)
+        machines2 = (
+            Machine.query.filter(
+                and_(
+                    Machine.state == MachineState.READY,
+                    Machine.owner_id == current_user.id,
+                )
+            )
+            .order_by(desc(Machine.id))
+            .all()
+        )
     else:
-        # a normal user can see their own stuff
+        # user's data sources
         data_sources = current_user.data_sources
-        machines = current_user.owned_machines + current_user.shared_machines
+        # machines they can copy data sources into
+        machines = (
+            Machine.query.filter(
+                and_(
+                    Machine.state == MachineState.READY,
+                    or_(
+                        Machine.owner_id == current_user.id,
+                        Machine.shared_users.any(id=current_user.id),
+                    ),
+                )
+            )
+            .order_by(desc(Machine.id))
+            .all()
+        )
+        # machines they can transfer their shared folder from/to
+        # (does not include shared machines due to ssh key limitations)
+        machines2 = (
+            Machine.query.filter(
+                and_(
+                    Machine.state == MachineState.READY,
+                    Machine.owner_id == current_user.id,
+                )
+            )
+            .order_by(desc(Machine.id))
+            .all()
+        )
 
     # fill in the form select options
     data_transfer_form = DataTransferForm()
+    machine_transfer_form = MachineTransferForm()
+
     data_transfer_form.data_source.choices = [
         (ds.id, f"{ds.name} ({ds.data_size} MB)") for ds in data_sources
     ]
-    data_transfer_form.machine.choices = [
-        (m.id, m.display_name) for m in machines if m.state == MachineState.READY
-    ]
+    data_transfer_form.machine.choices = [(m.id, m.display_name) for m in machines]
 
-    machine_data_transfer_form = MachineDataTransferForm()
-    machine_data_transfer_form.data_source_machine.choices = [
-        (m.id, m.display_name)
-        for m in current_user.owned_machines
-        if m.state == MachineState.READY
-    ]
-    machine_data_transfer_form.destination_machine.choices = (
-        machine_data_transfer_form.data_source_machine.choices
+    machine_transfer_form.machine.choices = [(m.id, m.display_name) for m in machines2]
+    machine_transfer_form.machine2.choices = list(
+        reversed(machine_transfer_form.machine.choices)
     )
 
     if request.method == "POST":
-        if machine_data_transfer_form.validate_on_submit():
-            data_source_machine_id = machine_data_transfer_form.data_source_machine.data
-            destination_machine_id = machine_data_transfer_form.destination_machine.data
-            if data_source_machine_id != destination_machine_id:
-                threading.Thread(
-                    target=start_machine_data_transfer,
-                    args=(data_source_machine_id, destination_machine_id),
-                ).start()
-                flash(gettext("Attempting machine data transfer."))
-            else:
-                flash(gettext("You can't transfer from a machine to itself!"), "danger")
+        audit = create_audit("data transfer", user=current_user)
+        form1_ok = False
+        form2_ok = False
+
+        #
+        # Machine to machine data transfer form
+        #
+        if (
+            machine_transfer_form.validate_on_submit()
+            and machine_transfer_form.submit_machine_transfer.data
+        ):
+            form1_ok = True
+            machine = Machine.query.filter_by(
+                id=machine_transfer_form.machine.data
+            ).first()
+            machine2 = Machine.query.filter_by(
+                id=machine_transfer_form.machine2.data
+            ).first()
+
+            if not machine or not machine2:
+                finish_audit(audit, "bad args")
+                abort(404)
+
+            if machine not in machines2 or machine2 not in machines2:
+                finish_audit(audit, "bad permissions")
+                abort(403)
+
+            if machine.id == machine2.id:
+                flash(gettext("You can't transfer from a machine to itself."), "danger")
+                finish_audit(audit, "bad form")
+                return redirect(url_for("data"))
+
+            # checks ok
+
+            job = DataTransferJob(
+                machine_id=machine.id,
+                machine2_id=machine2.id,
+                state=DataTransferJobState.RUNNING,
+                user=current_user,
+            )
+            # TODO allow users to change this
+            copy_dir_path = "/home/ubuntu/"
+
+            db.session.add(job)
+            db.session.commit()
+
+            threading.Thread(
+                target=start_machine_transfer, args=(job.id, audit.id, copy_dir_path)
+            ).start()
+
+            flash(gettext("Starting machine data transfer."))
+
             return redirect(url_for("data"))
 
-        audit = create_audit("data transfer", user=current_user)
-        if data_transfer_form.validate_on_submit():
+        #
+        # Data transfer form
+        #
+        if (
+            data_transfer_form.validate_on_submit()
+            and data_transfer_form.submit_data_transfer.data
+        ):
+            form2_ok = True
             machine = Machine.query.filter_by(
                 id=data_transfer_form.machine.data
             ).first()
@@ -3612,11 +3664,11 @@ def data():
 
             flash(gettext("Starting data transfer. Refresh page to update status."))
             return redirect(url_for("data"))
-        else:
+
+        if not (form1_ok or form2_ok):
             finish_audit(audit, "bad form")
             flash(
-                gettext("The data transfer job submission could not be validated."),
-                "danger",
+                gettext("The transfer job submission could not be validated."), "danger"
             )
             return redirect(url_for("data"))
     else:
@@ -3630,7 +3682,7 @@ def data():
             "data.jinja2",
             title=gettext("Data"),
             data_transfer_form=data_transfer_form,
-            machine_data_transfer_form=machine_data_transfer_form,
+            machine_transfer_form=machine_transfer_form,
             sorted_jobs=sorted_jobs,
         )
 
@@ -3640,7 +3692,7 @@ def do_rsync(source_host, source_port, source_dir, dest_host, dest_dir):
     try:
         # Construct the rsync command
         rsync_cmd = (
-            f"rsync -avz -e 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' "
+            f"rsync --include='/*/.*' --exclude='/.*' -avz -e 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' "
             f"{source_dir} {dest_host}:{dest_dir}"
         )
         logging.info(rsync_cmd)
@@ -3694,35 +3746,33 @@ def start_data_transfer(job_id, audit_id):
 
 
 @log_function_call
-def start_machine_data_transfer(data_source_machine_id, destination_machine_id):
+def start_machine_transfer(job_id, audit_id, copy_dir_path):
+    """
+    Thread function that takes a job and copies some directory between machines
+    """
     with app.app_context():
-        logging.info(
-            f"Starting machine data transfer from id={data_source_machine_id} to id={destination_machine_id}"
-        )
+        audit = get_audit(audit_id)
         result = None
-        data_source_machine = Machine.query.filter_by(id=data_source_machine_id).first()
-        destination_machine = Machine.query.filter_by(id=destination_machine_id).first()
-
-        if not data_source_machine or not destination_machine:
-            logging.info("Bad args for machine data transfer.")
-            return
-
-        result = do_rsync(
-            f"ubuntu@{data_source_machine.ip}",
-            source_port=22,
-            source_dir="/home/ubuntu/outgoing_shares/",
-            dest_host=f"ubuntu@{destination_machine.ip}",
-            dest_dir="/home/ubuntu/incoming_shares/",
-        )
+        job = DataTransferJob.query.filter_by(id=job_id).first()
+        if not job:
+            finish_audit(audit, "bad job id")
+            logging.error(f"job {job_id} not found!")
+        else:
+            result = do_rsync(
+                source_host=f"ubuntu@{job.machine.ip}",
+                source_port=22,
+                source_dir=copy_dir_path,
+                dest_host=f"ubuntu@{job.machine2.ip}",
+                dest_dir=copy_dir_path,
+            )
 
         if result:
-            logging.info(
-                f"Machine data transfer from id={data_source_machine_id} to id={destination_machine_id} successful."
-            )
+            finish_audit(audit, "ok")
+            job.state = DataTransferJobState.DONE
         else:
-            logging.info(
-                f"Machine data transfer from id={data_source_machine_id} to id={destination_machine_id} failed."
-            )
+            finish_audit(audit, "error")
+            job.state = DataTransferJobState.FAILED
+        db.session.commit()
 
 
 @app.route("/share_machine/<machine_id>")
