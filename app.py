@@ -3514,18 +3514,6 @@ def data():
             .all()
         )
 
-        # the admin can transfer their shared folder from/to their own machines
-        # (due to ssh key limitations)
-        machines2 = (
-            Machine.query.filter(
-                and_(
-                    Machine.state == MachineState.READY,
-                    Machine.owner_id == current_user.id,
-                )
-            )
-            .order_by(desc(Machine.id))
-            .all()
-        )
     else:
         # user's data sources
         data_sources = current_user.data_sources
@@ -3543,18 +3531,19 @@ def data():
             .order_by(desc(Machine.id))
             .all()
         )
-        # machines they can transfer their shared folder from/to
-        # (does not include shared machines due to ssh key limitations)
-        machines2 = (
-            Machine.query.filter(
-                and_(
-                    Machine.state == MachineState.READY,
-                    Machine.owner_id == current_user.id,
-                )
+
+    # machines users can transfer their shared folder from/to
+    # (does not include shared machines due to ssh key limitations)
+    machines2 = (
+        Machine.query.filter(
+            and_(
+                Machine.state == MachineState.READY,
+                Machine.owner_id == current_user.id,
             )
-            .order_by(desc(Machine.id))
-            .all()
         )
+        .order_by(desc(Machine.id))
+        .all()
+    )
 
     # fill in the form select options
     data_transfer_form = DataTransferForm()
@@ -3571,6 +3560,8 @@ def data():
     )
 
     if request.method == "POST":
+        # form POST
+
         audit = create_audit("data transfer", user=current_user)
         form1_ok = False
         form2_ok = False
@@ -3672,7 +3663,9 @@ def data():
                 gettext("The transfer job submission could not be validated."), "danger"
             )
             return redirect(url_for("data"))
+
     else:
+        # GET
         sorted_jobs = (
             DataTransferJob.query.filter(DataTransferJob.user_id == current_user.id)
             .filter(DataTransferJob.state != DataTransferJobState.HIDDEN)
