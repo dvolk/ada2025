@@ -19,7 +19,7 @@ import re
 import html
 import hashlib
 from functools import cache
-from itsdangerous.url_safe import URLSafeTimedSerializer
+import collections
 
 # flask and related imports
 from flask import (
@@ -74,6 +74,7 @@ from authlib.integrations.flask_client import OAuth
 from werkzeug.middleware.proxy_fix import ProxyFix
 import jinja2
 from flask_mail import Mail, Message
+from itsdangerous.url_safe import URLSafeTimedSerializer
 
 # flask recaptcha uses jinja2.Markup, which doesn't exist any more,
 # so we monkey-patch to use markupsafe.Markup
@@ -100,6 +101,7 @@ from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
 import misc.dnscrypto
+import keys
 
 
 def str_to_bool(s):
@@ -576,6 +578,22 @@ class ProtectedGroupWelcomePageModelView(ProtectedModelView):
     form_extra_fields = {"content": BigTextAreaField("Content", rows=25)}
 
 
+def gen_ssh_keys(user_id):
+    private_key, public_key = keys.generate_user_keys(str(user_id))
+    return SSHKeys(private_key=private_key, public_key=public_key, authorized_keys="")
+
+
+class SSHKeys(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    private_key = db.Column(db.Text)
+    public_key = db.Column(db.Text)
+    authorized_keys = db.Column(db.Text)
+
+    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    owner = db.relationship("User", back_populates="ssh_keys")
+
+
 class User(db.Model, UserMixin):
     """
     User model, also used for flask-login
@@ -620,6 +638,7 @@ class User(db.Model, UserMixin):
     data_sources = db.relationship(
         "DataSource", secondary=user_data_source_association, back_populates="users"
     )
+    ssh_keys = db.relationship("SSHKeys", uselist=False, back_populates="owner")
 
     data_transfer_jobs = db.relationship("DataTransferJob", back_populates="user")
     problem_reports = db.relationship("ProblemReport", back_populates="user")
@@ -1004,13 +1023,21 @@ class DataTransferJob(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     data_source_id = db.Column(db.Integer, db.ForeignKey("data_source.id"))
     machine_id = db.Column(db.Integer, db.ForeignKey("machine.id"))
+    machine2_id = db.Column(db.Integer, db.ForeignKey("machine.id"))
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
 
     user = db.relationship("User", back_populates="data_transfer_jobs")
     data_source = db.relationship("DataSource", back_populates="data_transfer_jobs")
-    machine = db.relationship("Machine", back_populates="data_transfer_jobs")
+    machine = db.relationship(
+        "Machine", back_populates="data_transfer_jobs", foreign_keys=[machine_id]
+    )
+    machine2 = db.relationship(
+        "Machine",
+        back_populates="machine_transfer_dest_jobs",
+        foreign_keys=[machine2_id],
+    )
     problem_reports = db.relationship(
         "ProblemReport", back_populates="data_transfer_job"
     )
@@ -1018,6 +1045,28 @@ class DataTransferJob(db.Model):
 
     def __repr__(self):
         return f"<Data {self.data_source_id}>"
+
+
+class ProtectedDataTransferJobModelView(ProtectedModelView):
+    column_list = (
+        "id",
+        "state",
+        "user",
+        "data_source",
+        "machine",
+        "creation_date",
+    )
+    form_columns = ("state", "user", "data_source", "machine")
+    column_searchable_list = ("state",)
+    column_sortable_list = ("id", "state", "creation_date")
+    column_filters = ("state", "user", "data_source", "machine")
+    column_auto_select_related = True
+    column_formatters = {
+        "state": _color_formatter,
+        "user": _color_formatter,
+        "machine": _color_formatter,
+        "data_source": _color_formatter,
+    }
 
 
 class ProtectedDataTransferJobModelView(ProtectedModelView):
@@ -1344,7 +1393,16 @@ class Machine(db.Model):
         "User", secondary=shared_user_machine, back_populates="shared_machines"
     )
     machine_template = db.relationship("MachineTemplate", back_populates="machines")
-    data_transfer_jobs = db.relationship("DataTransferJob", back_populates="machine")
+    data_transfer_jobs = db.relationship(
+        "DataTransferJob",
+        foreign_keys=[DataTransferJob.machine_id],
+        back_populates="machine",
+    )
+    machine_transfer_dest_jobs = db.relationship(
+        "DataTransferJob",
+        foreign_keys=[DataTransferJob.machine2_id],
+        back_populates="machine2",
+    )
     problem_reports = db.relationship("ProblemReport", back_populates="machine")
     audit_events = db.relationship("Audit", back_populates="machine")
 
@@ -3160,6 +3218,11 @@ def machines():
     """
     The machine page displays and controls the user's machines
     """
+    if not current_user.ssh_keys:
+        logging.info(f"user {current_user.id} is missing ssh keys, creating...")
+        current_user.ssh_keys = gen_ssh_keys(current_user.id)
+        db.session.commit()
+        logging.info(f"ssh key added for {current_user.id} ok")
 
     # Query for user's owned machines
     owned_machines_query = db.session.query(Machine).filter(
@@ -3397,9 +3460,19 @@ class DataTransferForm(FlaskForm):
         lazy_gettext("Data Source"), validators=[DataRequired()], coerce=int
     )
     machine = SelectField(
-        lazy_gettext("Machine"), validators=[DataRequired()], coerce=int
+        lazy_gettext("Destination Machine"), validators=[DataRequired()], coerce=int
     )
-    submit = SubmitField(lazy_gettext("Submit"))
+    submit_data_transfer = SubmitField(lazy_gettext("Submit"))
+
+
+class MachineTransferForm(FlaskForm):
+    machine = SelectField(
+        lazy_gettext("Source Machine"), validators=[DataRequired()], coerce=int
+    )
+    machine2 = SelectField(
+        lazy_gettext("Destination Machine"), validators=[DataRequired()], coerce=int
+    )
+    submit_machine_transfer = SubmitField(lazy_gettext("Submit"))
 
 
 @app.route("/dismiss_datatransferjob", methods=["POST"])
@@ -3453,29 +3526,133 @@ def machine_format_dtj(machine):
 @login_required
 @profile_complete_required
 def data():
+    # admin or normal user
     if current_user.is_admin:
-        # the admin can see everything
+        # the admin can use all data sources
         data_sources = DataSource.query.all()
-        machines = Machine.query.filter_by(state=MachineState.READY)
+        # the admin can copy data sources into any machine
+        machines = (
+            Machine.query.filter(Machine.state == MachineState.READY)
+            .order_by(desc(Machine.id))
+            .all()
+        )
+
     else:
-        # a normal user can see their own stuff
+        # user's data sources
         data_sources = current_user.data_sources
-        machines = current_user.owned_machines + current_user.shared_machines
+        # machines they can copy data sources into
+        machines = (
+            Machine.query.filter(
+                and_(
+                    Machine.state == MachineState.READY,
+                    or_(
+                        Machine.owner_id == current_user.id,
+                        Machine.shared_users.any(id=current_user.id),
+                    ),
+                )
+            )
+            .order_by(desc(Machine.id))
+            .all()
+        )
+
+    # machines users can transfer their shared folder from/to
+    # (does not include shared machines due to ssh key limitations)
+    machines2 = (
+        Machine.query.filter(
+            and_(
+                Machine.state == MachineState.READY,
+                Machine.owner_id == current_user.id,
+            )
+        )
+        .order_by(desc(Machine.id))
+        .all()
+    )
 
     # fill in the form select options
-    form = DataTransferForm()
-    form.data_source.choices = [
+    data_transfer_form = DataTransferForm()
+    machine_transfer_form = MachineTransferForm()
+
+    data_transfer_form.data_source.choices = [
         (ds.id, f"{ds.name} ({ds.data_size} MB)") for ds in data_sources
     ]
-    form.machine.choices = [
-        (m.id, m.display_name) for m in machines if m.state == MachineState.READY
-    ]
+    data_transfer_form.machine.choices = [(m.id, m.display_name) for m in machines]
+
+    machine_transfer_form.machine.choices = [(m.id, m.display_name) for m in machines2]
+    machine_transfer_form.machine2.choices = list(
+        reversed(machine_transfer_form.machine.choices)
+    )
 
     if request.method == "POST":
+        # form POST
+
         audit = create_audit("data transfer", user=current_user)
-        if form.validate_on_submit():
-            machine = Machine.query.filter_by(id=form.machine.data).first()
-            data_source = DataSource.query.filter_by(id=form.data_source.data).first()
+        form1_ok = False
+        form2_ok = False
+
+        #
+        # Machine to machine data transfer form
+        #
+        if (
+            machine_transfer_form.validate_on_submit()
+            and machine_transfer_form.submit_machine_transfer.data
+        ):
+            form1_ok = True
+            machine = Machine.query.filter_by(
+                id=machine_transfer_form.machine.data
+            ).first()
+            machine2 = Machine.query.filter_by(
+                id=machine_transfer_form.machine2.data
+            ).first()
+
+            if not machine or not machine2:
+                finish_audit(audit, "bad args")
+                abort(404)
+
+            if machine not in machines2 or machine2 not in machines2:
+                finish_audit(audit, "bad permissions")
+                abort(403)
+
+            if machine.id == machine2.id:
+                flash(gettext("You can't transfer from a machine to itself."), "danger")
+                finish_audit(audit, "bad form")
+                return redirect(url_for("data"))
+
+            # checks ok
+
+            job = DataTransferJob(
+                machine_id=machine.id,
+                machine2_id=machine2.id,
+                state=DataTransferJobState.RUNNING,
+                user=current_user,
+            )
+            # TODO allow users to change this
+            copy_dir_path = "/home/ubuntu/"
+
+            db.session.add(job)
+            db.session.commit()
+
+            threading.Thread(
+                target=start_machine_transfer, args=(job.id, audit.id, copy_dir_path)
+            ).start()
+
+            flash(gettext("Starting machine data transfer."))
+
+            return redirect(url_for("data"))
+
+        #
+        # Data transfer form
+        #
+        if (
+            data_transfer_form.validate_on_submit()
+            and data_transfer_form.submit_data_transfer.data
+        ):
+            form2_ok = True
+            machine = Machine.query.filter_by(
+                id=data_transfer_form.machine.data
+            ).first()
+            data_source = DataSource.query.filter_by(
+                id=data_transfer_form.data_source.data
+            ).first()
 
             if not machine or not data_source:
                 finish_audit(audit, "bad args")
@@ -3502,14 +3679,16 @@ def data():
 
             flash(gettext("Starting data transfer. Refresh page to update status."))
             return redirect(url_for("data"))
-        else:
+
+        if not (form1_ok or form2_ok):
             finish_audit(audit, "bad form")
             flash(
-                gettext("The data transfer job submission could not be validated."),
-                "danger",
+                gettext("The transfer job submission could not be validated."), "danger"
             )
             return redirect(url_for("data"))
+
     else:
+        # GET
         sorted_jobs = (
             DataTransferJob.query.filter(DataTransferJob.user_id == current_user.id)
             .filter(DataTransferJob.state != DataTransferJobState.HIDDEN)
@@ -3519,17 +3698,22 @@ def data():
         return render_template(
             "data.jinja2",
             title=gettext("Data"),
-            form=form,
+            data_transfer_form=data_transfer_form,
+            machine_transfer_form=machine_transfer_form,
             sorted_jobs=sorted_jobs,
         )
 
 
 @log_function_call
-def do_rsync(source_host, source_port, source_dir, dest_host, dest_dir):
+def do_rsync(source_host, source_port, source_dir, dest_host, dest_dir, key_path=None):
     try:
+        key_cmd = ""
+        if key_path:
+            key_cmd = f"-i {key_path}"
+
         # Construct the rsync command
         rsync_cmd = (
-            f"rsync -avz -e 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' "
+            f"rsync --include='/*/.*' --exclude='/.*' -avz -e 'ssh {key_cmd} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' "
             f"{source_dir} {dest_host}:{dest_dir}"
         )
         logging.info(rsync_cmd)
@@ -3571,6 +3755,37 @@ def start_data_transfer(job_id, audit_id):
                 source_dir=job.data_source.source_dir,
                 dest_host=f"{job.machine.machine_template.os_username}@{job.machine.ip}",
                 dest_dir="",
+            )
+
+        if result:
+            finish_audit(audit, "ok")
+            job.state = DataTransferJobState.DONE
+        else:
+            finish_audit(audit, "error")
+            job.state = DataTransferJobState.FAILED
+        db.session.commit()
+
+
+@log_function_call
+def start_machine_transfer(job_id, audit_id, copy_dir_path):
+    """
+    Thread function that takes a job and copies some directory between machines
+    """
+    with app.app_context():
+        audit = get_audit(audit_id)
+        result = None
+        job = DataTransferJob.query.filter_by(id=job_id).first()
+        if not job:
+            finish_audit(audit, "bad job id")
+            logging.error(f"job {job_id} not found!")
+        else:
+            result = do_rsync(
+                source_host=f"ubuntu@{job.machine.ip}",
+                source_port=22,
+                source_dir=copy_dir_path,
+                dest_host=f"ubuntu@{job.machine2.ip}",
+                dest_dir=copy_dir_path,
+                key_path="/home/ubuntu/.ssh/ada-id_rsa",
             )
 
         if result:
@@ -3694,6 +3909,49 @@ def share_revoke(machine_id):
         )
     )
     return redirect(url_for("machines"))
+
+
+@app.route("/metrics")
+def metrics():
+    counts = collections.defaultdict(int)
+
+    # Perform a join on Machine and MachineTemplate
+    machines = (
+        db.session.query(Machine, MachineTemplate)
+        .join(MachineTemplate, Machine.machine_template_id == MachineTemplate.id)
+        .all()
+    )
+
+    for machine, machine_template in machines:
+        counts[
+            (
+                machine_template.group_id,
+                machine_template.id,
+                machine_template.type,
+                machine.owner_id,
+                machine_template.cpu_limit_cores,
+                machine_template.memory_limit_gb,
+                machine_template.disk_size_gb,
+                machine.state,
+            )
+        ] += 1
+
+    logging.debug(counts)
+
+    out = ""
+    for (
+        group_id,
+        machine_template_id,
+        machine_template_type,
+        owner_id,
+        machine_template_cpu,
+        machine_template_mem,
+        machine_template_disk_gb,
+        state,
+    ), machines_count in counts.items():
+        out += f'machines{{group_id="{group_id}", machine_template_id="{machine_template_id}", machine_template_type="{machine_template_type}", owner_id="{owner_id}", machine_template_cpu="{machine_template_cpu}", machine_template_mem="{machine_template_mem}", machine_template_disk_gb="{machine_template_disk_gb}", state="{state}"}} {machines_count}\n'
+
+    return out
 
 
 @app.route("/new_machine", methods=["POST"])
@@ -4280,6 +4538,12 @@ class OpenStackService(VirtService):
                     )
 
                 configure_nginx(m)
+                keys.deploy_user_keys_to_machine(
+                    m.ip,
+                    m.owner.ssh_keys.private_key,
+                    m.owner.ssh_keys.public_key,
+                    m.owner.ssh_keys.authorized_keys,
+                )
 
                 m.state = MachineState.READY
                 finish_audit(audit, "ok")
@@ -4565,7 +4829,14 @@ class DockerService(VirtService):
                 )
 
                 m.ip = DockerService.wait_for_ip(client, m.name, network)
+
                 configure_nginx(m, service_type="direct")
+                keys.deploy_user_keys_to_machine(
+                    m.ip,
+                    m.owner.ssh_keys.private_key,
+                    m.owner.ssh_keys.public_key,
+                    m.owner.ssh_keys.authorized_keys,
+                )
 
                 m.state = MachineState.READY
                 finish_audit(audit, "ok")
@@ -4761,6 +5032,12 @@ class LibvirtService(VirtService):
                 m.state = MachineState.READY
 
                 configure_nginx(m)
+                keys.deploy_user_keys_to_machine(
+                    m.ip,
+                    m.owner.ssh_keys.private_key,
+                    m.owner.ssh_keys.public_key,
+                    m.owner.ssh_keys.authorized_keys,
+                )
 
                 finish_audit(audit, "ok")
                 db.session.commit()
@@ -5299,12 +5576,49 @@ def determine_redirect(share_accept_token_in_session):
     return resp
 
 
+def init_user_keys(user_id):
+    """Create a ssh key for a user."""
+    user = User.query.filter_by(id=user_id).first()
+    logging.info(f"generating keys for user {user.id}")
+    private_key, public_key = keys.generate_user_keys(str(user.id))
+    user.ssh_keys = gen_ssh_keys()
+    db.session.commit()
+
+
+def init_deploy_user_keys(user_id):
+    """Deploy a user's keys to their existing machines."""
+    user = User.query.filter_by(id=user_id).first()
+    for machine in Machine.query.filter_by(state=MachineState.READY, owner_id=user.id):
+        try:
+            logging.info(f"deploying keys for user {user.id} to {machine.ip}")
+            keys.deploy_user_keys_to_machine(
+                machine.ip,
+                user.ssh_keys.private_key,
+                user.ssh_keys.public_key,
+                user.ssh_keys.authorized_keys,
+            )
+        except Exception as e:
+            logging.warning(
+                f"couldn't dpeloy key for {user.id} to {machine.ip}: {str(e)}"
+            )
+
+
+def init_users_keys():
+    """On program start, generate missing keys and deploy to machines."""
+    with app.app_context():
+        for user in User.query.all():
+            if not user.ssh_keys:
+                init_user_keys(user.id)
+                init_deploy_user_keys(user.id)
+
+
 def main(debug=False):
     with app.app_context():
-        audit = create_audit("app", state="started")
+        create_audit("app", state="started")
 
     create_initial_db()
     clean_up_db()
+    # init_users_keys()
 
     VirtService.set_app(app)
 

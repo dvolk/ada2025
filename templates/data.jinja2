@@ -6,7 +6,7 @@
 {% endmacro %}
 
 {% block content %}
-  {% if current_user.data_transfer_jobs %}
+  {% if sorted_jobs %}
     {{ info(gettext("This table shows the state of your data transfers. Refresh page to update status.")) }}
     <div class="w3-container w3-blue">
       <h2>{{ gettext("Your Data Transfers") }}</h2>
@@ -21,9 +21,14 @@
             <th>{{ gettext("Actions") }}</th>
           </thead>
           {% for j in sorted_jobs %}
-          <tr>
-              <td style="vertical-align: middle;">{{ j.data_source.name }}</td>
-              <td style="vertical-align: middle;">{{ j.machine.display_name }}</td>
+            <tr>
+              {% if j.data_source %}
+                <td style="vertical-align: middle;">{{ j.data_source.name }}</td>
+                <td style="vertical-align: middle;">{{ j.machine.display_name }}</td>
+              {% else %}
+                <td style="vertical-align: middle;">{{ j.machine.display_name }}</td>
+                <td style="vertical-align: middle;">{{ j.machine2.display_name }}</td>
+              {% endif %}
               <td style="vertical-align: middle;">{{ j.state.name }}</td>
 
               <td style="vertical-align: middle;">
@@ -39,13 +44,17 @@
                    };
                    xhr.send('job_id={{ j.id }}');">{{ icon('check') }}
                 </a>
-                <a href="{{ url_for('report_problem', data_transfer_job_id=j.id, machine_id=j.machine.id, title=gettext('Problem with data transfer from ') + j.data_source.name + gettext(' to machine ') + j.machine.display_name ) }}"
+                {% if j.data_source %}
+                  {% set link = url_for('report_problem', data_transfer_job_id=j.id, machine_id=j.machine.id, title=gettext('Problem with data transfer from ') + j.data_source.name + gettext(' to machine ') + j.machine.display_name ) %}
+                {% else %}
+                  {% set link = "" %}
+                {% endif %}
+                <a href="{{ link }}"
                    class="w3-button w3-small w3-blue-gray w3-round"
                    title="Report problem">
-                    {{ icon('flag') }}
+                   {{ icon('flag') }}
                 </a>
               </td>
-
             </tr>
           {% endfor %}
         </table>
@@ -53,7 +62,7 @@
     </div>
   {% endif %}
 
-  {{ info(gettext("Here you can transfer data into your machine from registered data sources")) }}
+  {{ info(gettext("Here you can transfer data into your machine from registered data sources.")) }}
 
   {{ idea(gettext("Select the data source and a machine you want to copy the data to and then click submit. The data will be copied into your machine.")) }}
 
@@ -62,23 +71,56 @@
   {{ idea(gettext("Data source sizes are not updated in real-time and may be outdated.")) }}
 
   <form action="/data" method="POST">
-    {{ form.hidden_tag() }}
+    {{ data_transfer_form.hidden_tag() }}
     <div class="w3-container w3-yellow">
-      <h2>{{ gettext("New Data Transfer") }}</h2>
+      <h2>{{ gettext("Transfer External Data To Machine") }}</h2>
     </div>
     <div class="w3-container w3-pale-yellow">
-        <p>
-            {{ form.data_source.label() }}
-            {{ form.data_source(class="w3-input w3-round w3-white") }}
-        </p>
-        <p>
-            {{ form.machine.label() }}
-            {{ form.machine(class="w3-input w3-round w3-white") }}
-        </p>
+      <p>
+        <div class="w3-third" style="padding-right: 5px;">
+          {{ data_transfer_form.data_source.label() }}
+          {{ data_transfer_form.data_source(class="w3-input w3-round w3-white") }}
+        </div>
+        <div class="w3-third" style="padding-right: 5px;">
+          {{ data_transfer_form.machine.label() }}
+          {{ data_transfer_form.machine(class="w3-input w3-round w3-white") }}
+        </div>
+        <div class="w3-third" style="padding-right: 5px; margin-top: 21px;">
+          {{ data_transfer_form.submit_data_transfer(class="w3-button w3-round w3-blue") }}
+        </div>
+      </p>
+      <br/>
+      <br/>
+      <br/>
+      <br/>
+    </div>
+  </form>
 
-        {{ form.submit(class="w3-button w3-round w3-blue") }}
-        <br/>
-        <br/>
+  {{ idea(gettext("You can also copy your home directory between machines. Note that hidden (dot) directories on the top level are excluded.")) }}
+
+  <form action="/data" method="POST">
+    {{ machine_transfer_form.hidden_tag() }}
+    <div class="w3-container w3-yellow">
+      <h2>{{ gettext("Transfer Data Between Machines") }}</h2>
+    </div>
+    <div class="w3-container w3-pale-yellow">
+      <p>
+        <div class="w3-third" style="padding-right: 5px;">
+          {{ machine_transfer_form.machine.label() }}
+          {{ machine_transfer_form.machine(class="w3-input w3-round w3-white") }}
+        </div>
+        <div class="w3-third" style="padding-right: 5px;">
+          {{ machine_transfer_form.machine2.label() }}
+          {{ machine_transfer_form.machine2(class="w3-input w3-round w3-white") }}
+        </div>
+        <div class="w3-third" style="padding-top: 21px; padding-right: 5px;">
+          {{ machine_transfer_form.submit_machine_transfer(class="w3-button w3-round w3-blue") }}
+        </div>
+      </p>
+      <br/>
+      <br/>
+      <br/>
+      <br/>
     </div>
     <br/>
   </form>
