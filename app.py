@@ -5581,7 +5581,7 @@ def init_user_keys(user_id):
     user = User.query.filter_by(id=user_id).first()
     logging.info(f"generating keys for user {user.id}")
     private_key, public_key = keys.generate_user_keys(str(user.id))
-    user.ssh_keys = gen_ssh_keys()
+    user.ssh_keys = gen_ssh_keys(user_id)
     db.session.commit()
 
 
