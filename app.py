@@ -19,7 +19,7 @@ import re
 import html
 import hashlib
 from functools import cache
-from itsdangerous.url_safe import URLSafeTimedSerializer
+import collections
 
 # flask and related imports
 from flask import (
@@ -74,6 +74,7 @@ from authlib.integrations.flask_client import OAuth
 from werkzeug.middleware.proxy_fix import ProxyFix
 import jinja2
 from flask_mail import Mail, Message
+from itsdangerous.url_safe import URLSafeTimedSerializer
 
 # flask recaptcha uses jinja2.Markup, which doesn't exist any more,
 # so we monkey-patch to use markupsafe.Markup
@@ -3887,6 +3888,21 @@ def share_revoke(machine_id):
         )
     )
     return redirect(url_for("machines"))
+
+
+@app.route("/metrics")
+def metrics():
+    counts = collections.defaultdict(int)
+    for m in Machine.query.all():
+        counts[(m.machine_template.group_id, m.state)] += 1
+
+    logging.debug(counts)
+
+    out = ""
+    for (group_id, state), machines_count in counts.items():
+        out += f'machines{{group_id="{group_id}", state="{state}"}} {machines_count}\n'
+
+    return out
 
 
 @app.route("/new_machine", methods=["POST"])
