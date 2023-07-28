@@ -101,6 +101,7 @@ from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
 import misc.dnscrypto
+import keys
 
 
 def str_to_bool(s):
@@ -577,6 +578,22 @@ class ProtectedGroupWelcomePageModelView(ProtectedModelView):
     form_extra_fields = {"content": BigTextAreaField("Content", rows=25)}
 
 
+def gen_ssh_keys(user_id):
+    private_key, public_key = keys.generate_user_keys(str(user_id))
+    return SSHKeys(private_key=private_key, public_key=public_key, authorized_keys="")
+
+
+class SSHKeys(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    private_key = db.Column(db.Text)
+    public_key = db.Column(db.Text)
+    authorized_keys = db.Column(db.Text)
+
+    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+    owner = db.relationship("User", back_populates="ssh_keys")
+
+
 class User(db.Model, UserMixin):
     """
     User model, also used for flask-login
@@ -621,6 +638,7 @@ class User(db.Model, UserMixin):
     data_sources = db.relationship(
         "DataSource", secondary=user_data_source_association, back_populates="users"
     )
+    ssh_keys = db.relationship("SSHKeys", uselist=False, back_populates="owner")
 
     data_transfer_jobs = db.relationship("DataTransferJob", back_populates="user")
     problem_reports = db.relationship("ProblemReport", back_populates="user")
@@ -3200,6 +3218,11 @@ def machines():
     """
     The machine page displays and controls the user's machines
     """
+    if not current_user.ssh_keys:
+        logging.info(f"user {current_user.id} is missing ssh keys, creating...")
+        current_user.ssh_keys = gen_ssh_keys(current_user.id)
+        db.session.commit()
+        logging.info(f"ssh key added for {current_user.id} ok")
 
     # Query for user's owned machines
     owned_machines_query = db.session.query(Machine).filter(
@@ -3682,11 +3705,15 @@ def data():
 
 
 @log_function_call
-def do_rsync(source_host, source_port, source_dir, dest_host, dest_dir):
+def do_rsync(source_host, source_port, source_dir, dest_host, dest_dir, key_path=None):
     try:
+        key_cmd = ""
+        if key_path:
+            key_cmd = f"-i {key_path}"
+
         # Construct the rsync command
         rsync_cmd = (
-            f"rsync --include='/*/.*' --exclude='/.*' -avz -e 'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' "
+            f"rsync --include='/*/.*' --exclude='/.*' -avz -e 'ssh {key_cmd} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null' "
             f"{source_dir} {dest_host}:{dest_dir}"
         )
         logging.info(rsync_cmd)
@@ -3758,6 +3785,7 @@ def start_machine_transfer(job_id, audit_id, copy_dir_path):
                 source_dir=copy_dir_path,
                 dest_host=f"ubuntu@{job.machine2.ip}",
                 dest_dir=copy_dir_path,
+                key_path="/home/ubuntu/.ssh/ada-id_rsa",
             )
 
         if result:
@@ -3886,14 +3914,42 @@ def share_revoke(machine_id):
 @app.route("/metrics")
 def metrics():
     counts = collections.defaultdict(int)
-    for m in Machine.query.all():
-        counts[(m.machine_template.group_id, m.state)] += 1
+
+    # Perform a join on Machine and MachineTemplate
+    machines = (
+        db.session.query(Machine, MachineTemplate)
+        .join(MachineTemplate, Machine.machine_template_id == MachineTemplate.id)
+        .all()
+    )
+
+    for machine, machine_template in machines:
+        counts[
+            (
+                machine_template.group_id,
+                machine_template.id,
+                machine_template.type,
+                machine.owner_id,
+                machine_template.cpu_limit_cores,
+                machine_template.memory_limit_gb,
+                machine_template.disk_size_gb,
+                machine.state,
+            )
+        ] += 1
 
     logging.debug(counts)
 
     out = ""
-    for (group_id, state), machines_count in counts.items():
-        out += f'machines{{group_id="{group_id}", state="{state}"}} {machines_count}\n'
+    for (
+        group_id,
+        machine_template_id,
+        machine_template_type,
+        owner_id,
+        machine_template_cpu,
+        machine_template_mem,
+        machine_template_disk_gb,
+        state,
+    ), machines_count in counts.items():
+        out += f'machines{{group_id="{group_id}", machine_template_id="{machine_template_id}", machine_template_type="{machine_template_type}", owner_id="{owner_id}", machine_template_cpu="{machine_template_cpu}", machine_template_mem="{machine_template_mem}", machine_template_disk_gb="{machine_template_disk_gb}", state="{state}"}} {machines_count}\n'
 
     return out
 
@@ -4482,6 +4538,12 @@ class OpenStackService(VirtService):
                     )
 
                 configure_nginx(m)
+                keys.deploy_user_keys_to_machine(
+                    m.ip,
+                    m.owner.ssh_keys.private_key,
+                    m.owner.ssh_keys.public_key,
+                    m.owner.ssh_keys.authorized_keys,
+                )
 
                 m.state = MachineState.READY
                 finish_audit(audit, "ok")
@@ -4767,7 +4829,14 @@ class DockerService(VirtService):
                 )
 
                 m.ip = DockerService.wait_for_ip(client, m.name, network)
+
                 configure_nginx(m, service_type="direct")
+                keys.deploy_user_keys_to_machine(
+                    m.ip,
+                    m.owner.ssh_keys.private_key,
+                    m.owner.ssh_keys.public_key,
+                    m.owner.ssh_keys.authorized_keys,
+                )
 
                 m.state = MachineState.READY
                 finish_audit(audit, "ok")
@@ -4963,6 +5032,12 @@ class LibvirtService(VirtService):
                 m.state = MachineState.READY
 
                 configure_nginx(m)
+                keys.deploy_user_keys_to_machine(
+                    m.ip,
+                    m.owner.ssh_keys.private_key,
+                    m.owner.ssh_keys.public_key,
+                    m.owner.ssh_keys.authorized_keys,
+                )
 
                 finish_audit(audit, "ok")
                 db.session.commit()
@@ -5501,12 +5576,49 @@ def determine_redirect(share_accept_token_in_session):
     return resp
 
 
+def init_user_keys(user_id):
+    """Create a ssh key for a user."""
+    user = User.query.filter_by(id=user_id).first()
+    logging.info(f"generating keys for user {user.id}")
+    private_key, public_key = keys.generate_user_keys(str(user.id))
+    user.ssh_keys = gen_ssh_keys()
+    db.session.commit()
+
+
+def init_deploy_user_keys(user_id):
+    """Deploy a user's keys to their existing machines."""
+    user = User.query.filter_by(id=user_id).first()
+    for machine in Machine.query.filter_by(state=MachineState.READY, owner_id=user.id):
+        try:
+            logging.info(f"deploying keys for user {user.id} to {machine.ip}")
+            keys.deploy_user_keys_to_machine(
+                machine.ip,
+                user.ssh_keys.private_key,
+                user.ssh_keys.public_key,
+                user.ssh_keys.authorized_keys,
+            )
+        except Exception as e:
+            logging.warning(
+                f"couldn't dpeloy key for {user.id} to {machine.ip}: {str(e)}"
+            )
+
+
+def init_users_keys():
+    """On program start, generate missing keys and deploy to machines."""
+    with app.app_context():
+        for user in User.query.all():
+            if not user.ssh_keys:
+                init_user_keys(user.id)
+                init_deploy_user_keys(user.id)
+
+
 def main(debug=False):
     with app.app_context():
-        audit = create_audit("app", state="started")
+        create_audit("app", state="started")
 
     create_initial_db()
     clean_up_db()
+    # init_users_keys()
 
     VirtService.set_app(app)
 
