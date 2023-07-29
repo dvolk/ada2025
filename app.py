@@ -3990,12 +3990,12 @@ def metrics():
         labels_str = ", ".join(f'{k}="{v}"' for k, v in labels_dict.items())
         out += f"audit{{{labels_str}}} {audits_count}\n"
 
-    for count_keys, user_count in users_counts.items():
+    for count_keys, users_count in users_counts.items():
         labels_dict = {
             var_name: key for var_name, key in zip(user_var_names, count_keys)
         }
         labels_str = ", ".join(f'{k}="{v}"' for k, v in labels_dict.items())
-        out += f"user{{{labels_str}}} {audits_count}\n"
+        out += f"user{{{labels_str}}} {users_count}\n"
 
     return out
 
