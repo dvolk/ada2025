@@ -3913,7 +3913,9 @@ def share_revoke(machine_id):
 
 @app.route("/metrics")
 def metrics():
-    counts = collections.defaultdict(int)
+    machines_counts = collections.defaultdict(int)
+    audits_counts = collections.defaultdict(int)
+    users_counts = collections.defaultdict(int)
 
     # Perform a join on Machine and MachineTemplate
     machines = (
@@ -3922,8 +3924,18 @@ def metrics():
         .all()
     )
 
+    machines_var_names = [
+        "group_id",
+        "machine_template_id",
+        "machine_template_type",
+        "owner_id",
+        "machine_template_cpu",
+        "machine_template_mem",
+        "machine_template_disk_gb",
+        "state",
+    ]
     for machine, machine_template in machines:
-        counts[
+        machines_counts[
             (
                 machine_template.group_id,
                 machine_template.id,
@@ -3936,20 +3948,54 @@ def metrics():
             )
         ] += 1
 
-    logging.debug(counts)
+    audit_var_names = [
+        "user_id",
+        "action_name",
+        "state_name",
+    ]
+    for audit in Audit.query.all():
+        audits_counts[
+            (
+                audit.user_id,
+                audit.action,
+                audit.state,
+            )
+        ] += 1
+
+    user_var_names = [
+        "is_enabled",
+        "group_id",
+    ]
+    for user in User.query.all():
+        users_counts[
+            (
+                user.is_enabled,
+                user.group_id,
+            )
+        ] += 1
 
     out = ""
-    for (
-        group_id,
-        machine_template_id,
-        machine_template_type,
-        owner_id,
-        machine_template_cpu,
-        machine_template_mem,
-        machine_template_disk_gb,
-        state,
-    ), machines_count in counts.items():
-        out += f'machines{{group_id="{group_id}", machine_template_id="{machine_template_id}", machine_template_type="{machine_template_type}", owner_id="{owner_id}", machine_template_cpu="{machine_template_cpu}", machine_template_mem="{machine_template_mem}", machine_template_disk_gb="{machine_template_disk_gb}", state="{state}"}} {machines_count}\n'
+
+    for count_keys, machines_count in machines_counts.items():
+        labels_dict = {
+            var_name: key for var_name, key in zip(machines_var_names, count_keys)
+        }
+        labels_str = ", ".join(f'{k}="{v}"' for k, v in labels_dict.items())
+        out += f"machines{{{labels_str}}} {machines_count}\n"
+
+    for count_keys, audits_count in audits_counts.items():
+        labels_dict = {
+            var_name: key for var_name, key in zip(audit_var_names, count_keys)
+        }
+        labels_str = ", ".join(f'{k}="{v}"' for k, v in labels_dict.items())
+        out += f"audit{{{labels_str}}} {audits_count}\n"
+
+    for count_keys, user_count in users_counts.items():
+        labels_dict = {
+            var_name: key for var_name, key in zip(user_var_names, count_keys)
+        }
+        labels_str = ", ".join(f'{k}="{v}"' for k, v in labels_dict.items())
+        out += f"user{{{labels_str}}} {audits_count}\n"
 
     return out
 
