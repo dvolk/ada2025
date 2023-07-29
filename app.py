@@ -5618,7 +5618,7 @@ def main(debug=False):
 
     create_initial_db()
     clean_up_db()
-    init_users_keys()
+    # init_users_keys()
 
     VirtService.set_app(app)
 
