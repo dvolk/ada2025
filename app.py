@@ -1069,28 +1069,6 @@ class ProtectedDataTransferJobModelView(ProtectedModelView):
     }
 
 
-class ProtectedDataTransferJobModelView(ProtectedModelView):
-    column_list = (
-        "id",
-        "state",
-        "user",
-        "data_source",
-        "machine",
-        "creation_date",
-    )
-    form_columns = ("state", "user", "data_source", "machine")
-    column_searchable_list = ("state",)
-    column_sortable_list = ("id", "state", "creation_date")
-    column_filters = ("state", "user", "data_source", "machine")
-    column_auto_select_related = True
-    column_formatters = {
-        "state": _color_formatter,
-        "user": _color_formatter,
-        "machine": _color_formatter,
-        "data_source": _color_formatter,
-    }
-
-
 class MachineProvider(db.Model):
     """
     A machine provider is a local connection like local docker
