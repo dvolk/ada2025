@@ -5584,7 +5584,6 @@ def send_test_email():
             mail.send(msg)
 
     email_to = current_user.email
-    root = request.url_root
     logging.info(f"Sending test email to: {email_to}")
     msg = Message(
         "Ada Data Analysis test email",
@@ -5593,7 +5592,7 @@ def send_test_email():
     )
     msg.body = f"""Hi,
 
-You have recieved this email because you requested a test email from Ada Data Analysis ({root}).
+You have recieved this email because you requested a test email from Ada Data Analysis ({request.url_root}).
 """
     threading.Thread(
         target=send, args=(msg,)
