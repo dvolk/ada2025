@@ -2933,7 +2933,16 @@ def group_mgmt():
     ) in (
         group_users
     ):  # we use loop as _in() does not work for relationships. TODO: Make this a one line query
-        user_machines = db.session.query(Machine).filter(Machine.owner == user).all()
+        user_machines = (
+            db.session.query(Machine)
+            .filter(
+                and_(
+                    Machine.owner == user,
+                    Machine.state not in [MachineState.DELETING, MachineState.DELETED],
+                )
+            )
+            .all()
+        )
         group_machines.extend(user_machines)
     if current_user.group.welcome_page:
         form.content.data = current_user.group.welcome_page.content
