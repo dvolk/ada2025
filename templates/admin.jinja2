@@ -69,6 +69,17 @@
       </tr>
     {% endfor %}
   </table>
+
+  <h2>{{ gettext("Email test") }}</h2>
+  <form method="POST" action="/send_test_email">
+    <button
+      title="Send a test email to the email address associated with your account"
+      type="submit"
+      class="w3-button w3-green w3-round">
+      {{ icon("envelope") }}
+      {{ gettext('Send a test email to the email address associated with your account.') }}
+    </button>
+  </form>
   <br/>
 
 {% endblock %}
