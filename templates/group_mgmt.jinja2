@@ -96,6 +96,7 @@
         <thead>
           <th>Owner username</th>
           <th>Owner name</th>
+          <th>Machine name</th>
           <th>Template</th>
           <th>Creation date</th>
         </thead>
@@ -106,6 +107,9 @@
             </td>
             <td style="vertical-align: middle;">
               {{ m.owner.given_name }} {{ m.owner.family_name }}
+            </td>
+            <td style="vertical-align: middle;">
+              {{ m.display_name }}
             </td>
             <td style="vertical-align: middle;">
               {{ m.machine_template.name }}
