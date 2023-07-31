@@ -4030,7 +4030,7 @@ def new_machine():
 
     threading.Thread(target=target, args=(m.id, audit.id)).start()
     flash(
-        gettext("Creating machine in the background. Refresh page to update status."),
+        gettext("Creating machine."),
         category="success",
     )
     return redirect(url_for("machines"))
