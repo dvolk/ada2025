@@ -2932,7 +2932,7 @@ def group_mgmt():
         user
     ) in (
         group_users
-    ):  # we use loop as _in() does not work for relationships. TODO: Make this a one line query
+    ):  # we use loop as _in() does not work for relationships. TODO: Make this a one line query if possible
         user_machines = (
             db.session.query(Machine)
             .filter(
