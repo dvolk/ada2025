@@ -5577,6 +5577,29 @@ For your security, we recommend that you choose a unique password that you don't
         mail.send(msg)
         logging.info(f"Emailed {email_to} an email login link")
 
+@app.route("/send_test_email", methods=["POST"])
+def send_test_email():
+    def send(msg):
+        with app.app_context():
+            mail.send(msg)
+
+    email_to = current_user.email
+    root = request.url_root
+    logging.info(f"Sending test email to: {email_to}")
+    msg = Message(
+        "Ada Data Analysis test email",
+        sender=MAIL_SENDER,
+        recipients=[email_to],
+    )
+    msg.body = f"""Hi,
+
+You have recieved this email because you requested a test email from Ada Data Analysis ({root}).
+"""
+    threading.Thread(
+        target=send, args=(msg,)
+    ).start()
+    logging.info(f"Emailed {email_to} a test message")
+    return redirect(url_for("admin"))
 
 def determine_redirect(share_accept_token_in_session):
     """
