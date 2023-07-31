@@ -5583,6 +5583,7 @@ def send_test_email():
         with app.app_context():
             mail.send(msg)
 
+    audit = create_audit("test email")
     email_to = current_user.email
     logging.info(f"Sending test email to: {email_to}")
     msg = Message(
@@ -5598,6 +5599,7 @@ You have recieved this email because you requested a test email from Ada Data An
         target=send, args=(msg,)
     ).start()
     logging.info(f"Emailed {email_to} a test message")
+    finish_audit(audit, state="ok")
     return redirect(url_for("admin"))
 
 def determine_redirect(share_accept_token_in_session):
