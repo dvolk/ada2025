@@ -3229,11 +3229,15 @@ def machines():
         .all()
     )
 
+    machine_templates = current_user.group.machine_templates
+    machine_templates.sort(key=lambda mt: mt.name)
+
     return render_template(
         "machines.jinja2",
         title=gettext("Machines"),
         count_machines=count_machines,
         user_machines=user_machines,
+        machine_templates=machine_templates,
         MachineTemplate=MachineTemplate,
         MachineState=MachineState,
         Machine=Machine,
