@@ -2928,10 +2928,9 @@ def group_mgmt():
     )
 
     group_machines = []
-    for user in group_users: # we use loop as _in() does not work for relationships. TODO: Make this nicer
+    for user in group_users: # we use loop as _in() does not work for relationships. TODO: Make this a one line query
         user_machines = db.session.query(Machine).filter(Machine.owner == user).all()
         group_machines.extend(user_machines)
-
     if current_user.group.welcome_page:
         form.content.data = current_user.group.welcome_page.content
 
