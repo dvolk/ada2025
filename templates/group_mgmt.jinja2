@@ -94,7 +94,8 @@
     {{ info("You can view your group's machine resource usage here.") }}
           <table class="w3-table-all">
         <thead>
-          <th>Owner</th>
+          <th>Owner username</th>
+          <th>Owner name</th>
           <th>Template</th>
           <th>Creation date</th>
         </thead>
@@ -102,6 +103,9 @@
           <tr>
             <td style="vertical-align: middle;">
               {{ m.owner.username }}
+            </td>
+            <td style="vertical-align: middle;">
+              {{ m.owner.given_name }} {{ m.owner.family_name }}
             </td>
             <td style="vertical-align: middle;">
               {{ m.machine_template.name }}
