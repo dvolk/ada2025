@@ -2931,7 +2931,6 @@ def group_mgmt():
     for user in group_users: # we use loop as _in() does not work for relationships. TODO: Make this nicer
         user_machines = db.session.query(Machine).filter(Machine.owner == user).all()
         group_machines.extend(user_machines)
-    logging.info(group_machines)
 
     if current_user.group.welcome_page:
         form.content.data = current_user.group.welcome_page.content
