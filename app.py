@@ -5578,6 +5578,8 @@ For your security, we recommend that you choose a unique password that you don't
         logging.info(f"Emailed {email_to} an email login link")
 
 @app.route("/send_test_email", methods=["POST"])
+@login_required
+@profile_complete_required
 def send_test_email():
     def send(msg):
         with app.app_context():
@@ -5586,6 +5588,10 @@ def send_test_email():
     audit = create_audit("test email")
     email_to = current_user.email
     logging.info(f"Sending test email to: {email_to}")
+    if not current_user.is_admin:
+        logging.info("Current user not admin - won't send test email.")
+        finish_audit(audit, state="failed")
+        return redirect("/")
     msg = Message(
         "Ada Data Analysis test email",
         sender=MAIL_SENDER,
