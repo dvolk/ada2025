@@ -2928,7 +2928,11 @@ def group_mgmt():
     )
 
     group_machines = []
-    for user in group_users: # we use loop as _in() does not work for relationships. TODO: Make this a one line query
+    for (
+        user
+    ) in (
+        group_users
+    ):  # we use loop as _in() does not work for relationships. TODO: Make this a one line query
         user_machines = db.session.query(Machine).filter(Machine.owner == user).all()
         group_machines.extend(user_machines)
     if current_user.group.welcome_page:
@@ -5582,6 +5586,7 @@ For your security, we recommend that you choose a unique password that you don't
         mail.send(msg)
         logging.info(f"Emailed {email_to} an email login link")
 
+
 @app.route("/send_test_email", methods=["POST"])
 @login_required
 @profile_complete_required
@@ -5606,12 +5611,11 @@ def send_test_email():
 
 You have recieved this email because you requested a test email from Ada Data Analysis ({request.url_root}).
 """
-    threading.Thread(
-        target=send, args=(msg,)
-    ).start()
+    threading.Thread(target=send, args=(msg,)).start()
     logging.info(f"Emailed {email_to} a test message")
     finish_audit(audit, state="ok")
     return redirect(url_for("admin"))
+
 
 def determine_redirect(share_accept_token_in_session):
     """
