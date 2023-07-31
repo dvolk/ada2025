@@ -2938,7 +2938,7 @@ def group_mgmt():
             .filter(
                 and_(
                     Machine.owner == user,
-                    Machine.state not in [MachineState.DELETING, MachineState.DELETED],
+                    ~Machine.state.in_([MachineState.DELETING, MachineState.DELETED]),
                 )
             )
             .all()
