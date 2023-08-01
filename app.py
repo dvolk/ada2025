@@ -2933,10 +2933,11 @@ def group_mgmt():
         .join(MachineTemplate, Machine.machine_template_id == MachineTemplate.id)
         .filter(
             and_(
-                User.group_id == current_user.group_id,
+                MachineTemplate.group_id == current_user.group_id,
                 ~Machine.state.in_([MachineState.DELETING, MachineState.DELETED]),
             )
         )
+        .order_by(desc(Machine.id), desc(Machine.id))
         .all()
     )
 
