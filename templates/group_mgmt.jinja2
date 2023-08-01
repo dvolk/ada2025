@@ -39,6 +39,7 @@
                   {{ u.email }}</td>
                   <td style="vertical-align: middle;">{{ humanize.naturaldelta(time_now - u.creation_date) }} ago</td>
                 <td style="vertical-align: middle; text-align: right">
+                  {% if not (u.id == current_user.id or u.is_group_admin or u.is_admin) %}
                   {% if u.is_enabled %}
                     <a href="#"
                        title="Disable user account"
@@ -65,8 +66,12 @@
                      data-user-id="{{ u.id }}">
                      {{ icon('user-slash') }}
                   </a>
+                {% else %}
+                  <button class="w3-button w3-gray w3-round" disabled>{{ icon('user-xmark') }}</button>
+                  <button class="w3-button w3-gray w3-round" disabled>{{ icon('user-cog') }}</button>
+                  <button class="w3-button w3-gray w3-round" disabled>{{ icon('user-slash') }}</button>
+                {% endif %}
                 </td>
-
               </tr>
             {% endfor %}
           </table>

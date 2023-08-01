@@ -2918,9 +2918,7 @@ def group_mgmt():
         .filter(
             and_(
                 User.group == current_user.group,
-                ~User.is_admin,  # group admins can't control other admins
-                ~User.is_group_admin,
-                User.id != current_user.id,
+                ~User.is_banned,
             )
         )
         .order_by(asc(User.is_enabled), desc(User.creation_date))
