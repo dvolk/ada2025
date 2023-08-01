@@ -6,71 +6,112 @@
 
   <h2>{{ gettext("Group Management") }}</h2>
 
-  <div class="w3-container w3-dark-gray">
-    <h3>Users</h3>
-  </div>
-  <div class="w3-container w3-light-gray">
-    {{ info("You can enable, disable, and remove users from the group, and set their data sources.") }}
-    <p>
-      <table class="w3-table-all">
-        <thead>
-          <th>Username</th>
-          <th>Email</th>
-          <th>Account created</th>
-          <th style="text-align: right">Actions</th>
-        </thead>
-        {% for u in group_users %}
-          <tr class="{% if u.is_enabled %} w3-pale-green {% else %} w3-pale-red {% endif %}">
-            <td style="vertical-align: middle;">
-              {% if u.is_enabled %}
-                <span class="w3-green w3-round">{{ icon('check') }}</span>
-              {% else %}
-                <span class="w3-red w3-round">{{ icon('xmark') }}</span>
-              {% endif %}
-              &nbsp;
-              {{ u.username }}
-            </td>
-            <td style="vertical-align: middle;">
-              {% if u.provider == "google" %}
-                <i class="fa-brands fa-fw fa-google"></i>
-              {% endif %}
-              {{ u.email }}</td>
-            <td style="vertical-align: middle;">{{ humanize.naturaldelta(time_now - u.creation_date) }} ago</td>
-            <td style="vertical-align: middle; text-align: right">
-              {% if u.is_enabled %}
-                <a href="#"
-                   title="Disable user account"
-                   class="w3-button w3-pale-red w3-round user-disable"
-                   data-user-id="{{ u.id }}">
-                   {{ icon('user-xmark') }}
-                </a>
-              {% else %}
-                <a href="#"
-                   title="Enable user account"
-                   class="w3-button w3-pale-green w3-round user-enable"
-                   data-user-id="{{ u.id }}">
-                   {{ icon('user-check') }}
-                </a>
-              {% endif %}
-              <a href="{{ url_for('setup_user', user_id=u.id) }}"
-                 title="Set data sources"
-                 class="w3-button w3-pale-yellow w3-round">
-                 {{ icon('user-cog') }}
-              </a>
-              <a href="#"
-                 title="Remove user"
-                 class="w3-button w3-gray w3-round user-remove"
-                 data-user-id="{{ u.id }}">
-                 {{ icon('user-slash') }}
-              </a>
-            </td>
+  <div class="w3-row">
+    <div class="w3-half my-half" style="padding-right: 5px;">
+      <div class="w3-container w3-dark-gray">
+        <h3>Users</h3>
+      </div>
+      <div class="w3-container w3-light-gray">
+        {{ info("You can enable, disable, and remove users from the group, and set their data sources.") }}
+        <p>
+          <table class="w3-table-all">
+            <thead>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Account created</th>
+              <th style="text-align: right">Actions</th>
+            </thead>
+            {% for u in group_users %}
+              <tr class="{% if u.is_enabled %} w3-pale-green {% else %} w3-pale-red {% endif %}">
+                <td style="vertical-align: middle;">
+                  {% if u.is_enabled %}
+                    <span class="w3-green w3-round">{{ icon('check') }}</span>
+                  {% else %}
+                    <span class="w3-red w3-round">{{ icon('xmark') }}</span>
+                  {% endif %}
+                  &nbsp;
+                  {{ u.username }}
+                </td>
+                <td style="vertical-align: middle;">
+                  {% if u.provider == "google" %}
+                    <i class="fa-brands fa-fw fa-google"></i>
+                  {% endif %}
+                  {{ u.email }}</td>
+                  <td style="vertical-align: middle;">{{ humanize.naturaldelta(time_now - u.creation_date) }} ago</td>
+                <td style="vertical-align: middle; text-align: right">
+                  {% if u.is_enabled %}
+                    <a href="#"
+                       title="Disable user account"
+                       class="w3-button w3-pale-red w3-round user-disable"
+                       data-user-id="{{ u.id }}">
+                       {{ icon('user-xmark') }}
+                    </a>
+                  {% else %}
+                    <a href="#"
+                       title="Enable user account"
+                       class="w3-button w3-pale-green w3-round user-enable"
+                       data-user-id="{{ u.id }}">
+                       {{ icon('user-check') }}
+                    </a>
+                  {% endif %}
+                  <a href="{{ url_for('setup_user', user_id=u.id) }}"
+                     title="Set data sources"
+                     class="w3-button w3-pale-yellow w3-round">
+                     {{ icon('user-cog') }}
+                  </a>
+                  <a href="#"
+                     title="Remove user"
+                     class="w3-button w3-gray w3-round user-remove"
+                     data-user-id="{{ u.id }}">
+                     {{ icon('user-slash') }}
+                  </a>
+                </td>
 
-          </tr>
-        {% endfor %}
-      </table>
-    </p>
+              </tr>
+            {% endfor %}
+          </table>
+        </p>
+      </div>
+      <br/>
+    </div>
+    <div class="w3-half my-half" style="padding-left: 5px;">
+      <div class="w3-container w3-dark-gray">
+        <h3>Machines</h3>
+      </div>
+      <div class="w3-container w3-light-gray">
+        {{ info("You can view your group's machine resource usage here.") }}
+        <table class="w3-table-all">
+          <thead>
+            <th>Owner username</th>
+            <th>Owner name</th>
+            <th>Machine name</th>
+            <th>Template</th>
+            <th>Creation date</th>
+          </thead>
+          {% for m in group_machines %}
+            <tr>
+              <td style="vertical-align: middle;">
+                {{ m[0].username }}
+              </td>
+              <td style="vertical-align: middle;">
+                {{ m[0].given_name }} {{ m[0].family_name }}
+              </td>
+              <td style="vertical-align: middle;">
+                {{ m[1].display_name }}
+              </td>
+              <td style="vertical-align: middle;">
+                {{ m[2].name }}
+              </td>
+              <td style="vertical-align: middle;">{{ humanize.naturaldelta(time_now - m[1].creation_date) }} ago</td>
+
+            </tr>
+          {% endfor %}
+        </table>
+        <br/>
+      </div>
+      <br/>
+    </div>
   </div>
-  <br/>
 
   <div class="w3-container w3-dark-gray">
     <h3>Welcome page</h3>
@@ -79,47 +120,11 @@
     <p>
       <form method="POST">
         {{ form.hidden_tag() }}
-      {{ info("You can set the group welcome page content. The page is formatted in HTML format.") }}
+        {{ info("You can set the group welcome page content. The page is formatted in HTML format.") }}
         <p>{{ form.content(class="w3-input w3-border w3-round") }}</p>
         <p>{{ form.submit(class="w3-button w3-round w3-blue", rows=20) }}</p>
       </form>
     </p>
-  </div>
-  <br/>
-
-  <div class="w3-container w3-dark-gray">
-    <h3>Group Machines</h3>
-  </div>
-  <div class="w3-container w3-light-gray">
-    {{ info("You can view your group's machine resource usage here.") }}
-          <table class="w3-table-all">
-        <thead>
-          <th>Owner username</th>
-          <th>Owner name</th>
-          <th>Machine name</th>
-          <th>Template</th>
-          <th>Creation date</th>
-        </thead>
-        {% for m in group_machines %}
-          <tr>
-            <td style="vertical-align: middle;">
-              {{ m[0].username }}
-            </td>
-            <td style="vertical-align: middle;">
-              {{ m[0].given_name }} {{ m[0].family_name }}
-            </td>
-            <td style="vertical-align: middle;">
-              {{ m[1].display_name }}
-            </td>
-            <td style="vertical-align: middle;">
-              {{ m[2].name }}
-            </td>
-            <td style="vertical-align: middle;">{{ humanize.naturaldelta(time_now - m[1].creation_date) }} ago</td>
-
-          </tr>
-        {% endfor %}
-      </table>
-      <br/>
   </div>
   <br/>
 
