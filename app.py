@@ -2927,23 +2927,19 @@ def group_mgmt():
         .all()
     )
 
-    group_machines = []
-    for (
-        user
-    ) in (
-        group_users
-    ):  # we use loop as _in() does not work for relationships. TODO: Make this a one line query if possible
-        user_machines = (
-            db.session.query(Machine)
-            .filter(
-                and_(
-                    Machine.owner == user,
-                    ~Machine.state.in_([MachineState.DELETING, MachineState.DELETED]),
-                )
+    group_machines = (
+        db.session.query(User, Machine, MachineTemplate)
+        .join(Machine, Machine.owner_id == User.id)
+        .join(MachineTemplate, Machine.machine_template_id == MachineTemplate.id)
+        .filter(
+            and_(
+                User.group_id == current_user.group_id,
+                ~Machine.state.in_([MachineState.DELETING, MachineState.DELETED]),
             )
-            .all()
         )
-        group_machines.extend(user_machines)
+        .all()
+    )
+
     if current_user.group.welcome_page:
         form.content.data = current_user.group.welcome_page.content
 

@@ -103,18 +103,18 @@
         {% for m in group_machines %}
           <tr>
             <td style="vertical-align: middle;">
-              {{ m.owner.username }}
+              {{ m[0].username }}
             </td>
             <td style="vertical-align: middle;">
-              {{ m.owner.given_name }} {{ m.owner.family_name }}
+              {{ m[0].given_name }} {{ m[0].family_name }}
             </td>
             <td style="vertical-align: middle;">
-              {{ m.display_name }}
+              {{ m[1].display_name }}
             </td>
             <td style="vertical-align: middle;">
-              {{ m.machine_template.name }}
+              {{ m[2].name }}
             </td>
-            <td style="vertical-align: middle;">{{ humanize.naturaldelta(time_now - m.creation_date) }} ago</td>
+            <td style="vertical-align: middle;">{{ humanize.naturaldelta(time_now - m[1].creation_date) }} ago</td>
 
           </tr>
         {% endfor %}
