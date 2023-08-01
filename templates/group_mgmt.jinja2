@@ -87,6 +87,42 @@
   </div>
   <br/>
 
+  <div class="w3-container w3-dark-gray">
+    <h3>Group Machines</h3>
+  </div>
+  <div class="w3-container w3-light-gray">
+    {{ info("You can view your group's machine resource usage here.") }}
+          <table class="w3-table-all">
+        <thead>
+          <th>Owner username</th>
+          <th>Owner name</th>
+          <th>Machine name</th>
+          <th>Template</th>
+          <th>Creation date</th>
+        </thead>
+        {% for m in group_machines %}
+          <tr>
+            <td style="vertical-align: middle;">
+              {{ m[0].username }}
+            </td>
+            <td style="vertical-align: middle;">
+              {{ m[0].given_name }} {{ m[0].family_name }}
+            </td>
+            <td style="vertical-align: middle;">
+              {{ m[1].display_name }}
+            </td>
+            <td style="vertical-align: middle;">
+              {{ m[2].name }}
+            </td>
+            <td style="vertical-align: middle;">{{ humanize.naturaldelta(time_now - m[1].creation_date) }} ago</td>
+
+          </tr>
+        {% endfor %}
+      </table>
+      <br/>
+  </div>
+  <br/>
+
 {% endblock %}
 
 {% block javascript %}

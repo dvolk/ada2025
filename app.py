@@ -2927,12 +2927,26 @@ def group_mgmt():
         .all()
     )
 
+    group_machines = (
+        db.session.query(User, Machine, MachineTemplate)
+        .join(Machine, Machine.owner_id == User.id)
+        .join(MachineTemplate, Machine.machine_template_id == MachineTemplate.id)
+        .filter(
+            and_(
+                User.group_id == current_user.group_id,
+                ~Machine.state.in_([MachineState.DELETING, MachineState.DELETED]),
+            )
+        )
+        .all()
+    )
+
     if current_user.group.welcome_page:
         form.content.data = current_user.group.welcome_page.content
 
     return render_template(
         "group_mgmt.jinja2",
         group_users=group_users,
+        group_machines=group_machines,
         form=form,
         title=gettext("Group"),
     )
