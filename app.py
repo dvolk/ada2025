@@ -2354,79 +2354,96 @@ class UserInfoForm(FlaskForm):
 
     submit = SubmitField(lazy_gettext("Update"))
 
+class EditAuthorizedKeysForm(FlaskForm):
+    content = TextAreaField(
+        "Content",
+        render_kw={"rows": 20},
+    )
+    submit = SubmitField("Update Authorized Keys")
 
 @app.route("/settings", methods=["GET", "POST"])
 @limiter.limit("60 per minute")
 @login_required
 @profile_complete_required
 def settings():
-    form = UserInfoForm()
+    settings_form = UserInfoForm()
+    auth_keys_form = EditAuthorizedKeysForm()
 
     if request.method == "POST":
-        if form.validate_on_submit():
+        form_choice = request.args.get("form_choice")
+        if settings_form.validate_on_submit() and form_choice == "settings":
             error_msg = ""
-            if form.language.data not in [x[0] for x in form.language.choices]:
+            if settings_form.language.data not in [x[0] for x in settings_form.language.choices]:
                 error_msg = gettext("Bad language specified")
-            if form.timezone.data not in form.timezone.choices:
+            if settings_form.timezone.data not in settings_form.timezone.choices:
                 error_msg = gettext("Bad timezone specified")
-            if not is_name_safe(form.given_name.data):
+            if not is_name_safe(settings_form.given_name.data):
                 error_msg = gettext("Sorry, that given name is not allowed.")
-            if not is_name_safe(form.family_name.data):
+            if not is_name_safe(settings_form.family_name.data):
                 error_msg = gettext("Sorry, that last name is not allowed.")
-            if not is_name_safe(form.email.data):
+            if not is_name_safe(settings_form.email.data):
                 error_msg = gettext("Sorry, that email is not allowed.")
-            if u := User.query.filter_by(email=form.email.data).first():
+            if u := User.query.filter_by(email=settings_form.email.data).first():
                 if u != current_user:
                     error_msg = gettext(
                         "Sorry, that email can't be used. Please choose another or contact us for support."
                     )
-            if form.password.data:
-                if form.password.data != form.password_confirm.data:
+            if settings_form.password.data:
+                if settings_form.password.data != settings_form.password_confirm.data:
                     error_msg = gettext("The passwords you entered don't match.")
-                if len(form.password.data) < 8:
+                if len(settings_form.password.data) < 8:
                     error_msg = gettext("New password has to be at least 8 characters.")
 
             logging.warning(f"user settings change failed: {error_msg}")
             if error_msg:
                 flash(error_msg, "danger")
-                return redirect(url_for("settings"))
 
-            current_user.given_name = form.given_name.data
-            current_user.family_name = form.family_name.data
-            current_user.organization = form.organization.data
-            current_user.job_title = form.job_title.data
-            current_user.email = form.email.data
-            current_user.language = form.language.data
-            current_user.timezone = form.timezone.data
-            if form.password.data:
-                current_user.set_password(form.password.data)
+            current_user.given_name = settings_form.given_name.data
+            current_user.family_name = settings_form.family_name.data
+            current_user.organization = settings_form.organization.data
+            current_user.job_title = settings_form.job_title.data
+            current_user.email = settings_form.email.data
+            current_user.language = settings_form.language.data
+            current_user.timezone = settings_form.timezone.data
+            if settings_form.password.data:
+                current_user.set_password(settings_form.password.data)
 
             db.session.commit()
 
             flash(gettext("Your changes have been saved."))
-            return redirect(url_for("settings"))
-        else:
+        elif auth_keys_form.validate_on_submit() and form_choice == "auth_keys":
+            current_user.ssh_keys.authorized_keys = auth_keys_form.content.data
+            db.session.commit()
+
+            flash(gettext("Your changes have been saved."))
+        elif not settings_form.validate_on_submit() and form_choice == "settings":
             error_msg = ""
-            for field, errors in form.errors.items():
+            for field, errors in settings_form.errors.items():
                 for error in errors:
                     error_msg += f"{field}: {error}<br/>"
 
-            flash(f"Sorry, the form could not be validated:<br/> {error_msg}", "danger")
-            return redirect(url_for("settings"))
-
+            flash(f"Sorry, the User settings form could not be validated:<br/> {error_msg}", "danger")
+        elif not auth_keys_form.validate_on_submit() and form_choice == "auth_keys":
+            flash(f"Sorry, the Authorized SSH Keys form could not be validated")
+        
+        return redirect(url_for("settings"))
+        
     elif request.method == "GET":
-        form.given_name.data = current_user.given_name
-        form.family_name.data = current_user.family_name
-        form.organization.data = current_user.organization
-        form.job_title.data = current_user.job_title
-        form.email.data = current_user.email
-        form.language.data = current_user.language
-        form.timezone.data = current_user.timezone
+        settings_form.given_name.data = current_user.given_name
+        settings_form.family_name.data = current_user.family_name
+        settings_form.organization.data = current_user.organization
+        settings_form.job_title.data = current_user.job_title
+        settings_form.email.data = current_user.email
+        settings_form.language.data = current_user.language
+        settings_form.timezone.data = current_user.timezone
+
+        auth_keys_form.content.data = current_user.ssh_keys.authorized_keys
 
     return render_template(
         "settings.jinja2",
         title=gettext("Settings"),
-        form=form,
+        settings_form=settings_form,
+        auth_keys_form=auth_keys_form,
     )
 
 
