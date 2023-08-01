@@ -2937,7 +2937,7 @@ def group_mgmt():
                 ~Machine.state.in_([MachineState.DELETING, MachineState.DELETED]),
             )
         )
-        .order_by(desc(Machine.id), desc(Machine.id))
+        .order_by(desc(User.id), desc(Machine.id))
         .all()
     )
 
