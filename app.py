@@ -3243,11 +3243,15 @@ def machines():
         .all()
     )
 
+    machine_templates = current_user.group.machine_templates
+    machine_templates.sort(key=lambda mt: mt.name)
+
     return render_template(
         "machines.jinja2",
         title=gettext("Machines"),
         count_machines=count_machines,
         user_machines=user_machines,
+        machine_templates=machine_templates,
         MachineTemplate=MachineTemplate,
         MachineState=MachineState,
         Machine=Machine,
@@ -3331,6 +3335,50 @@ def admin():
         Group=Group,
         env=os.environ,
     )
+
+
+@app.route("/send_test_email", methods=["POST"])
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def send_test_email():
+    def send(msg):
+        with app.app_context():
+            mail.send(msg)
+
+    audit = create_audit("test email")
+
+    if not MAIL_SENDER:
+        finish_audit(audit, state="bad cfg")
+        logging.error(
+            "send_test_email(): MAIL_SENDER is not defined - check mail config"
+        )
+        abort(404)
+
+    email_to = current_user.email
+    logging.info(f"Sending test email to: {email_to}")
+
+    if not current_user.is_admin:
+        logging.info(
+            "send_test_email(): Current user not admin - won't send test email."
+        )
+        finish_audit(audit, state="bad user")
+        abort(403)
+
+    msg = Message(
+        "Ada Data Analysis test email",
+        sender=MAIL_SENDER,
+        recipients=[email_to],
+    )
+    msg.body = f"""Hi,
+
+You have recieved this email because you requested a test email from Ada Data Analysis ({request.url_root}).
+"""
+    threading.Thread(target=send, args=(msg,)).start()
+    logging.info(f"Emailed {email_to} a test message")
+    finish_audit(audit, state="ok")
+
+    return "OK"
 
 
 @app.route("/citations")
@@ -4044,7 +4092,7 @@ def new_machine():
 
     threading.Thread(target=target, args=(m.id, audit.id)).start()
     flash(
-        gettext("Creating machine in the background. Refresh page to update status."),
+        gettext("Creating machine."),
         category="success",
     )
     return redirect(url_for("machines"))
@@ -5590,36 +5638,6 @@ For your security, we recommend that you choose a unique password that you don't
 """
         mail.send(msg)
         logging.info(f"Emailed {email_to} an email login link")
-
-
-@app.route("/send_test_email", methods=["POST"])
-@login_required
-@profile_complete_required
-def send_test_email():
-    def send(msg):
-        with app.app_context():
-            mail.send(msg)
-
-    audit = create_audit("test email")
-    email_to = current_user.email
-    logging.info(f"Sending test email to: {email_to}")
-    if not current_user.is_admin:
-        logging.info("Current user not admin - won't send test email.")
-        finish_audit(audit, state="failed")
-        return redirect("/")
-    msg = Message(
-        "Ada Data Analysis test email",
-        sender=MAIL_SENDER,
-        recipients=[email_to],
-    )
-    msg.body = f"""Hi,
-
-You have recieved this email because you requested a test email from Ada Data Analysis ({request.url_root}).
-"""
-    threading.Thread(target=send, args=(msg,)).start()
-    logging.info(f"Emailed {email_to} a test message")
-    finish_audit(audit, state="ok")
-    return redirect(url_for("admin"))
 
 
 def determine_redirect(share_accept_token_in_session):
