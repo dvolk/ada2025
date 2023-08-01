@@ -2352,14 +2352,14 @@ class UserInfoForm(FlaskForm):
         ],
     )
 
-    submit = SubmitField(lazy_gettext("Update"))
+    submit_settings = SubmitField(lazy_gettext("Update"))
 
 class EditAuthorizedKeysForm(FlaskForm):
     content = TextAreaField(
         "Content",
         render_kw={"rows": 20},
     )
-    submit = SubmitField("Update Authorized Keys")
+    submit_auth_keys = SubmitField("Update Authorized Keys")
 
 @app.route("/settings", methods=["GET", "POST"])
 @limiter.limit("60 per minute")
@@ -2370,8 +2370,9 @@ def settings():
     auth_keys_form = EditAuthorizedKeysForm()
 
     if request.method == "POST":
-        form_choice = request.args.get("form_choice")
-        if settings_form.validate_on_submit() and form_choice == "settings":
+        form1_ok = False
+        form2_ok = False
+        if settings_form.validate_on_submit() and settings_form.submit_settings.data:
             error_msg = ""
             if settings_form.language.data not in [x[0] for x in settings_form.language.choices]:
                 error_msg = gettext("Bad language specified")
@@ -2394,9 +2395,10 @@ def settings():
                 if len(settings_form.password.data) < 8:
                     error_msg = gettext("New password has to be at least 8 characters.")
 
-            logging.warning(f"user settings change failed: {error_msg}")
             if error_msg:
+                logging.warning(f"user settings change failed: {error_msg}")
                 flash(error_msg, "danger")
+                return redirect(url_for("settings"))
 
             current_user.given_name = settings_form.given_name.data
             current_user.family_name = settings_form.family_name.data
@@ -2409,22 +2411,23 @@ def settings():
                 current_user.set_password(settings_form.password.data)
 
             db.session.commit()
-
+            form1_ok = True
             flash(gettext("Your changes have been saved."))
-        elif auth_keys_form.validate_on_submit() and form_choice == "auth_keys":
+        elif auth_keys_form.validate_on_submit() and auth_keys_form.submit_auth_keys.data:
             current_user.ssh_keys.authorized_keys = auth_keys_form.content.data
-            db.session.commit()
 
-            flash(gettext("Your changes have been saved."))
-        elif not settings_form.validate_on_submit() and form_choice == "settings":
+            db.session.commit()
+            form2_ok = True
+            flash(gettext("Your authorized_keys file has been saved."))
+        if not (form1_ok or form2_ok):
+            problematic_form = settings_form
+            if auth_keys_form.submit_auth_keys.data: problematic_form = auth_keys_form
             error_msg = ""
-            for field, errors in settings_form.errors.items():
+            for field, errors in problematic_form.errors.items():
                 for error in errors:
                     error_msg += f"{field}: {error}<br/>"
 
-            flash(f"Sorry, the User settings form could not be validated:<br/> {error_msg}", "danger")
-        elif not auth_keys_form.validate_on_submit() and form_choice == "auth_keys":
-            flash(f"Sorry, the Authorized SSH Keys form could not be validated")
+            flash(f"Sorry, the form could not be validated:<br/> {error_msg}", "danger")
         
         return redirect(url_for("settings"))
         
