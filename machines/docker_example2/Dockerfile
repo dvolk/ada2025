@@ -96,6 +96,23 @@ RUN mkdir /var/www/html/screenshots && \
 EXPOSE $NOVNC_PORT
 WORKDIR /home/$USER
 
+# Download theme and background
+RUN su ubuntu -c "cd ~ && \
+    mkdir -p ~/.themes && \
+    mkdir -p ~/.icons && \
+    wget https://github.com/grassmunk/Chicago95/archive/5670fde8ce33b33d37622b888278aa9cdbe5eea2.zip && \
+    unzip 5670fde8ce33b33d37622b888278aa9cdbe5eea2.zip && \
+    cd Chicago95-5670fde8ce33b33d37622b888278aa9cdbe5eea2 && \
+    cp -r Theme/Chicago95 ~/.themes && \
+    cp -r Icons/* ~/.icons && \
+    cd .. && \
+    wget http://www.dvd3000.ca/wp/content/win95/png/Clouds.png && \
+    rm -rf 5670fde8ce33b33d37622b888278aa9cdbe5eea2.zip && \
+    rm -rf Chicago95-5670fde8ce33b33d37622b888278aa9cdbe5eea2 && \
+    echo \"xfconf-query -c xsettings -p /Net/ThemeName -s 'Chicago95'\" >> ~/set-theme.sh && \
+    echo \"xfconf-query -c xfwm4 -p /general/theme -s 'Chicago95'\" >> ~/set-theme.sh && \
+    echo \"xfconf-query -c xsettings -p /Net/IconThemeName -s 'Chicago95'\" >> ~/set-theme.sh"
+
 # Start nginx, vncserver, filebrowser and websockify
 CMD service nginx start & \
     service cron start && \
