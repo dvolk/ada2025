@@ -2289,7 +2289,7 @@ def impersonate_user(user_id):
     user_to_impersonate = User.query.filter_by(id=user_id).first_or_404()
 
     login_user(user_to_impersonate)
-    flash("Impersonating user", "danger")
+    flash(gettext("Impersonating user"), "danger")
     return redirect(url_for("welcome"))
 
 
@@ -2303,14 +2303,14 @@ def visit_machine(m_id):
     m = Machine.query.filter_by(id=m_id).first()
     if not m:
         finish_audit(audit, "bad machine id")
-        flash("Machine not found", "danger")
+        flash(gettext("Machine not found"), "danger")
         return redirect(url_for("machines"))
 
     update_audit(audit, machine=m)
 
     if current_user != m.owner and current_user not in m.shared_users:
         finish_audit(audit, "bad user")
-        flash("Machine not found", "danger")
+        flash(gettext("Machine not found"), "danger")
         return redirect(url_for("machines"))
 
     # Uxse per machine access key
@@ -2479,7 +2479,9 @@ def download_priv_key():
         response.headers["Content-Disposition"] = "attachment; filename=private_key.txt"
         return response
     else:
-        flash("Sorry, you can't download your private key right now", "danger")
+        flash(
+            gettext("Sorry, something went wrong fetching your private key."), "danger"
+        )
         return redirect(url_for("settings"))
 
 
@@ -2734,7 +2736,7 @@ def email_login(login_token):
     user = User.query.filter_by(id=user_id).first()
 
     if not user:
-        flash("User doesn't exist.", "danger")
+        flash(gettext("User doesn't exist."), "danger")
         logging.info(f"User {user_id} doesn't exist")
         finish_audit(audit, "not user")
         return redirect(url_for("login"))
@@ -2742,7 +2744,11 @@ def email_login(login_token):
     login_user(user)
     logging.info(f"Logged user {current_user.id} in using email login")
     used_email_login_tokens.append(login_token)
-    flash("You have been logged in successfully. You can set a new password below.")
+    flash(
+        gettext(
+            "You have been logged in successfully. You can set a new password below."
+        )
+    )
     finish_audit(audit, "ok", user=current_user)
     return redirect(url_for("settings"))
 
@@ -2836,7 +2842,7 @@ def register():
         audit = create_audit("registration")
         if not recaptcha.verify():
             finish_audit(audit, "recaptcha failed")
-            flash("Could not verify captcha. Try again.", "danger")
+            flash(gettext("Could not verify captcha. Try again."), "danger")
             return render_template(
                 "register.jinja2",
                 form=form,
@@ -2954,7 +2960,7 @@ class EditGroupNameForm(FlaskForm):
 @profile_complete_required
 def group_mgmt():
     if not current_user.is_admin and not current_user.is_group_admin:
-        flash("Invalid page", "danger")
+        flash(gettext("Invalid page"), "danger")
         return redirect(url_for("welcome"))
 
     welcome_page_form = EditWelcomePageForm()
@@ -2980,7 +2986,7 @@ def group_mgmt():
                 db.session.add(new_welcome_page)
             db.session.commit()
 
-            flash("Welcome message updated")
+            flash(gettext("Welcome message updated"))
             form1_ok = True
         elif (
             group_name_form.validate_on_submit()
@@ -2991,11 +2997,11 @@ def group_mgmt():
             logging.info(group_name_form.name_field.data)
             db.session.commit()
 
-            flash("Group name updated")
+            flash(gettext("Group name updated"))
             form2_ok = True
 
         if not (form1_ok or form2_ok):
-            flash("Sorry, that didn't work")
+            flash(gettext("Sorry, that didn't work"), "danger")
 
         return redirect(url_for("group_mgmt"))
 
@@ -3170,12 +3176,12 @@ def setup_user(user_id):
     user = User.query.filter_by(id=user_id).first_or_404()
 
     if not (current_user.is_group_admin or current_user.is_admin):
-        flash("Invalid page", "danger")
+        flash(gettext("Invalid page"), "danger")
         return redirect(url_for("welcome"))
 
     # Check group access right
     if user.group != current_user.group:
-        flash("Invalid user selected", "danger")
+        flash(gettext("Invalid user selected"), "danger")
         return redirect(url_for("welcome"))
 
     form = SetupUser2()
@@ -3198,15 +3204,15 @@ def setup_user(user_id):
             # check that all submitted data sources are in the allowed data sources
             for data_source in form.data_sources.data:
                 if data_source not in allowed_data_sources:
-                    flash("Invalid data source selected.", "danger")
+                    flash(gettext("Invalid data source selected."), "danger")
                     return redirect(url_for("welcome"))
 
             user.data_sources = form.data_sources.data
             db.session.commit()
-            flash("Data sources for user have been updated.")
+            flash(gettext("Data sources for user have been updated."))
             return redirect(url_for("group_mgmt"))
         else:
-            flash("Couldn't validate form")
+            flash(gettext("Couldn't validate form"), "danger")
             return redirect(url_for("welcome"))
 
     # GET
@@ -3961,7 +3967,7 @@ def share_machine(machine_id):
     perm_ok = current_user == machine.owner or current_user in machine.shared_users
 
     if not perm_ok:
-        flash("You can't share that machine", "danger")
+        flash(gettext("You can't share that machine"), "danger")
         return redirect(url_for("welcome"))
 
     s = URLSafeTimedSerializer(ADA2025_SHARE_TOKEN_SECRET_KEY)
@@ -3991,7 +3997,9 @@ def share_accept(timed_share_token):
     except Exception as e:
         logging.warning(f"token exception: {e}")
         flash(
-            "That share link has expired. Please request a new one from the machine's owner.",
+            gettext(
+                "That share link has expired. Please request a new one from the machine's owner."
+            ),
             "danger",
         )
         finish_audit(audit, "invalid token")
@@ -4160,13 +4168,13 @@ def new_machine():
     mt = MachineTemplate.query.filter_by(id=machine_template_id).first()
     if not mt:
         finish_audit(audit, "bad mt")
-        flash("You can't launch that machine template")
+        flash(gettext("You can't launch that machine template"), "danger")
         return redirect(url_for("machines"))
 
     if quota := mt.extra_data.get("quota"):
         if count_machines(mt) >= quota:
             finish_audit(audit, "template quota exceeded")
-            flash("Quota for template exceeded", "danger")
+            flash(gettext("Quota for template exceeded"), "danger")
             return redirect(url_for("machines"))
 
     machine_name = mk_safe_machine_name(current_user.username)
