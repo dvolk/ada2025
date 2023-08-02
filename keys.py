@@ -46,6 +46,9 @@ def deploy_user_keys_to_machine(
             scp.putfo(StringIO(private_key), remote_path="~/.ssh/ada-id_rsa")
             ssh.exec_command("chmod 600 ~/.ssh/ada-id_rsa")
         if public_key:
+            # Ensure public key ends with a newline
+            if not public_key.endswith("\n"):
+                public_key += "\n"
             scp.putfo(StringIO(public_key), remote_path="~/.ssh/ada-id_rsa.pub")
             ssh.exec_command("chmod 644 ~/.ssh/ada-id_rsa.pub")
             ssh.exec_command("cat ~/.ssh/ada-id_rsa.pub >> ~/.ssh/authorized_keys")
