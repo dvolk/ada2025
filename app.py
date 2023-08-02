@@ -20,6 +20,7 @@ import html
 import hashlib
 from functools import cache
 import collections
+import pathlib
 
 # flask and related imports
 from flask import (
@@ -1716,6 +1717,12 @@ def get_main_menu():
             "href": "/about",
         },
         {
+            "icon": "image",
+            "name": gettext("Images"),
+            "href": "/images",
+            "admin_only": True,
+        },
+        {
             "icon": "toolbox",
             "name": gettext("Admin"),
             "href": "/admin",
@@ -3364,6 +3371,25 @@ def get_machine_state(machine_id):
     ):
         return {"machine_state": None}
     return {"machine_state": str(machine.state)}
+
+
+@app.route("/images")
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def images():
+    if not current_user.is_admin:
+        return redirect(url_for("login"))
+
+    image_templates = list(pathlib.Path("machines").iterdir())
+
+    return render_template(
+        "images.jinja2",
+        title=gettext("Images"),
+        now=datetime.datetime.utcnow(),
+        Image=Image,
+        image_templates=image_templates,
+    )
 
 
 @app.route("/admin")

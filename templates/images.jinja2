@@ -1,0 +1,73 @@
+{% extends 'base.jinja2' %}
+
+{% block content %}
+<br/>
+
+<div class="w3-container w3-blue">
+    <h2>Images</h2>
+</div>
+
+<div class="w3-container w3-pale-blue">
+    <p>
+    <table class="w3-table-all">
+        <thead>
+            <th>Image name</th>
+            <th>Created</th>
+            <th>Machine templates</th>
+            <th>Image template name</th>
+            <th style="float: right;">Actions</th>
+        </thead>
+        {% for image in Image.query.all()|reverse %}
+        <tr>
+            <td style="vertical-align: middle;">
+                {{ image.name }}
+            </td>
+            <td style="vertical-align: middle;">
+                {{ humanize.naturaldelta(now - image.creation_date) }} ago
+            </td>
+            <td style="vertical-align: middle;">
+                {{ image.machine_templates|map(attribute="name")|join("<br/>") }}
+            </td>
+            <td style="vertical-align: middle;">
+                To-do
+            </td>
+            <td style="float: right;">
+                <button class="w3-button w3-red w3-round">
+                    {{ icon('trash') }}
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    </p>
+</div>
+
+<br/>
+
+<div class="w3-container w3-lime">
+    <h2>Image templates</h2>
+</div>
+
+<div class="w3-container w3-sand">
+    <p>
+        <table class="w3-table-all">
+            <thead>
+                <th>Template name</th>
+                <th style="float: right;">Actions</th>
+            </thead>
+            {% for image_template in image_templates %}
+            <tr>
+                <td style="vertical-align: middle;">{{ image_template }}</td>
+                <td style="float: right;">
+                    <button class="w3-button w3-blue w3-round">
+                        {{ icon('refresh') }}
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </p>
+</div>
+
+<br/>
+{% endblock %}
