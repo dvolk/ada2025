@@ -3027,6 +3027,7 @@ def group_mgmt():
 
     if current_user.group.welcome_page:
         welcome_page_form.content.data = current_user.group.welcome_page.content
+    group_name_form.name_field.data = current_user.group.name
 
     return render_template(
         "group_mgmt.jinja2",
