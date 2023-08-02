@@ -2355,12 +2355,14 @@ class UserInfoForm(FlaskForm):
 
     submit_settings = SubmitField(lazy_gettext("Update"))
 
+
 class EditAuthorizedKeysForm(FlaskForm):
     content = TextAreaField(
         "Content",
         render_kw={"rows": 20},
     )
     submit_auth_keys = SubmitField("Update Authorized Keys")
+
 
 @app.route("/settings", methods=["GET", "POST"])
 @limiter.limit("60 per minute")
@@ -2375,7 +2377,9 @@ def settings():
         form2_ok = False
         if settings_form.validate_on_submit() and settings_form.submit_settings.data:
             error_msg = ""
-            if settings_form.language.data not in [x[0] for x in settings_form.language.choices]:
+            if settings_form.language.data not in [
+                x[0] for x in settings_form.language.choices
+            ]:
                 error_msg = gettext("Bad language specified")
             if settings_form.timezone.data not in settings_form.timezone.choices:
                 error_msg = gettext("Bad timezone specified")
@@ -2414,7 +2418,9 @@ def settings():
             db.session.commit()
             form1_ok = True
             flash(gettext("Your changes have been saved."))
-        elif auth_keys_form.validate_on_submit() and auth_keys_form.submit_auth_keys.data:
+        elif (
+            auth_keys_form.validate_on_submit() and auth_keys_form.submit_auth_keys.data
+        ):
             current_user.ssh_keys.authorized_keys = auth_keys_form.content.data
 
             db.session.commit()
@@ -2422,16 +2428,17 @@ def settings():
             flash(gettext("Your authorized_keys file has been saved."))
         if not (form1_ok or form2_ok):
             problematic_form = settings_form
-            if auth_keys_form.submit_auth_keys.data: problematic_form = auth_keys_form
+            if auth_keys_form.submit_auth_keys.data:
+                problematic_form = auth_keys_form
             error_msg = ""
             for field, errors in problematic_form.errors.items():
                 for error in errors:
                     error_msg += f"{field}: {error}<br/>"
 
             flash(f"Sorry, the form could not be validated:<br/> {error_msg}", "danger")
-        
+
         return redirect(url_for("settings"))
-        
+
     elif request.method == "GET":
         settings_form.given_name.data = current_user.given_name
         settings_form.family_name.data = current_user.family_name
@@ -2459,8 +2466,8 @@ def download_priv_key():
     priv_key = current_user.ssh_keys.private_key
 
     if priv_key:
-        response = Response(priv_key, content_type='text/plain')
-        response.headers['Content-Disposition'] = "attachment; filename=private_key.txt"
+        response = Response(priv_key, content_type="text/plain")
+        response.headers["Content-Disposition"] = "attachment; filename=private_key.txt"
         return response
     else:
         flash("Sorry, you can't download your private key right now", "danger")
