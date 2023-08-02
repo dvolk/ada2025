@@ -12,57 +12,73 @@
 
   <div class="w3-container w3-pale-yellow">
     <form method="POST">
-      {{ form.hidden_tag() }}
+      {{ settings_form.hidden_tag() }}
       <p>
         <div class="w3-half" style="padding-right: 5px;">
-          {{ form.given_name.label() }}
-          {{ form.given_name(class="w3-input w3-round w3-border") }}
+          {{ settings_form.given_name.label() }}
+          {{ settings_form.given_name(class="w3-input w3-round w3-border") }}
         </div>
         <div class="w3-half" style="padding-left: 5px;">
-          {{ form.family_name.label() }}
-          {{ form.family_name(class="w3-input w3-round w3-border") }}
+          {{ settings_form.family_name.label() }}
+          {{ settings_form.family_name(class="w3-input w3-round w3-border") }}
         </div>
       </p>
       <br/><br/><br/> {# what? why? #}
       <p>
-        {{ form.organization.label() }}
-        {{ form.organization(class="w3-input w3-round w3-border") }}
+        {{ settings_form.organization.label() }}
+        {{ settings_form.organization(class="w3-input w3-round w3-border") }}
       </p>
       <p>
-        {{ form.job_title.label() }}
-        {{ form.job_title(class="w3-input w3-round w3-border") }}
+        {{ settings_form.job_title.label() }}
+        {{ settings_form.job_title(class="w3-input w3-round w3-border") }}
       </p>
       <p>
-        {{ form.email.label() }}
-        {{ form.email(class="w3-input w3-round w3-border") }}
+        {{ settings_form.email.label() }}
+        {{ settings_form.email(class="w3-input w3-round w3-border") }}
       </p>
       <p>
         <div class="w3-half" style="padding-right: 5px;">
-          {{ form.language.label() }}
-          {{ form.language(class="w3-input w3-round w3-white w3-border") }}
+          {{ settings_form.language.label() }}
+          {{ settings_form.language(class="w3-input w3-round w3-white w3-border") }}
         </div>
         <div class="w3-half" style="padding-left: 5px;">
-          {{ form.timezone.label() }}
-          {{ form.timezone(class="w3-input w3-round w3-white w3-border") }}
+          {{ settings_form.timezone.label() }}
+          {{ settings_form.timezone(class="w3-input w3-round w3-white w3-border") }}
         </div>
       </p>
       <br/><br/><br/> {# what? why? #}
 
       <p>
         <div class="w3-half" style="padding-right: 5px;">
-          {{ form.password.label() }}
-          {{ form.password(class="w3-input w3-round w3-border") }}
+          {{ settings_form.password.label() }}
+          {{ settings_form.password(class="w3-input w3-round w3-border") }}
         </div>
         <div class="w3-half" style="padding-left: 5px;">
-          {{ form.password_confirm.label() }}
-          {{ form.password_confirm(class="w3-input w3-round w3-border") }}
+          {{ settings_form.password_confirm.label() }}
+          {{ settings_form.password_confirm(class="w3-input w3-round w3-border") }}
         </div>
       </p>
 
       <br/><br/><br/> {# what? why? #}
 
       <p>
-        {{ form.submit(class="w3-button w3-round w3-blue") }}
+        {{ settings_form.submit_settings(class="w3-button w3-round w3-blue") }}
+      </p>
+    </form>
+  </div>
+  <br/>
+
+  <div class="w3-container w3-blue">
+    <h2>{{ gettext("Authorized SSH Keys") }}</h2>
+  </div>
+
+  <div class="w3-container w3-pale-blue">
+    <form method="POST">
+      {{ auth_keys_form.hidden_tag() }}
+      <p>
+        {{ idea(gettext("You can set the authorized_keys file for your new machines here.")) }}
+        <p>{{ auth_keys_form.content(class="w3-input w3-border w3-round") }}</p>
+        <p>{{ auth_keys_form.submit_auth_keys(class="w3-button w3-round w3-blue") }}</p>
       </p>
     </form>
   </div>
