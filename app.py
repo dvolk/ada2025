@@ -2937,6 +2937,7 @@ class EditWelcomePageForm(FlaskForm):
     )
     submit_welcome_page = SubmitField("Update Welcome Page")
 
+
 class EditGroupNameForm(FlaskForm):
     group_name_min = 2
     group_name_max = 100
@@ -2945,6 +2946,7 @@ class EditGroupNameForm(FlaskForm):
         validators=[DataRequired(), Length(min=group_name_min, max=group_name_max)],
     )
     submit_group_name = SubmitField("Update Group Name")
+
 
 @app.route("/group_mgmt", methods=["GET", "POST"])
 @limiter.limit("60 per minute")
@@ -2961,8 +2963,11 @@ def group_mgmt():
     form1_ok = False
     form2_ok = False
 
-    if request.method == "POST": # POST path
-        if welcome_page_form.validate_on_submit() and welcome_page_form.submit_welcome_page.data:
+    if request.method == "POST":  # POST path
+        if (
+            welcome_page_form.validate_on_submit()
+            and welcome_page_form.submit_welcome_page.data
+        ):
             group = current_user.group
             if group.welcome_page:
                 group.welcome_page.content = welcome_page_form.content.data
@@ -2977,7 +2982,10 @@ def group_mgmt():
 
             flash("Welcome message updated")
             form1_ok = True
-        elif group_name_form.validate_on_submit() and group_name_form.submit_group_name.data:
+        elif (
+            group_name_form.validate_on_submit()
+            and group_name_form.submit_group_name.data
+        ):
             group = current_user.group
             group.name = group_name_form.name_field.data
             logging.info(group_name_form.name_field.data)
@@ -2988,9 +2996,9 @@ def group_mgmt():
 
         if not (form1_ok or form2_ok):
             flash("Sorry, that didn't work")
-        
+
         return redirect(url_for("group_mgmt"))
-            
+
     group_users = (
         db.session.query(User)
         .filter(
