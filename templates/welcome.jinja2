@@ -4,6 +4,22 @@
 
   {% if current_user.is_admin %}
     <br/>
+    <div class="w3-container w3-dark-gray">
+      <h2>Useful links</h2>
+    </div>
+    <div class="w3-row w3-container w3-light-gray">
+      <div class="w3-half">
+        <p>{{ external_link("https://ada.stfc.ac.uk") }}</p>
+        <p>{{ external_link("https://ada-staging.oxfordfunl.com") }}</p>
+        <p>{{ external_link("https://github.com/dvolk/ada2025") }}</p>
+      </div>
+      <div class="w3-half">
+        <p>{{ external_link("https://ada-grafana.oxfordfun.com") }}</p>
+        <p>{{ external_link("https://ada-metrics.oxfordfun.com") }}</p>
+      </div>
+    </div>
+    <br/>
+
     <div class="w3-container w3-red">
       <h2>{{ gettext("Problem Reports") }}</h2>
     </div>
