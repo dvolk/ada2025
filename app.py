@@ -2935,8 +2935,16 @@ class EditWelcomePageForm(FlaskForm):
         "Content",
         render_kw={"rows": 20},
     )
-    submit = SubmitField("Update Welcome Page")
+    submit_welcome_page = SubmitField("Update Welcome Page")
 
+class EditGroupNameForm(FlaskForm):
+    group_name_min = 2
+    group_name_max = 100
+    name_field = StringField(
+        lazy_gettext("Group Name"),
+        validators=[DataRequired(), Length(min=group_name_min, max=group_name_max)],
+    )
+    submit_group_name = SubmitField("Update Group Name")
 
 @app.route("/group_mgmt", methods=["GET", "POST"])
 @limiter.limit("60 per minute")
@@ -2947,25 +2955,42 @@ def group_mgmt():
         flash("Invalid page", "danger")
         return redirect(url_for("welcome"))
 
-    form = EditWelcomePageForm()
+    welcome_page_form = EditWelcomePageForm()
+    group_name_form = EditGroupNameForm()
 
-    if request.method == "POST":
-        if form.validate_on_submit():
+    form1_ok = False
+    form2_ok = False
+
+    if request.method == "POST": # POST path
+        if welcome_page_form.validate_on_submit() and welcome_page_form.submit_welcome_page.data:
             group = current_user.group
             if group.welcome_page:
-                group.welcome_page.content = form.content.data
+                group.welcome_page.content = welcome_page_form.content.data
                 group.welcome_page.updated_date = datetime.datetime.utcnow()
             else:
                 new_welcome_page = GroupWelcomePage(
-                    content=form.content.data,
+                    content=welcome_page_form.content.data,
                     group_id=group.id,
                 )
                 db.session.add(new_welcome_page)
             db.session.commit()
 
             flash("Welcome message updated")
-            return redirect(url_for("group_mgmt"))
+            form1_ok = True
+        elif group_name_form.validate_on_submit() and group_name_form.submit_group_name.data:
+            group = current_user.group
+            group.name = group_name_form.name_field.data
+            logging.info(group_name_form.name_field.data)
+            db.session.commit()
 
+            flash("Group name updated")
+            form2_ok = True
+
+        if not (form1_ok or form2_ok):
+            flash("Sorry, that didn't work")
+        
+        return redirect(url_for("group_mgmt"))
+            
     group_users = (
         db.session.query(User)
         .filter(
@@ -2993,13 +3018,14 @@ def group_mgmt():
     )
 
     if current_user.group.welcome_page:
-        form.content.data = current_user.group.welcome_page.content
+        welcome_page_form.content.data = current_user.group.welcome_page.content
 
     return render_template(
         "group_mgmt.jinja2",
         group_users=group_users,
         group_machines=group_machines,
-        form=form,
+        welcome_page_form=welcome_page_form,
+        group_name_form=group_name_form,
         title=gettext("Group"),
     )
 

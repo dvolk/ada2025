@@ -124,10 +124,25 @@
   <div class="w3-container w3-light-gray">
     <p>
       <form method="POST">
-        {{ form.hidden_tag() }}
+        {{ welcome_page_form.hidden_tag() }}
         {{ info("You can set the group welcome page content. The page is formatted in HTML format.") }}
-        <p>{{ form.content(class="w3-input w3-border w3-round") }}</p>
-        <p>{{ form.submit(class="w3-button w3-round w3-blue", rows=20) }}</p>
+        <p>{{ welcome_page_form.content(class="w3-input w3-border w3-round") }}</p>
+        <p>{{ welcome_page_form.submit_welcome_page(class="w3-button w3-round w3-blue", rows=20) }}</p>
+      </form>
+    </p>
+  </div>
+  <br/>
+
+  <div class="w3-container w3-dark-gray">
+    <h3>Group Name</h3>
+  </div>
+  <div class="w3-container w3-light-gray">
+    <p>
+      <form method="POST">
+        {{ group_name_form.hidden_tag() }}
+        {{ info("You can enter a new group name below.") }}
+        <p>{{ group_name_form.name_field(class="w3-input w3-border w3-round") }}</p>
+        <p>{{ group_name_form.submit_group_name(class="w3-button w3-round w3-blue") }}</p>
       </form>
     </p>
   </div>
