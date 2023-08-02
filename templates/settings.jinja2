@@ -68,15 +68,15 @@
   </div>
   <br/>
 
-  <div class="w3-container w3-blue">
-    <h2>{{ gettext("Authorized SSH Keys") }}</h2>
+  <div class="w3-container w3-yellow">
+      <h2>{{ gettext("SSH Authorized Keys") }}</h2>
   </div>
 
-  <div class="w3-container w3-pale-blue">
+  <div class="w3-container w3-pale-yellow">
     <form method="POST">
       {{ auth_keys_form.hidden_tag() }}
       <p>
-        {{ idea(gettext("You can set the authorized_keys file for your new machines here.")) }}
+        {{ idea(gettext("You can add additional SSH public keys and they will be deployed on new machines.")) }}
         <p>{{ auth_keys_form.content(class="w3-input w3-border w3-round") }}</p>
         <p>{{ auth_keys_form.submit_auth_keys(class="w3-button w3-round w3-blue") }}</p>
       </p>
