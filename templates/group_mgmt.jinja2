@@ -2,24 +2,24 @@
 
 {% block content %}
 
-  {{ info("You're the admin of the group: {group}. This page allows you to activate/deactive users and set other properties for the group.", group=current_user.group.name) }}
+  {{ info(gettext("You're the admin of the group: {group}. This page allows you to activate/deactive users and set other properties for the group."), group=current_user.group.name) }}
 
   <h2>{{ gettext("Group Management") }}</h2>
 
   <div class="w3-row">
     <div class="w3-half my-half" style="padding-right: 5px;">
       <div class="w3-container w3-dark-gray">
-        <h3>Users</h3>
+        <h3>{{ gettext("Users") }}</h3>
       </div>
       <div class="w3-container w3-light-gray">
-        {{ info("You can enable, disable, and remove users from the group, and set their data sources.") }}
+        {{ info(gettext("You can enable, disable, and remove users from the group, and set their data sources.")) }}
         <p>
           <table class="w3-table-all">
             <thead>
-              <th>Username</th>
-              <th>Email</th>
-              <th>Account created</th>
-              <th style="text-align: right">Actions</th>
+              <th>{{ gettext("Username") }}</th>
+              <th>{{ gettext("Email") }}</th>
+              <th>{{ gettext("Account created") }}</th>
+              <th style="text-align: right">{{ gettext("Actions") }}</th>
             </thead>
             {% for u in group_users %}
               <tr class="{% if u.is_enabled %} w3-pale-green {% else %} w3-pale-red {% endif %}">
@@ -81,17 +81,17 @@
     </div>
     <div class="w3-half my-half" style="padding-left: 5px;">
       <div class="w3-container w3-dark-gray">
-        <h3>Machines</h3>
+        <h3>{{ gettext("Machines") }}</h3>
       </div>
       <div class="w3-container w3-light-gray">
-        {{ info("You can view your group's machine resource usage here.") }}
+        {{ info(gettext("You can view your group's machine resource usage here.")) }}
         <table class="w3-table w3-white w3-border w3-bordered">
           <thead>
-            <th>Owner username</th>
-            <th>Owner name</th>
-            <th>Machine name</th>
-            <th>Template</th>
-            <th>Creation date</th>
+            <th>{{ gettext("Owner username") }}</th>
+            <th>{{ gettext("Owner name") }}</th>
+            <th>{{ gettext("Machine name") }}</th>
+            <th>{{ gettext("Template") }}</th>
+            <th>{{ gettext("Creation date") }}</th>
           </thead>
           {% for m in group_machines %}
             <tr>
@@ -125,7 +125,7 @@
     <p>
       <form method="POST">
         {{ welcome_page_form.hidden_tag() }}
-        {{ info("You can set the group welcome page content. The page is formatted in HTML format.") }}
+        {{ info(gettext("You can set the group welcome page content. The page is formatted in HTML format.")) }}
         <p>{{ welcome_page_form.content(class="w3-input w3-border w3-round") }}</p>
         <p>{{ welcome_page_form.submit_welcome_page(class="w3-button w3-round w3-blue", rows=20) }}</p>
       </form>
@@ -134,13 +134,13 @@
   <br/>
 
   <div class="w3-container w3-dark-gray">
-    <h3>Group Name</h3>
+    <h3>{{ gettext("Group Name") }}</h3>
   </div>
   <div class="w3-container w3-light-gray">
     <p>
       <form method="POST">
         {{ group_name_form.hidden_tag() }}
-        {{ info("You can enter a new group name below.") }}
+        {{ info(gettext("You can enter a new group name below.")) }}
         <p>{{ group_name_form.name_field(class="w3-input w3-border w3-round") }}</p>
         <p>{{ group_name_form.submit_group_name(class="w3-button w3-round w3-blue") }}</p>
       </form>
