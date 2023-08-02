@@ -69,7 +69,7 @@
   <br/>
 
   <div class="w3-container w3-yellow">
-      <h2>{{ gettext("SSH Authorized Keys") }}</h2>
+    <h2>{{ gettext("SSH Keys") }}</h2>
   </div>
 
   <div class="w3-container w3-pale-yellow">
@@ -78,10 +78,21 @@
       <p>
         {{ idea(gettext("You can add additional SSH public keys and they will be deployed on new machines.")) }}
         <p>{{ auth_keys_form.content(class="w3-input w3-border w3-round") }}</p>
-        <p>{{ auth_keys_form.submit_auth_keys(class="w3-button w3-round w3-blue") }}</p>
+        {{ auth_keys_form.submit_auth_keys(class="w3-button w3-round w3-blue") }}
+        <a id="download_priv_key_button"  href="/download_priv_key" class="w3-button w3-round w3-red" style="margin-left: 5px;">Download Your Private SSH Key</a>
       </p>
     </form>
   </div>
   <br/>
 
+{% endblock %}
+
+{% block javascript %}
+  <script>
+  document.getElementById('download_priv_key_button').addEventListener('click', function(event) {
+    if (!confirm('Are you sure you want to download your private key? Misplacing it could potentially allow bad actors to access your machines.')) {
+      event.preventDefault();
+    }
+  });
+  </script>
 {% endblock %}
