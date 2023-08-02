@@ -32,6 +32,7 @@ from flask import (
     abort,
     has_request_context,
     session,
+    Response,
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import aliased
@@ -2428,6 +2429,22 @@ def settings():
         title=gettext("Settings"),
         form=form,
     )
+
+
+@app.route("/download_priv_key")
+@limiter.limit("60 per hour")
+@login_required
+@profile_complete_required
+def download_priv_key():
+    priv_key = current_user.ssh_keys.private_key
+
+    if priv_key:
+        response = Response(priv_key, content_type='text/plain')
+        response.headers['Content-Disposition'] = "attachment; filename=private_key.txt"
+        return response
+    else:
+        flash("Sorry, you can't download your private key right now", "danger")
+        return redirect(url_for("settings"))
 
 
 @app.route("/login", methods=["GET", "POST"])
