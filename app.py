@@ -2359,9 +2359,9 @@ class UserInfoForm(FlaskForm):
 class EditAuthorizedKeysForm(FlaskForm):
     content = TextAreaField(
         "Content",
-        render_kw={"rows": 20},
+        render_kw={"rows": 10},
     )
-    submit_auth_keys = SubmitField("Update Authorized Keys")
+    submit_auth_keys = SubmitField("Submit")
 
 
 @app.route("/settings", methods=["GET", "POST"])
@@ -2418,6 +2418,7 @@ def settings():
             db.session.commit()
             form1_ok = True
             flash(gettext("Your changes have been saved."))
+
         elif (
             auth_keys_form.validate_on_submit() and auth_keys_form.submit_auth_keys.data
         ):
@@ -2425,7 +2426,8 @@ def settings():
 
             db.session.commit()
             form2_ok = True
-            flash(gettext("Your authorized_keys file has been saved."))
+            flash(gettext("Your SSH public keys have been saved."))
+
         if not (form1_ok or form2_ok):
             problematic_form = settings_form
             if auth_keys_form.submit_auth_keys.data:
