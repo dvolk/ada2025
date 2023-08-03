@@ -4223,6 +4223,7 @@ def shutdown_machine():
 
     # sanity checks
     audit = create_audit("shutdown machine", user=current_user)
+    source_page = request.args.get('source_page', default='machines')
     machine_id = request.form.get("machine_id")
 
     if not machine_id:
@@ -4271,7 +4272,7 @@ def shutdown_machine():
 
     threading.Thread(target=target, args=(m.id, audit.id)).start()
     flash(gettext("Shutting down machine"), category="success")
-    return redirect(url_for("machines"))
+    return redirect(url_for(source_page))
 
 
 @app.route("/resume_machine", methods=["POST"])
@@ -4285,6 +4286,7 @@ def resume_machine():
 
     # sanity checks
     audit = create_audit("resume machine", user=current_user)
+    source_page = request.args.get('source_page', default='machines')
     machine_id = request.form.get("machine_id")
 
     if not machine_id:
@@ -4334,7 +4336,7 @@ def resume_machine():
     threading.Thread(target=target, args=(m.id, audit.id)).start()
 
     flash(gettext("Resuming machine."), category="success")
-    return redirect(url_for("machines"))
+    return redirect(url_for(source_page))
 
 
 @app.route("/stop_machine", methods=["POST"])
@@ -4348,6 +4350,7 @@ def stop_machine():
 
     # sanity checks
     audit = create_audit("stop machine", user=current_user)
+    source_page = request.args.get('source_page', default='machines')
     machine_id = request.form.get("machine_id")
 
     if not machine_id:
@@ -4386,13 +4389,13 @@ def stop_machine():
             gettext("Machine cannot be stopped in its current state."),
             category="danger",
         )
-        return redirect(url_for("machines"))
+        return redirect(url_for(source_page))
 
     # let's go
     stop_machine2(machine.id, audit.id)
 
     flash(gettext("Deleting machine"), category="success")
-    return redirect(url_for("machines"))
+    return redirect(url_for(source_page))
 
 
 def stop_machine2(machine_id, audit_id=None):

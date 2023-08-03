@@ -167,7 +167,7 @@
                        title='{{ gettext("Power on machine") }}'>
                        {{ icon('power-off') }}
                     </a>
-                    <form style="display: inline" id="resume-form-{{ machine.id }}" action="/resume_machine" method="POST">
+                    <form style="display: inline" id="resume-form-{{ machine.id }}" action="/resume_machine?source_page=machines" method="POST">
                       <input type="hidden" name="machine_id" value="{{ machine.id }}">
                     </form>
                   {% endif %}
@@ -178,7 +178,7 @@
                        title='{{ gettext("Shut down machine") }}'>
                        {{ icon('power-off') }}
                     </button>
-                    <form style="display: inline" id="shutdown-form-{{ machine.id }}" action="/shutdown_machine" method="POST">
+                    <form style="display: inline" id="shutdown-form-{{ machine.id }}" action="/shutdown_machine?source_page=machines" method="POST">
                       <input type="hidden" name="machine_id" value="{{ machine.id }}">
                     </form>
                   {% endif %}
@@ -190,7 +190,7 @@
                        title='{{ gettext("Stop and remove machine") }}'>
                        {{ icon('trash') }}
                     </button>
-                    <form style="display: inline" id="stop-form-{{ machine.id }}" action="/stop_machine" method="POST">
+                    <form style="display: inline" id="stop-form-{{ machine.id }}" action="/stop_machine?source_page=machines" method="POST">
                       <input type="hidden" name="machine_id" value="{{ machine.id }}">
                     </form>
                   {% endif %}
