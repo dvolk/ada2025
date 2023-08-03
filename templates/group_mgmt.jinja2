@@ -90,11 +90,12 @@
             <th>{{ gettext("Owner username") }}</th>
             <th>{{ gettext("Owner name") }}</th>
             <th>{{ gettext("Machine name") }}</th>
+            <th>{{ gettext("State") }}</th>
             <th>{{ gettext("Template") }}</th>
             <th>{{ gettext("Creation date") }}</th>
           </thead>
           {% for m in group_machines %}
-            <tr>
+            <tr class="{% if m[1].state == MachineState.READY %} w3-pale-green {% elif m[1].state in [MachineState.STARTING, MachineState.STOPPING, MachineState.PROVISIONING] %} w3-pale-yellow {% else %} w3-pale-red {% endif %}">
               <td style="vertical-align: middle;">
                 {{ m[0].username }}
               </td>
@@ -103,6 +104,10 @@
               </td>
               <td style="vertical-align: middle;">
                 {{ m[1].display_name }}
+              </td>
+              <td style="vertical-align: middle;">
+                {% set machine_state_as_string = m[1].state | string %}
+                {{ machine_state_as_string[13:] }}
               </td>
               <td style="vertical-align: middle;">
                 {{ m[2].name }}
