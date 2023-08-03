@@ -143,6 +143,16 @@
                     <form style="display: inline" id="shutdown-form-{{ m[0].id }}" action="/shutdown_machine?source_page=group_mgmt" method="POST">
                       <input type="hidden" name="machine_id" value="{{ m[0].id }}">
                     </form>
+                {% elif m[1].state == MachineState.STOPPED %}
+                    <a href="#"
+                       onclick="document.getElementById('resume-form-{{ m[1].id }}').submit();"
+                       class="w3-button w3-green w3-round"
+                       title='{{ gettext("Power on machine") }}'>
+                       {{ icon('power-off') }}
+                    </a>
+                    <form style="display: inline" id="resume-form-{{ m[1].id }}" action="/resume_machine?source_page=group_mgmt" method="POST">
+                      <input type="hidden" name="machine_id" value="{{ m[1].id }}">
+                    </form>
                 {% else %}
                     <button
                        onclick='confirm_shutdown({{ m[1].display_name|tojson|safe }}, {{ m[1].id }})'
