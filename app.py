@@ -4255,6 +4255,16 @@ def shutdown_machine():
             f"user {current_user.id} is not the owner of machine {machine_id} nor admin/group admin"
         )
         abort(403)
+    elif (
+        not current_user.is_admin
+        and not current_user == m.owner
+        and not m.machine_template in current_user.group.machine_templates
+    ):
+        finish_audit(audit, "bad template")
+        logging.warning(
+            f"group {current_user.group} does not contain machine template {m.machine_template}"
+        )
+        abort(403)
     if m.state != MachineState.READY:
         logging.warning(
             f"machine {machine_id} is not in correct state for shutdown: {m.state}"
@@ -4320,6 +4330,16 @@ def resume_machine():
         finish_audit(audit, "bad user")
         logging.warning(
             f"user {current_user.id} is not the owner of machine {machine_id} nor admin/group admin"
+        )
+        abort(403)
+    elif (
+        not current_user.is_admin
+        and not current_user == m.owner
+        and not migrate.machine_template in current_user.group.machine_templates
+    ):
+        finish_audit(audit, "bad template")
+        logging.warning(
+            f"group {current_user.group} does not contain machine template {m.machine_template}"
         )
         abort(403)
     if m.state != MachineState.STOPPED:
