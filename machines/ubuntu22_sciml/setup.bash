@@ -75,9 +75,9 @@ apt-get -y install emacs materia-gtk-theme
 
 # Add desktop user 'ubuntu'
 useradd -m -s /bin/bash $USER
-echo "$USER:$USER" | chpasswd
-echo "$USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER
-chmod 0440 /etc/sudoers.d/$USER
+# echo "$USER:$USER" | chpasswd
+# echo "$USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER
+# chmod 0440 /etc/sudoers.d/$USER
 usermod -aG audio,video,cdrom,plugdev,staff,adm,dialout,sudo $USER
 
 
@@ -305,22 +305,24 @@ EOF
 
 # OPTIONAL: Install spyder (same env as jupyter)
 
-
-su ubuntu << EOF
-/home/ubuntu/jupyter-env/bin/pip3 install spyder==5.4.3
-wget https://raw.githubusercontent.com/spyder-ide/spyder/master/img_src/spyder.png
-cp spyder.png /home/ubuntu/Downloads/spyder.png
-cp spyder.desktop /home/ubuntu/Desktop/spyder.desktop
-chmod a+x /home/ubuntu/Desktop/spyder.desktop
-EOF
+if $INSTALL_SPYDER; do
+    su ubuntu << EOF
+    /home/ubuntu/jupyter-env/bin/pip3 install spyder==5.4.3
+    wget https://raw.githubusercontent.com/spyder-ide/spyder/master/img_src/spyder.png
+    cp spyder.png /home/ubuntu/Downloads/spyder.png
+    cp spyder.desktop /home/ubuntu/Desktop/spyder.desktop
+    chmod a+x /home/ubuntu/Desktop/spyder.desktop
+    EOF
+fi
 
 
 # OPTIONAL: Install the nix package manager
 
-
-wget https://nixos.org/nix/install
-chmod a+x install
-yes | ./install --daemon
+if $INSTALL_NIX; do
+    wget https://nixos.org/nix/install
+    chmod a+x install
+    yes | ./install --daemon
+fi
 
 
 ### THE END

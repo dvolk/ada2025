@@ -1717,7 +1717,7 @@ def get_main_menu():
             "href": "/about",
         },
         {
-            "icon": "image",
+            "icon": "images",
             "name": gettext("Images"),
             "href": "/images",
             "admin_only": True,
@@ -3422,14 +3422,54 @@ def images():
     if not current_user.is_admin:
         return redirect(url_for("login"))
 
+    images = reversed(Image.query.all())
     image_templates = list(pathlib.Path("machines").iterdir())
 
     return render_template(
         "images.jinja2",
         title=gettext("Images"),
         now=datetime.datetime.utcnow(),
-        Image=Image,
+        images=images,
         image_templates=image_templates,
+    )
+
+
+@app.route("/new_image", methods=["GET", "POST"])
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def new_image():
+    if not current_user.is_admin:
+        abort(403)
+
+    template_dir = pathlib.Path(request.args.get("image_template"))
+    if not template_dir.is_dir():
+        logging.warning(f"{template_dir} not a directory")
+        abort(404)
+    if not (fname := template_dir / "build.json").is_file():
+        logging.warning(f"{fname} not found")
+        abort(404)
+
+    buildjson = (template_dir / "build.json").read_text()
+
+    try:
+        buildjson = json.loads(buildjson)
+    except Exception as e:
+        logging.exception(e)
+        abort(404)
+
+    machine_providers = MachineProvider.query.all()
+
+    if request.method == "POST":
+        flash("Building new image")
+        logging.info(request.form)
+        return redirect(url_for("images"))
+
+    return render_template(
+        "new_image.jinja2",
+        title=gettext("Images"),
+        buildjson=buildjson,
+        machine_providers=machine_providers,
     )
 
 

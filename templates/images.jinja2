@@ -17,7 +17,7 @@
             <th>Image template name</th>
             <th style="float: right;">Actions</th>
         </thead>
-        {% for image in Image.query.all()|reverse %}
+        {% for image in images %}
         <tr>
             <td style="vertical-align: middle;">
                 {{ image.name }}
@@ -60,7 +60,9 @@
                 <td style="vertical-align: middle;">{{ image_template }}</td>
                 <td style="float: right;">
                     <button class="w3-button w3-blue w3-round">
-                        {{ icon('refresh') }}
+                        <a href="{{ url_for('new_image', image_template=image_template) }}">
+                            {{ icon('right-long') }}
+                        </a>
                     </button>
                 </td>
             </tr>
