@@ -4245,10 +4245,10 @@ def shutdown_machine():
 
     update_audit(audit, machine=m)
 
-    if not current_user.is_admin and not current_user == m.owner:
+    if not current_user.is_admin and not current_user == m.owner and not current_user.is_group_admin:
         finish_audit(audit, "bad user")
         logging.warning(
-            f"user {current_user.id} is not the owner of machine {machine_id} nor admin"
+            f"user {current_user.id} is not the owner of machine {machine_id} nor admin/group admin"
         )
         abort(403)
     if m.state != MachineState.READY:
@@ -4308,10 +4308,10 @@ def resume_machine():
 
     update_audit(audit, machine=m)
 
-    if not current_user.is_admin and not current_user == m.owner:
+    if not current_user.is_admin and not current_user == m.owner and not current_user.is_group_admin:
         finish_audit(audit, "bad user")
         logging.warning(
-            f"user {current_user.id} is not the owner of machine {machine_id} nor admin"
+            f"user {current_user.id} is not the owner of machine {machine_id} nor admin/group admin"
         )
         abort(403)
     if m.state != MachineState.STOPPED:
@@ -4372,10 +4372,10 @@ def stop_machine():
 
     update_audit(audit, machine=machine)
 
-    if not current_user.is_admin and not current_user == machine.owner:
+    if not current_user.is_admin and not current_user == machine.owner and not current_user.is_group_admin:
         finish_audit(audit, "bad user")
         logging.warning(
-            f"user {current_user.id} is not the owner of machine {machine.id} nor admin"
+            f"user {current_user.id} is not the owner of machine {machine.id} nor admin/group admin"
         )
         abort(403)
     if machine.state not in [
