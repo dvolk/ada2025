@@ -4390,6 +4390,16 @@ def stop_machine():
             f"user {current_user.id} is not the owner of machine {machine.id} nor admin/group admin"
         )
         abort(403)
+    elif (
+        not current_user.is_admin
+        and not current_user == machine.owner
+        and not machine.machine_template in current_user.group.machine_templates
+    ):
+        finish_audit(audit, "bad template")
+        logging.warning(
+            f"group {current_user.group} does not contain machine template {machine.machine_template}"
+        )
+        abort(403)
     if machine.state not in [
         MachineState.READY,
         MachineState.FAILED,
