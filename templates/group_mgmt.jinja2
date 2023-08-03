@@ -95,7 +95,7 @@
             <th>{{ gettext("Creation date") }}</th>
           </thead>
           {% for m in group_machines %}
-            <tr class="{% if m[1].state == MachineState.READY %} w3-pale-green {% elif m[1].state in [MachineState.STARTING, MachineState.STOPPING, MachineState.PROVISIONING] %} w3-pale-yellow {% else %} w3-pale-red {% endif %}">
+            <tr class="{% if m[1].state == MachineState.READY %} w3-pale-green {% elif m[1].state in [MachineState.STARTING, MachineState.STOPPING, MachineState.PROVISIONING, MachineState.STOPPED] %} w3-pale-yellow {% else %} w3-pale-red {% endif %}">
               <td style="vertical-align: middle;">
                 {{ m[0].username }}
               </td>
