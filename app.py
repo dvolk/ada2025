@@ -4263,6 +4263,7 @@ def shutdown_machine():
 
     # sanity checks
     audit = create_audit("shutdown machine", user=current_user)
+    source_page = request.args.get("source_page", default="machines")
     machine_id = request.form.get("machine_id")
 
     if not machine_id:
@@ -4284,10 +4285,14 @@ def shutdown_machine():
 
     update_audit(audit, machine=m)
 
-    if not current_user.is_admin and not current_user == m.owner:
+    if (
+        not current_user.is_admin
+        and not current_user == m.owner
+        and not current_user.is_group_admin
+    ):
         finish_audit(audit, "bad user")
         logging.warning(
-            f"user {current_user.id} is not the owner of machine {machine_id} nor admin"
+            f"user {current_user.id} is not the owner of machine {machine_id} nor admin/group admin"
         )
         abort(403)
     if m.state != MachineState.READY:
@@ -4311,7 +4316,7 @@ def shutdown_machine():
 
     threading.Thread(target=target, args=(m.id, audit.id)).start()
     flash(gettext("Shutting down machine"), category="success")
-    return redirect(url_for("machines"))
+    return redirect(url_for(source_page))
 
 
 @app.route("/resume_machine", methods=["POST"])
@@ -4325,6 +4330,7 @@ def resume_machine():
 
     # sanity checks
     audit = create_audit("resume machine", user=current_user)
+    source_page = request.args.get("source_page", default="machines")
     machine_id = request.form.get("machine_id")
 
     if not machine_id:
@@ -4346,10 +4352,14 @@ def resume_machine():
 
     update_audit(audit, machine=m)
 
-    if not current_user.is_admin and not current_user == m.owner:
+    if (
+        not current_user.is_admin
+        and not current_user == m.owner
+        and not current_user.is_group_admin
+    ):
         finish_audit(audit, "bad user")
         logging.warning(
-            f"user {current_user.id} is not the owner of machine {machine_id} nor admin"
+            f"user {current_user.id} is not the owner of machine {machine_id} nor admin/group admin"
         )
         abort(403)
     if m.state != MachineState.STOPPED:
@@ -4374,7 +4384,7 @@ def resume_machine():
     threading.Thread(target=target, args=(m.id, audit.id)).start()
 
     flash(gettext("Resuming machine."), category="success")
-    return redirect(url_for("machines"))
+    return redirect(url_for(source_page))
 
 
 @app.route("/stop_machine", methods=["POST"])
@@ -4388,6 +4398,7 @@ def stop_machine():
 
     # sanity checks
     audit = create_audit("stop machine", user=current_user)
+    source_page = request.args.get("source_page", default="machines")
     machine_id = request.form.get("machine_id")
 
     if not machine_id:
@@ -4409,10 +4420,14 @@ def stop_machine():
 
     update_audit(audit, machine=machine)
 
-    if not current_user.is_admin and not current_user == machine.owner:
+    if (
+        not current_user.is_admin
+        and not current_user == machine.owner
+        and not current_user.is_group_admin
+    ):
         finish_audit(audit, "bad user")
         logging.warning(
-            f"user {current_user.id} is not the owner of machine {machine.id} nor admin"
+            f"user {current_user.id} is not the owner of machine {machine.id} nor admin/group admin"
         )
         abort(403)
     if machine.state not in [
@@ -4426,13 +4441,13 @@ def stop_machine():
             gettext("Machine cannot be stopped in its current state."),
             category="danger",
         )
-        return redirect(url_for("machines"))
+        return redirect(url_for(source_page))
 
     # let's go
     stop_machine2(machine.id, audit.id)
 
     flash(gettext("Deleting machine"), category="success")
-    return redirect(url_for("machines"))
+    return redirect(url_for(source_page))
 
 
 def stop_machine2(machine_id, audit_id=None):

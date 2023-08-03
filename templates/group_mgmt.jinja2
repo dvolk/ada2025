@@ -7,7 +7,7 @@
   <h2>{{ gettext("Group Management") }}</h2>
 
   <div class="w3-row">
-    <div class="w3-half my-half" style="padding-right: 5px;">
+    <div class="w3-half my-half" style="padding-right: 5px; width: 40%;">
       <div class="w3-container w3-dark-gray">
         <h3>{{ gettext("Users") }}</h3>
       </div>
@@ -79,7 +79,7 @@
       </div>
       <br/>
     </div>
-    <div class="w3-half my-half" style="padding-left: 5px;">
+    <div class="w3-half my-half" style="padding-left: 5px; width: 60%">
       <div class="w3-container w3-dark-gray">
         <h3>{{ gettext("Machines") }}</h3>
       </div>
@@ -90,11 +90,13 @@
             <th>{{ gettext("Owner username") }}</th>
             <th>{{ gettext("Owner name") }}</th>
             <th>{{ gettext("Machine name") }}</th>
+            <th>{{ gettext("State") }}</th>
             <th>{{ gettext("Template") }}</th>
             <th>{{ gettext("Creation date") }}</th>
+            <th style="text-align: right">{{ gettext("Actions") }}</th>
           </thead>
           {% for m in group_machines %}
-            <tr>
+            <tr class="{% if m[1].state == MachineState.READY %} w3-pale-green {% elif m[1].state in [MachineState.STARTING, MachineState.STOPPING, MachineState.PROVISIONING, MachineState.STOPPED] %} w3-pale-yellow {% else %} w3-pale-red {% endif %}">
               <td style="vertical-align: middle;">
                 {{ m[0].username }}
               </td>
@@ -105,10 +107,61 @@
                 {{ m[1].display_name }}
               </td>
               <td style="vertical-align: middle;">
+                {% set machine_state_as_string = m[1].state | string %}
+                {{ machine_state_as_string[13:] }}
+              </td>
+              <td style="vertical-align: middle;">
                 {{ m[2].name }}
               </td>
               <td style="vertical-align: middle;">{{ humanize.naturaldelta(time_now - m[1].creation_date) }} ago</td>
-
+              <td style="vertical-align: middle; text-align: right">
+                {% if m[1].state in [MachineState.READY, MachineState.FAILED] %}
+                  <button
+                    onclick='confirm_deletion({{ m[1].display_name|tojson|safe }}, {{ m[1].id }})'
+                    class="w3-button w3-red w3-round"
+                    title='{{ gettext("Stop and remove machine") }}'>
+                    {{ icon('trash') }}
+                  </button>
+                  <form style="display: inline" id="stop-form-{{ m[1].id }}" action="/stop_machine?source_page=group_mgmt" method="POST">
+                    <input type="hidden" name="machine_id" value="{{ m[1].id }}">
+                  </form>
+                {% else %}
+                  <button
+                    onclick='confirm_deletion({{ m[1].display_name|tojson|safe }}, {{ m[1].id }})'
+                    class="w3-button w3-red w3-round"
+                    title='{{ gettext("Stop and remove machine") }}' disabled>
+                    {{ icon('trash') }}
+                  </button>
+                {% endif %}
+                {% if m[1].state == MachineState.READY and m[2].extra_data.get("can_shutdown", False)%}
+                    <button
+                       onclick='confirm_shutdown({{ m[1].display_name|tojson|safe }}, {{ m[1].id }})'
+                       class="w3-button w3-orange w3-round"
+                       title='{{ gettext("Shut down machine") }}'>
+                       {{ icon('power-off') }}
+                    </button>
+                    <form style="display: inline" id="shutdown-form-{{ m[0].id }}" action="/shutdown_machine?source_page=group_mgmt" method="POST">
+                      <input type="hidden" name="machine_id" value="{{ m[0].id }}">
+                    </form>
+                {% elif m[1].state == MachineState.STOPPED %}
+                    <a href="#"
+                       onclick="document.getElementById('resume-form-{{ m[1].id }}').submit();"
+                       class="w3-button w3-green w3-round"
+                       title='{{ gettext("Power on machine") }}'>
+                       {{ icon('power-off') }}
+                    </a>
+                    <form style="display: inline" id="resume-form-{{ m[1].id }}" action="/resume_machine?source_page=group_mgmt" method="POST">
+                      <input type="hidden" name="machine_id" value="{{ m[1].id }}">
+                    </form>
+                {% else %}
+                    <button
+                       onclick='confirm_shutdown({{ m[1].display_name|tojson|safe }}, {{ m[1].id }})'
+                       class="w3-button w3-orange w3-round"
+                       title='{{ gettext("Shut down machine") }}' disabled>
+                       {{ icon('power-off') }}
+                    </button>
+                {% endif %}
+              </td>
             </tr>
           {% endfor %}
         </table>
@@ -153,38 +206,60 @@
 {% block javascript %}
 
 <script type="text/javascript">
- document.addEventListener('DOMContentLoaded', function() {
-     const sendPostRequest = (url, userId) => {
-         fetch(url, {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ user_id: userId })
-         })
-             .then(response => location.reload())
-             .catch(error => console.error('Error:', error));
-     };
+  document.addEventListener('DOMContentLoaded', function() {
+      const sendPostRequest = (url, userId) => {
+          fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user_id: userId })
+          })
+              .then(response => location.reload())
+              .catch(error => console.error('Error:', error));
+      };
 
-     document.querySelectorAll('.user-enable').forEach(item => {
-         item.addEventListener('click', event => {
-             event.preventDefault();
-             sendPostRequest('/enable_user', item.dataset.userId);
-         });
-     });
+      document.querySelectorAll('.user-enable').forEach(item => {
+          item.addEventListener('click', event => {
+              event.preventDefault();
+              sendPostRequest('/enable_user', item.dataset.userId);
+          });
+      });
 
-     document.querySelectorAll('.user-disable').forEach(item => {
-         item.addEventListener('click', event => {
-             event.preventDefault();
-             sendPostRequest('/disable_user', item.dataset.userId);
-         });
-     });
+      document.querySelectorAll('.user-disable').forEach(item => {
+          item.addEventListener('click', event => {
+            var result = window.confirm('Are you sure you want to disable this account? Press OK to confirm this action.');
+            if (result){
+              event.preventDefault();
+              sendPostRequest('/disable_user', item.dataset.userId);
+            }
+          });
+      });
 
-     document.querySelectorAll('.user-remove').forEach(item => {
-         item.addEventListener('click', event => {
-             event.preventDefault();
-             sendPostRequest('/remove_user', item.dataset.userId);
-         });
-     });
+      document.querySelectorAll('.user-remove').forEach(item => {
+          item.addEventListener('click', event => {
+          var result = window.confirm('Are you sure you want to remove this account? Press OK to confirm this action.');
+            if (result) {
+              event.preventDefault();
+              sendPostRequest('/remove_user', item.dataset.userId);
+            }
+          });
+      });
  });
+
+ function confirm_shutdown(machine_display_name, machine_id) {
+      if (confirm('You have selected to shutdown machine titled ' + machine_display_name + '. Is this ok?')){
+        document.getElementById('shutdown-form-'+machine_id).submit();
+      } else {
+        alert('Machine will not be shutdown.');
+      }
+  }
+
+  function confirm_deletion(machine_display_name, machine_id) {
+      if (confirm('You have selected to stop and remove machine titled ' + machine_display_name + '. This action is irreversible. Is this ok?')){
+        document.getElementById('stop-form-'+machine_id).submit();
+      } else {
+        alert('Machine will not be deleted.');
+      }
+  }
 </script>
 
 {% endblock %}
