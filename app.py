@@ -4223,7 +4223,7 @@ def shutdown_machine():
 
     # sanity checks
     audit = create_audit("shutdown machine", user=current_user)
-    source_page = request.args.get('source_page', default='machines')
+    source_page = request.args.get("source_page", default="machines")
     machine_id = request.form.get("machine_id")
 
     if not machine_id:
@@ -4245,7 +4245,11 @@ def shutdown_machine():
 
     update_audit(audit, machine=m)
 
-    if not current_user.is_admin and not current_user == m.owner and not current_user.is_group_admin:
+    if (
+        not current_user.is_admin
+        and not current_user == m.owner
+        and not current_user.is_group_admin
+    ):
         finish_audit(audit, "bad user")
         logging.warning(
             f"user {current_user.id} is not the owner of machine {machine_id} nor admin/group admin"
@@ -4286,7 +4290,7 @@ def resume_machine():
 
     # sanity checks
     audit = create_audit("resume machine", user=current_user)
-    source_page = request.args.get('source_page', default='machines')
+    source_page = request.args.get("source_page", default="machines")
     machine_id = request.form.get("machine_id")
 
     if not machine_id:
@@ -4308,7 +4312,11 @@ def resume_machine():
 
     update_audit(audit, machine=m)
 
-    if not current_user.is_admin and not current_user == m.owner and not current_user.is_group_admin:
+    if (
+        not current_user.is_admin
+        and not current_user == m.owner
+        and not current_user.is_group_admin
+    ):
         finish_audit(audit, "bad user")
         logging.warning(
             f"user {current_user.id} is not the owner of machine {machine_id} nor admin/group admin"
@@ -4350,7 +4358,7 @@ def stop_machine():
 
     # sanity checks
     audit = create_audit("stop machine", user=current_user)
-    source_page = request.args.get('source_page', default='machines')
+    source_page = request.args.get("source_page", default="machines")
     machine_id = request.form.get("machine_id")
 
     if not machine_id:
@@ -4372,7 +4380,11 @@ def stop_machine():
 
     update_audit(audit, machine=machine)
 
-    if not current_user.is_admin and not current_user == machine.owner and not current_user.is_group_admin:
+    if (
+        not current_user.is_admin
+        and not current_user == machine.owner
+        and not current_user.is_group_admin
+    ):
         finish_audit(audit, "bad user")
         logging.warning(
             f"user {current_user.id} is not the owner of machine {machine.id} nor admin/group admin"
