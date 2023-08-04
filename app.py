@@ -3082,6 +3082,65 @@ def group_mgmt():
     )
 
 
+@app.route("/email_machine_owner", methods=["POST"])
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def email_machine_owner():
+    audit = create_audit("email machine owner", user=current_user)
+
+    machine_id = request.json.get("machine_id")
+    logging.info(f"Emailing owner of machine {machine_id}")
+    if not machine_id:
+        logging.info("No machine ID - aborting")
+        finish_audit(audit, "no machine id")
+        abort(404)
+    machine = Machine.query.filter_by(id=machine_id).first_or_404()
+
+    owner_id = machine.owner.id
+    if not owner_id:
+        logging.info("No owner ID - aborting")
+        finish_audit(audit, "no owner id")
+        abort(404)
+
+    perm_ok = False
+    if current_user.is_admin:
+        perm_ok = True
+    elif current_user.is_group_admin:
+        perm_ok = True
+    else:
+        logging.info("Bad permissions - action forbidden")
+        finish_audit(audit, "bad permissions")
+        abort(403)
+    if perm_ok:
+        owner = User.query.filter_by(id=owner_id).first_or_404()
+        email_to = owner.email
+        logging.info(f"Found user email: {email_to}")
+        msg = Message(
+            "Ada Data Analysis machine notification",
+            sender=MAIL_SENDER,
+            recipients=[email_to],
+        )
+
+        msg.body = f"""Hi,
+
+Your machine named "{machine.display_name}" on Ada Data Analysis may be deleted or shut down by a group admin in order to free up resources.
+
+Please contact them if you do not want this to happen.
+
+You're receiving this email because you've registered on {request.url_root}.
+"""
+
+        def send_email(msg):
+            with app.app_context():
+                mail.send(msg)
+                logging.info("Email sent")
+
+        threading.Thread(target=send_email, args=(msg,)).start()
+        finish_audit(audit, state="ok")
+        return "OK"
+
+
 @app.route("/enable_user", methods=["POST"])
 @limiter.limit("60 per minute")
 @login_required
@@ -4352,38 +4411,49 @@ def shutdown_machine():
 
     update_audit(audit, machine=m)
 
-    if (
-        not current_user.is_admin
-        and not current_user == m.owner
-        and not current_user.is_group_admin
-    ):
+    perm_ok = False
+    if current_user == m.owner:
+        perm_ok = True
+    elif current_user.is_admin:
+        perm_ok = True
+    elif current_user.is_group_admin:
+        if not m.machine_template in current_user.group.machine_templates:
+            finish_audit(audit, "bad template")
+            logging.warning(
+                f"group {current_user.group} does not contain machine template {m.machine_template}"
+            )
+            abort(403)
+        perm_ok = True
+    else:
         finish_audit(audit, "bad user")
         logging.warning(
-            f"user {current_user.id} is not the owner of machine {machine_id} nor admin/group admin"
+            f"user {current_user.id} is not the owner of machine {m.id} nor admin/group admin"
         )
         abort(403)
-    if m.state != MachineState.READY:
-        logging.warning(
-            f"machine {machine_id} is not in correct state for shutdown: {m.state}"
-        )
 
-    mt = m.machine_template
+    if perm_ok:
+        if m.state != MachineState.READY:
+            logging.warning(
+                f"machine {machine_id} is not in correct state for shutdown: {m.state}"
+            )
 
-    if mt.type == "docker":
-        raise NotImplementedError(mt.type)
-    elif mt.type == "libvirt":
-        raise NotImplementedError(mt.type)
-    elif mt.type == "openstack":
-        target = OpenStackService.shut_down
-    else:
-        raise RuntimeError(mt.type)
+        mt = m.machine_template
 
-    m.state = MachineState.STOPPING
-    db.session.commit()
+        if mt.type == "docker":
+            raise NotImplementedError(mt.type)
+        elif mt.type == "libvirt":
+            raise NotImplementedError(mt.type)
+        elif mt.type == "openstack":
+            target = OpenStackService.shut_down
+        else:
+            raise RuntimeError(mt.type)
 
-    threading.Thread(target=target, args=(m.id, audit.id)).start()
-    flash(gettext("Shutting down machine"), category="success")
-    return redirect(url_for(source_page))
+        m.state = MachineState.STOPPING
+        db.session.commit()
+
+        threading.Thread(target=target, args=(m.id, audit.id)).start()
+        flash(gettext("Shutting down machine"), category="success")
+        return redirect(url_for(source_page))
 
 
 @app.route("/resume_machine", methods=["POST"])
@@ -4419,39 +4489,50 @@ def resume_machine():
 
     update_audit(audit, machine=m)
 
-    if (
-        not current_user.is_admin
-        and not current_user == m.owner
-        and not current_user.is_group_admin
-    ):
+    perm_ok = False
+    if current_user == m.owner:
+        perm_ok = True
+    elif current_user.is_admin:
+        perm_ok = True
+    elif current_user.is_group_admin:
+        if not m.machine_template in current_user.group.machine_templates:
+            finish_audit(audit, "bad template")
+            logging.warning(
+                f"group {current_user.group} does not contain machine template {m.machine_template}"
+            )
+            abort(403)
+        perm_ok = True
+    else:
         finish_audit(audit, "bad user")
         logging.warning(
-            f"user {current_user.id} is not the owner of machine {machine_id} nor admin/group admin"
+            f"user {current_user.id} is not the owner of machine {m.id} nor admin/group admin"
         )
         abort(403)
-    if m.state != MachineState.STOPPED:
-        logging.warning(
-            f"machine {machine_id} is not in correct state for resuming: {m.state}"
-        )
 
-    mt = m.machine_template
+    if perm_ok:
+        if m.state != MachineState.STOPPED:
+            logging.warning(
+                f"machine {machine_id} is not in correct state for resuming: {m.state}"
+            )
 
-    if mt.type == "docker":
-        raise NotImplementedError(mt.type)
-    elif mt.type == "libvirt":
-        raise NotImplementedError(mt.type)
-    elif mt.type == "openstack":
-        target = OpenStackService.resume
-    else:
-        raise RuntimeError(mt.type)
+        mt = m.machine_template
 
-    m.state = MachineState.STARTING
-    db.session.commit()
+        if mt.type == "docker":
+            raise NotImplementedError(mt.type)
+        elif mt.type == "libvirt":
+            raise NotImplementedError(mt.type)
+        elif mt.type == "openstack":
+            target = OpenStackService.resume
+        else:
+            raise RuntimeError(mt.type)
 
-    threading.Thread(target=target, args=(m.id, audit.id)).start()
+        m.state = MachineState.STARTING
+        db.session.commit()
 
-    flash(gettext("Resuming machine."), category="success")
-    return redirect(url_for(source_page))
+        threading.Thread(target=target, args=(m.id, audit.id)).start()
+
+        flash(gettext("Resuming machine."), category="success")
+        return redirect(url_for(source_page))
 
 
 @app.route("/stop_machine", methods=["POST"])
@@ -4487,34 +4568,45 @@ def stop_machine():
 
     update_audit(audit, machine=machine)
 
-    if (
-        not current_user.is_admin
-        and not current_user == machine.owner
-        and not current_user.is_group_admin
-    ):
+    perm_ok = False
+    if current_user == machine.owner:
+        perm_ok = True
+    elif current_user.is_admin:
+        perm_ok = True
+    elif current_user.is_group_admin:
+        if not machine.machine_template in current_user.group.machine_templates:
+            finish_audit(audit, "bad template")
+            logging.warning(
+                f"group {current_user.group} does not contain machine template {machine.machine_template}"
+            )
+            abort(403)
+        perm_ok = True
+    else:
         finish_audit(audit, "bad user")
         logging.warning(
             f"user {current_user.id} is not the owner of machine {machine.id} nor admin/group admin"
         )
         abort(403)
-    if machine.state not in [
-        MachineState.READY,
-        MachineState.FAILED,
-    ]:
-        logging.warning(
-            f"machine {machine.id} is not in correct state for deletion: {machine.state}"
-        )
-        flash(
-            gettext("Machine cannot be stopped in its current state."),
-            category="danger",
-        )
+
+    if perm_ok:
+        if machine.state not in [
+            MachineState.READY,
+            MachineState.FAILED,
+        ]:
+            logging.warning(
+                f"machine {machine.id} is not in correct state for deletion: {machine.state}"
+            )
+            flash(
+                gettext("Machine cannot be stopped in its current state."),
+                category="danger",
+            )
+            return redirect(url_for(source_page))
+
+        # let's go
+        stop_machine2(machine.id, audit.id)
+
+        flash(gettext("Deleting machine"), category="success")
         return redirect(url_for(source_page))
-
-    # let's go
-    stop_machine2(machine.id, audit.id)
-
-    flash(gettext("Deleting machine"), category="success")
-    return redirect(url_for(source_page))
 
 
 def stop_machine2(machine_id, audit_id=None):
