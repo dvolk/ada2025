@@ -3052,7 +3052,7 @@ def group_mgmt():
 def email_machine_owner():
     audit = create_audit("email machine owner", user=current_user)
 
-    machine_id = request.form.get("machine_id")
+    machine_id = request.json.get("machine_id")
     logging.info(f"Emailing owner of machine {machine_id}")
     if not machine_id:
         logging.info("No machine ID - aborting")
@@ -3101,7 +3101,7 @@ You're receiving this email because you've registered on {request.url_root}.
 
         threading.Thread(target=send_email, args=(msg,)).start()
         finish_audit(audit, state="ok")
-        return redirect(url_for("group_mgmt"))
+        return "OK"
 
 
 @app.route("/enable_user", methods=["POST"])
