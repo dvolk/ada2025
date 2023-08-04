@@ -3045,6 +3045,65 @@ def group_mgmt():
     )
 
 
+@app.route("/email_machine_owner", methods=["POST"])
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def email_machine_owner():
+    audit = create_audit("email machine owner", user=current_user)
+
+    machine_id = request.json.get("machine_id")
+    logging.info(f"Emailing owner of machine {machine_id}")
+    if not machine_id:
+        logging.info("No machine ID - aborting")
+        finish_audit(audit, "no machine id")
+        abort(404)
+    machine = Machine.query.filter_by(id=machine_id).first_or_404()
+
+    owner_id = machine.owner.id
+    if not owner_id:
+        logging.info("No owner ID - aborting")
+        finish_audit(audit, "no owner id")
+        abort(404)
+
+    perm_ok = False
+    if current_user.is_admin:
+        perm_ok = True
+    elif current_user.is_group_admin:
+        perm_ok = True
+    else:
+        logging.info("Bad permissions - action forbidden")
+        finish_audit(audit, "bad permissions")
+        abort(403)
+    if perm_ok:
+        owner = User.query.filter_by(id=owner_id).first_or_404()
+        email_to = owner.email
+        logging.info(f"Found user email: {email_to}")
+        msg = Message(
+            "Ada Data Analysis machine notification",
+            sender=MAIL_SENDER,
+            recipients=[email_to],
+        )
+
+        msg.body = f"""Hi,
+
+Your machine named "{machine.display_name}" on Ada Data Analysis may be deleted or shut down by a group admin in order to free up resources.
+
+Please contact them if you do not want this to happen.
+
+You're receiving this email because you've registered on {request.url_root}.
+"""
+
+        def send_email(msg):
+            with app.app_context():
+                mail.send(msg)
+                logging.info("Email sent")
+
+        threading.Thread(target=send_email, args=(msg,)).start()
+        finish_audit(audit, state="ok")
+        return "OK"
+
+
 @app.route("/enable_user", methods=["POST"])
 @limiter.limit("60 per minute")
 @login_required
