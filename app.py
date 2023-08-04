@@ -831,7 +831,14 @@ class ProtectedUserModelView(ProtectedModelView):
     )
     column_searchable_list = ("username", "email")
     column_sortable_list = ("id", "username", "email", "creation_date")
-    column_filters = ("is_enabled", "is_banned", "is_group_admin", "is_admin", "is_email_confirmed", "group")
+    column_filters = (
+        "is_enabled",
+        "is_banned",
+        "is_group_admin",
+        "is_admin",
+        "is_email_confirmed",
+        "group",
+    )
     column_auto_select_related = True
     form_extra_fields = {"password": PasswordField("Password")}
 
@@ -2554,7 +2561,10 @@ def login():
             # users who haven't confirmed their email
             if user and not user.is_email_confirmed:
                 finish_audit(audit, "unconfirmed email")
-                flash("This account has not had its associated email address confirmed. Please click here <a style=\"text-decoration: underline;\" href=\"/send_confirmation_email\">here</a> to recieve a confirmation link via email.", "danger")
+                flash(
+                    f'This account has not had its associated email address confirmed. Please click <a style="text-decoration: underline;" href="/send_confirmation_email/{user.id}">here</a> to recieve a confirmation link via email.',
+                    "danger",
+                )
                 return redirect(url_for("login"))
 
             # oauth2 returning users
@@ -2630,11 +2640,46 @@ def login():
     )
 
 
-@app.route("/send_confirmation_email")
+@app.route("/send_confirmation_email/<user_id>")
 @limiter.limit("60 per hour")
-def send_confirmation_email():
-    s = URLSafeTimedSerializer(ADA2025_EMAIL_CONFIRMATION_SECRET_KEY)
+def send_confirmation_email(user_id):
+    def send_email(msg):
+        with app.app_context():
+            mail.send(msg)
 
+    if not MAIL_SENDER:
+        abort(404)
+
+    user = User.query.filter_by(id=user_id).first_or_404()
+
+    s = URLSafeTimedSerializer(ADA2025_EMAIL_CONFIRMATION_SECRET_KEY)
+    data_to_encode = [user_id, request.remote_addr]
+    confirmation_token = s.dumps(data_to_encode)
+    site_root = request.url_root
+    confirmation_link = request.url_root + "confirm_email/" + confirmation_token
+    email_to = user.email
+
+    msg = Message(
+        "Ada Data Analysis email confirmation",
+        sender=MAIL_SENDER,
+        recipients=[email_to],
+    )
+    msg.body = f"""Hi,
+
+The email address for your account on Ada Data Analysis needs to be confirmed.
+
+You can do this by clicking the following link:
+
+{confirmation_link}
+
+If you did not request this email, then you can safely ignore it.
+
+You're receiving this email because you've registered on {site_root}.
+"""
+
+    threading.Thread(target=send_email, args=(msg,)).start()
+    flash("Confirmation email sent")
+    return redirect(url_for("login"))
 
 class ForgotPasswordForm(FlaskForm):
     username = StringField(
@@ -2760,7 +2805,7 @@ def email_login(login_token):
         logging.info(f"User {user_id} doesn't exist")
         finish_audit(audit, "not user")
         return redirect(url_for("login"))
-    
+
     user.is_email_confirmed = True
     db.session.commit()
 
