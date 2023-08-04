@@ -2546,6 +2546,13 @@ def login():
                 )
                 .first()
             )
+
+            # users who haven't confirmed their email
+            if user and not user.is_email_confirmed:
+                finish_audit(audit, "unconfirmed email")
+                flash("This account has not had its associated email address confirmed. Please click here <a style=\"text-decoration: underline;\" href=\"/send_confirmation_email\">here</a> to recieve a confirmation link via email.", "danger")
+                return redirect(url_for("login"))
+
             # oauth2 returning users
             if user and user.provider_id:
                 if user.provider == "google":
@@ -2743,6 +2750,9 @@ def email_login(login_token):
         logging.info(f"User {user_id} doesn't exist")
         finish_audit(audit, "not user")
         return redirect(url_for("login"))
+    
+    user.is_email_confirmed = True
+    db.session.commit()
 
     login_user(user)
     logging.info(f"Logged user {current_user.id} in using email login")
