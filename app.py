@@ -183,6 +183,10 @@ ADA2025_SHARE_TOKEN_SECRET_KEY = os.getenv(
     "ADA2025_SHARE_TOKEN_SECRET_KEY"
 ) or gen_token(32)
 
+ADA2025_EMAIL_CONFIRMATION_SECRET_KEY = os.getenv(
+    "ADA2025_EMAIL_CONFIRMATION_SECRET_KEY"
+) or gen_token(32)
+
 ADA2025_DNS_SECRET_KEY = os.getenv("ADA2025_DNS_SECRET_KEY") or gen_token(32)
 
 admin = Admin(
@@ -2624,6 +2628,12 @@ def login():
         show_iris_iam_button=show_iris_iam_button,
         show_stfc_logo=True,
     )
+
+
+@app.route("/send_confirmation_email")
+@limiter.limit("60 per hour")
+def send_confirmation_email():
+    s = URLSafeTimedSerializer(ADA2025_EMAIL_CONFIRMATION_SECRET_KEY)
 
 
 class ForgotPasswordForm(FlaskForm):
