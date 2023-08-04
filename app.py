@@ -4977,7 +4977,7 @@ class OpenStackService(VirtService):
 
                     while True:
                         status = get_image_status(conn, image_id)
-                        if status == "active":
+                        if status == "ACTIVE":
                             break
 
                         elapsed_time = time.time() - start_time
