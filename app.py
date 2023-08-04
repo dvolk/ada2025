@@ -608,6 +608,7 @@ class User(db.Model, UserMixin):
     is_banned = db.Column(db.Boolean, nullable=False, default=False)
     is_group_admin = db.Column(db.Boolean, nullable=False, default=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    is_email_confirmed = db.Column(db.Boolean, nullable=False, default=False)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(200))
     given_name = db.Column(db.String(100))
@@ -797,10 +798,12 @@ class ProtectedUserModelView(ProtectedModelView):
         "email",
         "group",
         "is_admin",
+        "is_email_confirmed",
         "creation_date",
     )
     form_columns = (
         "is_enabled",
+        "is_email_confirmed",
         "is_banned",
         "is_group_admin",
         "group",
@@ -824,7 +827,7 @@ class ProtectedUserModelView(ProtectedModelView):
     )
     column_searchable_list = ("username", "email")
     column_sortable_list = ("id", "username", "email", "creation_date")
-    column_filters = ("is_enabled", "is_banned", "is_group_admin", "is_admin", "group")
+    column_filters = ("is_enabled", "is_banned", "is_group_admin", "is_admin", "is_email_confirmed", "group")
     column_auto_select_related = True
     form_extra_fields = {"password": PasswordField("Password")}
 
@@ -5470,6 +5473,7 @@ def create_initial_db():
                 group=localtester_group,
                 language="en",
                 is_admin=True,
+                is_email_confirmed=True,
                 email="denis.volk@stfc.ac.uk",
                 data_sources=[demo_source1, demo_source2],
             )
@@ -5484,6 +5488,7 @@ def create_initial_db():
                 group=stfctester_group,
                 language="en",
                 is_admin=False,
+                is_email_confirmed=True,
                 email="noname@example.com",
                 data_sources=[demo_source2, demo_source3],
             )
@@ -5498,6 +5503,7 @@ def create_initial_db():
                 group=imperialtester_group,
                 language="en",
                 is_admin=False,
+                is_email_confirmed=True,
                 email="imperium@example.com",
                 data_sources=[demo_source2, demo_source3],
             )
@@ -5512,6 +5518,7 @@ def create_initial_db():
                 group=localtester_group,
                 language="en",
                 is_admin=False,
+                is_email_confirmed=True,
                 email="local@example.com",
                 data_sources=[demo_source2, demo_source3],
             )
@@ -5524,6 +5531,7 @@ def create_initial_db():
                 family_name="NoFamilyName",
                 language="en",
                 email="local1@example.com",
+                is_email_confirmed=True,
             )
             notactivated1_user_password = gen_token(8)
             notactivated1_user.set_password(notactivated1_user_password)
@@ -5534,6 +5542,7 @@ def create_initial_db():
                 family_name="NoFamilyName",
                 language="en",
                 email="local2@example.com",
+                is_email_confirmed=True,
             )
             notactivated2_user_password = gen_token(8)
             notactivated2_user.set_password(notactivated2_user_password)
