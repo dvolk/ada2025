@@ -2691,6 +2691,40 @@ class ForgotPasswordForm(FlaskForm):
     submit = SubmitField("Forgot Password")
 
 
+@app.route("/confirm_email/<confirmation_token>")
+@limiter.limit("60 per hour")
+def confirm_email(confirmation_token):
+    try:
+        s = URLSafeTimedSerializer(ADA2025_EMAIL_CONFIRMATION_SECRET_KEY)
+        user_id, ip = s.loads(confirmation_token, max_age=1800)
+    except Exception as e:
+        logging.warning(f"token exception: {e}")
+        flash(
+            gettext(
+                f'That link is invalid or expired. Please attempt to login below in order to request a new confirmation link.'
+            ),
+            "danger",
+        )
+        return redirect(url_for("login"))
+
+    if ip != request.remote_addr:
+        flash(gettext(f'Please confirm the email address from the same IP that you requested the confirmation link from. You can request a new link <a style="text-decoration: underline;" href="/send_confirmation_email/{user_id}">here</a>.'))
+        return redirect(url_for("login"))
+
+    user = User.query.filter_by(id=user_id).first_or_404()
+
+    if not user:
+        abort(404)
+
+    user.is_email_confirmed = True
+    db.session.commit()
+    flash(gettext("Your email has been confirmed. You may now login below."))
+    return redirect(url_for("login"))
+
+
+
+
+
 @app.route("/forgot_password", methods=["GET", "POST"])
 @limiter.limit(lambda: {"GET": "60 per hour", "POST": "5 per hour"}[request.method])
 def forgot_password():
