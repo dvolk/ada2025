@@ -165,3 +165,7 @@ Pin-Priority: 1001
 echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
 
 apt install -y firefox webext-ublock-origin-firefox
+
+echo "System will reboot in 10 seconds..."
+sleep 10
+reboot

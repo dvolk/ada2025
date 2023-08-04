@@ -5,7 +5,7 @@ import argh
 from cryptography.hazmat.backends import default_backend as crypto_default_backend
 from cryptography.hazmat.primitives import serialization as crypto_serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-from paramiko import AutoAddPolicy, SSHClient
+from paramiko import WarningPolicy, SSHClient
 from scp import SCPClient
 
 
@@ -35,7 +35,7 @@ def deploy_user_keys_to_machine(
     hostname, private_key, public_key, authorized_keys, username="ubuntu"
 ):
     ssh = SSHClient()
-    ssh.set_missing_host_key_policy(AutoAddPolicy())
+    ssh.set_missing_host_key_policy(WarningPolicy())
     ssh.connect(hostname, username=username)
 
     scp = SCPClient(ssh.get_transport())

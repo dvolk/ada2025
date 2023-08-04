@@ -95,6 +95,7 @@ import humanize
 import pytz
 import requests
 import paramiko
+import scp
 
 # sentry.io integration
 import sentry_sdk
@@ -1163,6 +1164,42 @@ class ProtectedMachineProviderModelView(ProtectedModelView):
         form_class = super(ProtectedMachineProviderModelView, self).scaffold_form()
         form_class.provider_data = JsonTextAreaField("Provider Data")
         return form_class
+
+
+class ImageBuildJobState(enum.Enum):
+    STARTING = "STARTING"
+    MAKING_VM = "MAKING_VM"
+    COPYING_BUILD = "COPYING_BUILD"
+    WAITING_FOR_VM = "WAITING_FOR_VM"
+    RUNNING_SCRIPT = "RUNNING_SCRIPT"
+    SAVING_IMAGE = "SAVING_IMAGE"
+    DONE = "DONE"
+    FAILED = "FAILED"
+
+
+class ImageBuildJob(db.Model):
+    """
+    ImageBuild tracks the image building process
+    """
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+    template_name = db.Column(db.String(100))
+    state = db.Column(db.Enum(ImageBuildJobState), nullable=False, index=True)
+    creation_date = db.Column(
+        db.DateTime, default=datetime.datetime.utcnow, nullable=False
+    )
+    finished_date = db.Column(db.DateTime)
+    extra_data = db.Column(db.JSON, default={})
+
+    machine_provider_id = db.Column(db.ForeignKey("machine_provider.id"))
+    image_id = db.Column(db.ForeignKey("image.id"))
+
+    machine_provider = db.Relationship("MachineProvider")
+    image = db.Relationship("Image")
+
+    def __repr__(self):
+        return f"<{self.name}>"
 
 
 software_image_table = db.Table(
@@ -3424,6 +3461,7 @@ def images():
 
     images = reversed(Image.query.all())
     image_templates = list(pathlib.Path("machines").iterdir())
+    image_build_jobs = reversed(ImageBuildJob.query.all())
 
     return render_template(
         "images.jinja2",
@@ -3431,6 +3469,7 @@ def images():
         now=datetime.datetime.utcnow(),
         images=images,
         image_templates=image_templates,
+        image_build_jobs=image_build_jobs,
     )
 
 
@@ -3461,6 +3500,34 @@ def new_image():
     machine_providers = MachineProvider.query.all()
 
     if request.method == "POST":
+        args = request.args
+        form = request.form
+
+        mp = MachineProvider.query.filter_by(
+            id=form.get("machine_provider")
+        ).first_or_404()
+
+        job = ImageBuildJob(
+            machine_provider=mp,
+            template_name=args.get("image_template"),
+            state=ImageBuildJobState.STARTING,
+            extra_data={
+                "flavor_name": "l3.tiny",
+                "network_uuid": "5be315b7-7ebd-4254-97fe-18c1df501538",
+                "security_groups": ["HTTP", "HTTPS", "SSH"],
+                "vol_image": "ubuntu-focal-20.04-nogui",
+                "assign_floating_ip": False,
+                "username": "ubuntu",
+                "reboots": 2,
+            },
+        )
+        db.session.add(job)
+        db.session.commit()
+        job.name = f"ada-image-bot_{job.id}"
+        db.session.commit()
+
+        threading.Thread(target=OpenStackService.build_image, args=(job.id,)).start()
+
         flash("Building new image")
         logging.info(request.form)
         return redirect(url_for("images"))
@@ -4575,7 +4642,7 @@ def run_machine_command(machine, command):
 @log_function_call
 def wait_for_nginx(machine, timeout=120):
     ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
 
     start_time = time.time()
 
@@ -4695,6 +4762,172 @@ class VirtService(ABC):
 
 
 class OpenStackService(VirtService):
+    # Function to create openstack instance for image building purposes
+    @log_function_call
+    @staticmethod
+    def build_image(build_job_id):
+        with app.app_context():
+            job = ImageBuildJob.query.filter_by(id=build_job_id).first()
+            try:
+                conn, env = OpenStackService.conn_from_mp(job.machine_provider)
+
+                network_uuid = job.extra_data.get("network_uuid")
+                flavor_name = job.extra_data.get("flavor_name")
+                vol_image = job.extra_data.get("vol_image")
+                security_groups = job.extra_data.get("security_groups")
+                assign_floating_ip = job.extra_data.get("assign_floating_ip")
+                username = job.extra_data.get("username")
+                reboots = job.extra_data.get("reboots")
+
+                network = conn.network.get_network(network_uuid)
+                flavor = conn.compute.find_flavor(flavor_name)
+                image = conn.compute.find_image(vol_image)
+                security_groups = [{"name": x} for x in security_groups]
+
+                job.state = ImageBuildJobState.MAKING_VM
+                db.session.commit()
+
+                logging.info("creating server")
+                server = conn.compute.create_server(
+                    name=job.name,
+                    flavor_id=flavor.id,
+                    networks=[{"uuid": network_uuid}],
+                    security_groups=security_groups,
+                    image_id=image.id,
+                    key_name="denis-key",
+                )
+
+                job.state = ImageBuildJobState.WAITING_FOR_VM
+                db.session.commit()
+
+                logging.info("waiting for server to come up")
+                OpenStackService.wait_for_vm_state(
+                    env, server.id, "ACTIVE", timeout=2400
+                )
+
+                # wait for an ip
+                logging.info("waiting for server to acquire ip")
+                server_ip = OpenStackService.wait_for_vm_ip(conn, server.id, network.id)
+
+                time.sleep(2)
+
+                # assign floating ip if configured
+                if assign_floating_ip:
+                    server_ip = OpenStackService.assign_floating_ip(env, server.id)
+
+                time.sleep(60)  # TODO loop until ssh is ready
+
+                job.state = ImageBuildJobState.COPYING_BUILD
+                db.session.commit()
+
+                ssh = paramiko.SSHClient()
+                ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
+                ssh.connect(server_ip, username=username)
+
+                # SCPCLient takes a paramiko transport as its only argument
+                scpclient = scp.SCPClient(ssh.get_transport())
+
+                # This will copy the entire directory at 'machines/ubuntu22_mini'
+                # to the user's home directory on the remote host
+                logging.warning("copying files")
+                scpclient.put(
+                    "machines/ubuntu22_mini", recursive=True, remote_path="~/"
+                )
+                scpclient.close()
+
+                job.state = ImageBuildJobState.RUNNING_SCRIPT
+                db.session.commit()
+
+                for i in range(reboots + 1):
+                    ssh.connect(server_ip, username=username)
+                    logging.warning(f"starting loop {i}")
+                    stdin, stdout, stderr = ssh.exec_command(
+                        "cd ubuntu22_mini && sudo bash setup.bash"
+                    )
+                    print(stdout.read().decode())
+                    print(stderr.read().decode())
+
+                    # Wait for some time for the system to reboot
+                    logging.warning("waiting")
+                    time.sleep(120)
+
+                ssh.close()
+
+                def create_snapshot(conn, server_name):
+                    snapshot_command = [
+                        "openstack",
+                        "server",
+                        "image",
+                        "create",
+                        "--name",
+                        server_name,
+                        server_name,
+                        "-f",
+                        "json",
+                    ]
+                    result = subprocess.run(
+                        snapshot_command,
+                        check=True,
+                        text=True,
+                        capture_output=True,
+                        env=env,
+                    )
+                    result = json.loads(result.stdout)
+                    image_id = result["id"]
+                    return image_id
+
+                def get_image_status(conn, image_id):
+                    image = conn.compute.get_image(image_id)
+                    return image.status
+
+                def wait_for_image(conn, image_id, timeout=3600):
+                    start_time = time.time()
+
+                    while True:
+                        status = get_image_status(conn, image_id)
+                        if status == "active":
+                            break
+
+                        elapsed_time = time.time() - start_time
+                        remaining_time = timeout - elapsed_time
+
+                        logging.info(
+                            "Elapsed: {:.2f} s, Timeout: {:.2f} s, Remaining: {:.2f} s".format(
+                                elapsed_time, timeout, remaining_time
+                            )
+                        )
+
+                        if elapsed_time > timeout:
+                            raise Exception(
+                                "Timeout waiting for image to become active"
+                            )
+
+                        time.sleep(5)
+
+                job.state = ImageBuildJobState.SAVING_IMAGE
+                db.session.commit()
+
+                image_id = create_snapshot(conn, job.name)
+                wait_for_image(conn, image_id)
+
+                new_image = Image(
+                    name=job.name,
+                    display_name=job.name,
+                    machine_providers=[job.machine_provider],
+                )
+                db.session.add(new_image)
+                db.session.commit()
+
+                job.state = ImageBuildJobState.DONE
+                job.finished_date = datetime.datetime.utcnow()
+                db.session.commit()
+
+            except Exception as e:
+                logging.error(f"image build failed: {str(e)}")
+                job.state = ImageBuildJobState.FAILED
+                job.finished_date = datetime.datetime.utcnow()
+                db.session.commit()
+
     # Function to create a new VM from an image
     @log_function_call
     @staticmethod

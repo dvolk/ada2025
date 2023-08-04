@@ -9,36 +9,79 @@
 
 <div class="w3-container w3-pale-blue">
     <p>
-    <table class="w3-table-all">
-        <thead>
-            <th>Image name</th>
-            <th>Created</th>
-            <th>Machine templates</th>
-            <th>Image template name</th>
-            <th style="float: right;">Actions</th>
-        </thead>
-        {% for image in images %}
-        <tr>
-            <td style="vertical-align: middle;">
-                {{ image.name }}
-            </td>
-            <td style="vertical-align: middle;">
-                {{ humanize.naturaldelta(now - image.creation_date) }} ago
-            </td>
-            <td style="vertical-align: middle;">
-                {{ image.machine_templates|map(attribute="name")|join("<br/>") }}
-            </td>
-            <td style="vertical-align: middle;">
-                To-do
-            </td>
-            <td style="float: right;">
-                <button class="w3-button w3-red w3-round">
-                    {{ icon('trash') }}
-                </button>
-            </td>
-        </tr>
-        {% endfor %}
-    </table>
+        <table class="w3-table-all">
+            <thead>
+                <th>Image name</th>
+                <th>Created</th>
+                <th>Machine templates</th>
+                <th>Image template name</th>
+                <th style="float: right;">Actions</th>
+            </thead>
+            {% for image in images %}
+            <tr>
+                <td style="vertical-align: middle;">
+                    {{ image.name }}
+                </td>
+                <td style="vertical-align: middle;">
+                    {{ humanize.naturaldelta(now - image.creation_date) }} ago
+                </td>
+                <td style="vertical-align: middle;">
+                    {{ image.machine_templates|map(attribute="name")|join("<br/>") }}
+                </td>
+                <td style="vertical-align: middle;">
+                    To-do
+                </td>
+                <td style="float: right;">
+                    <button class="w3-button w3-red w3-round">
+                        {{ icon('trash') }}
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    </p>
+</div>
+
+<br/>
+
+<div class="w3-container w3-blue">
+    <h2>Build Jobs</h2>
+</div>
+
+<div class="w3-container w3-pale-blue">
+    <p>
+        <table class="w3-table-all">
+            <thead>
+                <th>Name</th>
+                <th>State</th>
+                <th>Created</th>
+                <th>Template</th>
+                <th>Provider</th>
+                <th>Image</th>
+            </thead>
+            {% for job in image_build_jobs %}
+            <tr>
+                <td style="vertical-align: middle;">
+                    {{ job.name }}
+                </td>
+                <td style="vertical-align: middle;">
+                    {{ job.state }}
+                </td>
+                <td style="vertical-align: middle;">
+                    {{ humanize.naturaldelta(now - job.creation_date) }} ago
+                </td>
+                <td style="vertical-align: middle;">
+                    {{ job.template_name }}
+                </td>
+                <td style="vertical-align: middle;">
+                    {{ job.machine_provider.name }}
+                </td>
+                <td style="float: right;">
+                    {{ job.image.name }}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
     </p>
 </div>
 
