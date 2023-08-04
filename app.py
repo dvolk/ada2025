@@ -3087,7 +3087,7 @@ def email_machine_owner():
 
         msg.body = f"""Hi,
 
-Your machine named {machine.display_name} on Ada Data Analysis may be deleted by a group admin in order to free up resources.
+Your machine named {machine.display_name} on Ada Data Analysis may be deleted or shut down by a group admin in order to free up resources.
 
 Please contact them if you do not want this to happen.
 
