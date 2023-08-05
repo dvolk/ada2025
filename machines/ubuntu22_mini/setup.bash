@@ -359,7 +359,7 @@ xfconf-query -c xsettings -p /Net/ThemeName -s 'Adwaita'
 xfconf-query -c xfwm4 -p /general/theme -s 'Adwaita'
 xfconf-query -c xsettings -p /Net/IconThemeName -s 'Tango'
 xfconf-query -c xfce4-panel -p /panels/dark-mode -s false
-#wget https://www.scd.stfc.ac.uk/Gallery/pixabay_artificial-intelligence-3382521_1920.jpg -O /home/ubuntu/.sciml_bg.jpg
+wget https://www.scd.stfc.ac.uk/Gallery/pixabay_artificial-intelligence-3382521_1920.jpg -O /home/ubuntu/.sciml_bg.jpg
 xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitorVNC-0/workspace0/last-image -s /home/ubuntu/.sciml_bg.jpg
 EOF
 fi
