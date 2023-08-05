@@ -342,7 +342,7 @@ if [ "$BUILD_INSTALL_NIX" = "True" ]; then
     yes | ./install --daemon
 fi
 
-if [ "BUILD_GROUP_FLAVOR" = "sciml" ]; then
+if [ "$BUILD_GROUP_FLAVOR" = "sciml" ]; then
     # - Change the theme to Adwaita
     # - Change the icons to Tango
     # - Turn off xfce panel dark mode
