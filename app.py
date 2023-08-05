@@ -1186,6 +1186,7 @@ class ImageBuildJob(db.Model):
     name = db.Column(db.String(100))
     template_name = db.Column(db.String(100))
     state = db.Column(db.Enum(ImageBuildJobState), nullable=False, index=True)
+    is_hidden = db.Column(db.Boolean, nullable=False, default=False)
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
@@ -1196,10 +1197,35 @@ class ImageBuildJob(db.Model):
     image_id = db.Column(db.ForeignKey("image.id"))
 
     machine_provider = db.Relationship("MachineProvider")
-    image = db.Relationship("Image")
+    image = db.Relationship("Image", back_populates="image_build_job", uselist=False)
 
     def __repr__(self):
         return f"<{self.name}>"
+
+
+class ProtectedImageBuildJobModelView(ProtectedModelView):
+    column_list = (
+        "id",
+        "name",
+        "template_name",
+        "state",
+        "creation_date",
+        "machine_provider",
+        "image",
+    )
+    column_searchable_list = ("name",)
+    column_filters = ("name",)
+
+    form_columns = (
+        "name",
+        "template_name",
+        "state",
+        "creation_date",
+        "finished_date",
+        "extra_data",
+        "machine_provider",
+        "image",
+    )
 
 
 software_image_table = db.Table(
@@ -1249,12 +1275,14 @@ class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     display_name = db.Column(db.String(100))
+    is_deleted = db.Column(db.Boolean, default=False)
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
     machine_providers = db.relationship(
         "MachineProvider", secondary=image_provider_table, backref="images"
     )
+    image_build_job = db.Relationship("ImageBuildJob", uselist=False)
 
     def __repr__(self):
         return f"<{self.name}>"
@@ -1688,6 +1716,7 @@ admin.add_view(ProtectedGroupWelcomePageModelView(GroupWelcomePage, db.session))
 admin.add_view(ProtectedMachineProviderModelView(MachineProvider, db.session))
 admin.add_view(ProtectedSoftwareModelView(Software, db.session))
 admin.add_view(ProtectedImageModelView(Image, db.session))
+admin.add_view(ProtectedImageBuildJobModelView(ImageBuildJob, db.session))
 admin.add_view(ProtectedMachineTemplateModelView(MachineTemplate, db.session))
 admin.add_view(ProtectedMachineModelView(Machine, db.session))
 admin.add_view(ProtectedProblemReportModelView(ProblemReport, db.session))
@@ -3518,9 +3547,19 @@ def images():
     if not current_user.is_admin:
         return redirect(url_for("login"))
 
-    images = reversed(Image.query.all())
-    image_templates = list(pathlib.Path("machines").iterdir())
-    image_build_jobs = reversed(ImageBuildJob.query.all())
+    # images = reversed(Image.query.filter_by(is_deleted=False).all())
+    images = (
+        db.session.query(Image)
+        .filter(and_(Image.is_deleted == False, Image.image_build_job))
+        .order_by(desc(Image.id))
+    )
+
+    # get image templates from ada2025/machines
+    # filter out ada2025/machines directories that don't have a build.json
+    image_templates = [
+        p for p in pathlib.Path("machines").iterdir() if (p / "build.json").is_file()
+    ]
+    image_build_jobs = reversed(ImageBuildJob.query.filter_by(is_hidden=False).all())
 
     return render_template(
         "images.jinja2",
@@ -3530,6 +3569,29 @@ def images():
         image_templates=image_templates,
         image_build_jobs=image_build_jobs,
     )
+
+
+@app.route("/delete_image", methods=["POST"])
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def delete_image():
+    if not current_user.is_admin:
+        abort(403)
+
+    logging.info(request.json)
+
+    image_id = request.json.get("image_id_to_delete")
+
+    if not (image := Image.query.filter_by(id=image_id).first()):
+        abort(404)
+
+    # we don't want to delete images that are in use by templates
+    if len(image.machine_templates) > 0:
+        abort(404)
+
+    threading.Thread(target=OpenStackService.delete_image, args=(image_id,)).start()
+    return "OK"
 
 
 @app.route("/new_image", methods=["GET", "POST"])
@@ -3558,9 +3620,93 @@ def new_image():
 
     machine_providers = MachineProvider.query.all()
 
+    openstack_form_opts = [
+        {
+            "name": "openstack_image_flavor",
+            "label": "Openstack instance image build flavor",
+            "options": ["l3.tiny"],
+            "info": "The flavor instance disk space will determine the minimum disk space required on template flavors",
+        },
+        {
+            "name": "openstack_network_uuid",
+            "label": "Openstack network UUID",
+            "options": ["5be315b7-7ebd-4254-97fe-18c1df501538"],
+        },
+        {
+            "name": "openstack_security_groups",
+            "label": "Openstack security_groups",
+            "options": [["HTTP", "HTTPS", "SSH"], ["SSH"]],
+        },
+        {
+            "name": "openstack_volume_image",
+            "label": "Openstack volume image",
+            "options": ["ubuntu-focal-20.04-nogui"],
+        },
+        {
+            "name": "openstack_bool_assign_floating_ip",
+            "label": "Openstack assign floating ip",
+            "options": [False, True],
+            "info": "Can Ada ssh into the instance without assigning a floating ip?",
+        },
+        {
+            "name": "openstack_username",
+            "label": "Openstack volume image username",
+            "options": ["ubuntu"],
+        },
+        {
+            "name": "openstack_keypair",
+            "label": "Openstack keypair",
+            "options": ["denis-key"],
+        },
+    ]
+
     if request.method == "POST":
         args = request.args
         form = request.form
+
+        print(request.args)
+        print(request.form)
+
+        build_script_env = dict()
+
+        # process form to extract dynamic form values
+        for opt in buildjson["params"]:
+            if opt["type"] == "bool":
+                if request.form.get(f"param_bool_{opt['name']}") == "on":
+                    build_script_env[opt["name"]] = True
+                else:
+                    build_script_env[opt["name"]] = False
+            if opt["type"] == "textline":
+                build_script_env[opt["name"]] = request.form.get(
+                    f"param_textline_{opt['name']}", ""
+                )
+            if opt["type"] == "option":
+                build_script_env[opt["name"]] = request.form.get(
+                    f"param_textline_{opt['name']}", ""
+                )
+
+        print(build_script_env)
+
+        provider_opts = dict()
+        for form_opt in openstack_form_opts:
+            print(form_opt)
+            name = form_opt["name"]
+            provider_opts[name] = form_opt["options"][int(request.form.get(name))]
+
+        print(provider_opts)
+
+        job_extra_data = {
+            **provider_opts,
+            "create_image": request.form.get("create_image") == "on",
+            "delete_build_machine": request.form.get("delete_build_machine") == "on",
+            "reboots": int(buildjson["reboots_required"]),
+            "buildjson": buildjson,
+            "build_script_env": build_script_env,
+        }
+        print(json.dumps(job_extra_data, indent=4))
+
+        # flash("Building new image")
+        # return redirect(url_for("images"))
 
         mp = MachineProvider.query.filter_by(
             id=form.get("machine_provider")
@@ -3570,15 +3716,7 @@ def new_image():
             machine_provider=mp,
             template_name=args.get("image_template"),
             state=ImageBuildJobState.STARTING,
-            extra_data={
-                "flavor_name": "l3.tiny",
-                "network_uuid": "5be315b7-7ebd-4254-97fe-18c1df501538",
-                "security_groups": ["HTTP", "HTTPS", "SSH"],
-                "vol_image": "ubuntu-focal-20.04-nogui",
-                "assign_floating_ip": False,
-                "username": "ubuntu",
-                "reboots": 2,
-            },
+            extra_data=job_extra_data,
         )
         db.session.add(job)
         db.session.commit()
@@ -3588,13 +3726,13 @@ def new_image():
         threading.Thread(target=OpenStackService.build_image, args=(job.id,)).start()
 
         flash("Building new image")
-        logging.info(request.form)
         return redirect(url_for("images"))
 
     return render_template(
         "new_image.jinja2",
         title=gettext("Images"),
         buildjson=buildjson,
+        form_opts=openstack_form_opts,
         machine_providers=machine_providers,
     )
 
@@ -3815,6 +3953,32 @@ def dismiss_datatransferjob():
         abort(403)
 
     job.state = DataTransferJobState.HIDDEN
+    db.session.commit()
+    return "OK"
+
+
+@app.route("/dismiss_imagebuildjob", methods=["POST"])
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def dismiss_imagebuildjob():
+    """
+    Endpoint for hiding the image build job from the images page
+    by setting is_hidden to True
+    """
+    if not current_user.is_admin:
+        abort(403)
+
+    job_id = request.json.get("job_id")
+    if not job_id:
+        abort(404)
+
+    job = ImageBuildJob.query.filter_by(id=job_id).first()
+
+    if not job:
+        abort(404)
+
+    job.is_hidden = True
     db.session.commit()
     return "OK"
 
@@ -4854,6 +5018,36 @@ class VirtService(ABC):
 
 
 class OpenStackService(VirtService):
+    @log_function_call
+    @staticmethod
+    def delete_image(image_id):
+        """Delete an openstack image."""
+        with app.app_context():
+            image = Image.query.filter_by(id=image_id).first()
+            if len(mps := image.machine_providers) > 1:
+                raise NotImplementedError(
+                    "Will not delete image with more than 1 provider"
+                )
+            try:
+                conn, env = OpenStackService.conn_from_mp(mps[0])
+                command = ["openstack", "image", "delete", image.name]
+                logging.info(command)
+                result = subprocess.run(
+                    command, capture_output=True, text=True, env=env
+                )
+                if result.returncode == 0:
+                    # Deletion successful
+                    logging.info("Image deleted successfully")
+                    image.is_deleted = True
+                    db.session.commit()
+                else:
+                    # Deletion failed
+                    logging.warning(result.stdout)
+                    logging.warning(result.stderr)
+                    logging.error("Failed to delete image")
+            except Exception:
+                logging.exception("Error: ")
+
     # Function to create openstack instance for image building purposes
     @log_function_call
     @staticmethod
@@ -4861,21 +5055,32 @@ class OpenStackService(VirtService):
         with app.app_context():
             job = ImageBuildJob.query.filter_by(id=build_job_id).first()
             try:
+                # create openstack connection, and get equivalent env for cli
                 conn, env = OpenStackService.conn_from_mp(job.machine_provider)
 
-                network_uuid = job.extra_data.get("network_uuid")
-                flavor_name = job.extra_data.get("flavor_name")
-                vol_image = job.extra_data.get("vol_image")
-                security_groups = job.extra_data.get("security_groups")
-                assign_floating_ip = job.extra_data.get("assign_floating_ip")
-                username = job.extra_data.get("username")
-                reboots = job.extra_data.get("reboots")
+                flavor_name = job.extra_data.get("openstack_image_flavor")
+                network_uuid = job.extra_data.get("openstack_network_uuid")
+                security_groups = job.extra_data.get("openstack_security_groups")
+                vol_image = job.extra_data.get("openstack_volume_image")
+                assign_floating_ip = job.extra_data.get(
+                    "openstack_bool_assign_floating_ip"
+                )
+                username = job.extra_data.get("openstack_username")
+                keypair = job.extra_data.get("openstack_keypair")
 
+                reboots = job.extra_data.get("reboots")
+                create_image = job.extra_data.get("create_image")
+                delete_build_machine = job.extra_data.get("delete_build_machine")
+                buildjson = job.extra_data.get("buildjson")
+                build_script_env = job.extra_data.get("build_script_env")
+
+                # create openstack objects
                 network = conn.network.get_network(network_uuid)
                 flavor = conn.compute.find_flavor(flavor_name)
                 image = conn.compute.find_image(vol_image)
                 security_groups = [{"name": x} for x in security_groups]
 
+                # begin creating the instance
                 job.state = ImageBuildJobState.MAKING_VM
                 db.session.commit()
 
@@ -4886,9 +5091,10 @@ class OpenStackService(VirtService):
                     networks=[{"uuid": network_uuid}],
                     security_groups=security_groups,
                     image_id=image.id,
-                    key_name="denis-key",
+                    key_name=keypair,
                 )
 
+                # wait for instance to be active
                 job.state = ImageBuildJobState.WAITING_FOR_VM
                 db.session.commit()
 
@@ -4909,6 +5115,7 @@ class OpenStackService(VirtService):
 
                 time.sleep(60)  # TODO loop until ssh is ready
 
+                # copy the machine files i.e. machines/ubuntu22_sciml
                 job.state = ImageBuildJobState.COPYING_BUILD
                 db.session.commit()
 
@@ -4921,10 +5128,11 @@ class OpenStackService(VirtService):
 
                 # This will copy the entire directory at 'machines/ubuntu22_mini'
                 # to the user's home directory on the remote host
+                build_dir = buildjson.get("name")
+                build_script = buildjson.get("script")
                 logging.warning("copying files")
-                scpclient.put(
-                    "machines/ubuntu22_mini", recursive=True, remote_path="~/"
-                )
+                scpclient.put(job.template_name, recursive=True, remote_path="~/")
+                scpclient.put("secrets", recursive=True, remote_path=f"~/{build_dir}")
                 scpclient.close()
 
                 job.state = ImageBuildJobState.RUNNING_SCRIPT
@@ -4933,9 +5141,13 @@ class OpenStackService(VirtService):
                 for i in range(reboots + 1):
                     ssh.connect(server_ip, username=username)
                     logging.warning(f"starting loop {i}")
-                    stdin, stdout, stderr = ssh.exec_command(
-                        "cd ubuntu22_mini && sudo bash setup.bash"
-                    )
+
+                    # pass in user build.json parameters into setup.bash
+                    env_str = " ".join(f"{k}={v}" for k, v in build_script_env.items())
+                    cmd = f"sudo bash -c 'cd {build_dir} && {env_str} bash {build_script}'"
+                    logging.info("\n\n" + cmd + "\n")
+
+                    stdin, stdout, stderr = ssh.exec_command(cmd)
                     print(stdout.read().decode())
                     print(stderr.read().decode())
 
@@ -4943,6 +5155,8 @@ class OpenStackService(VirtService):
                     logging.warning("waiting")
                     time.sleep(120)
 
+                ssh.connect(server_ip, username=username)
+                stdin, stdout, stderr = ssh.exec_command(f"rm -rf {build_dir}")
                 ssh.close()
 
                 def create_snapshot(conn, server_name):
@@ -4994,28 +5208,34 @@ class OpenStackService(VirtService):
                                 "Timeout waiting for image to become active"
                             )
 
-                        time.sleep(5)
+                        time.sleep(30)
 
-                job.state = ImageBuildJobState.SAVING_IMAGE
-                db.session.commit()
+                if create_image:
+                    job.state = ImageBuildJobState.SAVING_IMAGE
+                    db.session.commit()
 
-                image_id = create_snapshot(conn, job.name)
-                wait_for_image(conn, image_id)
+                    image_id = create_snapshot(conn, job.name)
+                    wait_for_image(conn, image_id)
 
-                new_image = Image(
-                    name=job.name,
-                    display_name=job.name,
-                    machine_providers=[job.machine_provider],
-                )
-                db.session.add(new_image)
-                db.session.commit()
+                    new_image = Image(
+                        name=job.name,
+                        display_name=job.name,
+                        image_build_job=job,
+                        machine_providers=[job.machine_provider],
+                    )
+                    db.session.add(new_image)
+                    db.session.commit()
+
+                if create_image and delete_build_machine:
+                    logging.info("deleting build machine")
+                    conn.compute.delete_server(server)
 
                 job.state = ImageBuildJobState.DONE
                 job.finished_date = datetime.datetime.utcnow()
                 db.session.commit()
 
-            except Exception as e:
-                logging.error(f"image build failed: {str(e)}")
+            except Exception:
+                logging.exception("image build failed: ")
                 job.state = ImageBuildJobState.FAILED
                 job.finished_date = datetime.datetime.utcnow()
                 db.session.commit()

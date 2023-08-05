@@ -9,44 +9,92 @@
 
   <div class="w3-container w3-pale-blue">
     <form method="POST">
-    <p>
-      <label>New image name:</label>
-      <input class="w3-input w3-round w3-white" name="new_image_name" value="{{ buildjson['name'] + '-' + time_now.strftime('%Y%m%d') }}">
-</input>
-    </p>
 
-    <p>
-      <label>Machine provider (where the image will be built):</label>
-      <select class="w3-input w3-round w3-white" name="machine_provider">
-        {% for machine_provider in machine_providers %}
-          <option value="{{ machine_provider.id }}">{{ machine_provider.name }}</option>
-        {% endfor %}
-      </select>
-    </p>
+      {{ info(gettext("This page allows you to submit a new image build job to create a new image.")) }}
+      {{ idea(gettext("Look at these options carefully!")) }}
 
-    <h3>Image build parameters</h3>
-    {% for param in buildjson["params"]  %}
+      <div class="w3-container w3-round w3-border">
+      <h3>Ada options</h3>
+
       <p>
-        <label>{{ param["name"] }}:</label>
-        {% if param["type"] == "bool" %}
-          <select class="w3-input w3-round w3-white" name="param_{{ param['name'] }}" required>
-            <option value="True">True</option>
-            <option value="False">False</option>
-          </select>
-       {% elif param["type"] == "textline" %}
-          <input class="w3-input w3-round w3-white" name="param_{{ param['name'] }}" required></input>
-        {% elif param["type"] == "option" %}
-          <select class="w3-input w3-round w3-white" name="param_{{ param['name'] }}" required>
-            {% for option in param["options"] %}
-              <option value="{{ option }}">{{ option }}</option>
+        <label>Machine provider (where the image will be built):</label>
+        <select class="w3-input w3-round w3-white" name="machine_provider">
+          {% for machine_provider in machine_providers %}
+            <option value="{{ machine_provider.id }}">{{ machine_provider.name }}</option>
+          {% endfor %}
+        </select>
+      </p>
+
+      <div class="w3-half">
+        <p>
+        <input class="w3-check" name="create_image", type="checkbox" checked="checked">
+        <label>Create image</label>
+        </p>
+        </div>
+      <div class="w3-half">
+      <p>
+        <input class="w3-check" name="delete_build_machine" type="checkbox" checked="checked">
+        <label>Delete build machine</label>
+      </p>
+      </div>
+      </div>
+
+      <br/>
+
+      <div class="w3-container w3-round w3-border">
+      <h3>Provider parameters</h3>
+
+      {# TODO switch to different provider form for different providers. This one is for openstack #}
+
+      {% for opt in form_opts %}
+        {# build provider parameters form from form_opts passed into the template #}
+        <p>
+          {% if opt.get("info") %}
+            {{ info(gettext(opt.get("info"))) }}
+          {% endif %}
+          <label>{{ opt["label"] }}:</label>
+          <select class="w3-input w3-round w3-white" name="{{ opt.get('name') }}" required>
+            {% for sel in opt["options"] %}
+              <option value={{ loop.index -1 }}>{{ sel }}</option>
             {% endfor %}
           </select>
-        {% endif %}
+        </p>
+      {% endfor %}
+      </div>
+
+      <br/>
+
+      <div class="w3-container w3-round w3-border">
+      <h3>Image build parameters</h3>
+
+      {% for param in buildjson["params"]  %}
+        {# build image build parameters form with data from build.json #}
+        <p>
+          {% if param["type"] == "bool" %}
+            <input class="w3-check" type="checkbox" checked="checked" name="param_bool_{{ param['name'] }}">
+            <label>{{ param["display_name"] }}</label>
+          {% elif param["type"] == "textline" %}
+            <label>{{ param["display_name"] }}:</label>
+            <input class="w3-input w3-round w3-white" name="param_textline_{{ param['name'] }}" required></input>
+          {% elif param["type"] == "option" %}
+            <label>{{ param["display_name"] }}:</label>
+            <select class="w3-input w3-round w3-white" name="param_textline_{{ param['name'] }}" required>
+              {% for option in param["options"] %}
+                <option value="{{ option }}">{{ option }}</option>
+              {% endfor %}
+            </select>
+          {% endif %}
+        </p>
+      {% endfor %}
+      </div>
+
+      <br/>
+
+      <p>
+        <input class="w3-button w3-round w3-blue" name="submit_data_transfer" type="submit" value="Submit">
       </p>
-    {% endfor %}
-    <p>
-      <input class="w3-button w3-round w3-blue" name="submit_data_transfer" type="submit" value="Submit">
-    </p>
+
+
     </form>
   </div>
   <br/>

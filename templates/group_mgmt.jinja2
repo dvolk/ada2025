@@ -115,7 +115,7 @@
               </td>
               <td style="vertical-align: middle;">{{ humanize.naturaldelta(time_now - m[1].creation_date) }} ago</td>
               <td style="vertical-align: middle; text-align: right">
-              <a class="w3-button w3-round w3-blue email-owner" style="margin-left: 5px;" 
+              <a class="w3-button w3-round w3-blue email-owner" style="margin-left: 5px;"
                  title="Email machine owner to inform them that their machine may be shut down or deleted."
                  data-machine-id='{{ m[1].id }}'
                  data-machine-display-name='{{ m[1].display_name|tojson|safe }}'>

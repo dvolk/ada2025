@@ -3,14 +3,67 @@
   "script": "setup.bash",
   "reboots_required": 2,
   "params":
-  [{ "name": "BUILD_OPENSTACK_FLAVOR",
-     "type": "option",
-     "options": ["l3.tiny"]},
-   { "name": "BUILD_GROUP_FLAVOR",
-     "type": "option",
-     "options": ["sciml", "rfi"]},
-   { "name": "BUILD_INSTALL_NIX",
-     "type": "bool" },
-   { "name": "BUILD_INSTALL_SPYDER",
-     "type": "bool" }]
+  [
+    {
+      "name": "BUILD_GROUP_FLAVOR",
+      "display_name": "Build group flavor",
+      "type": "option",
+      "options": ["sciml", "rfi"]
+    },
+    {
+      "name": "BUILD_INSTALL_RSTUDIO",
+      "display_name": "Install RStudio",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_JUPYTER",
+      "display_name": "Install Jupyter lab and notebook",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_CUDA_ETC",
+      "display_name": "Install CUDA 11.8, cuDNN and TensorRT",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_TENSORFLOW_TENSORBOARD",
+      "display_name": "Install Tensorflow and Tensorboard",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_DOCKER",
+      "display_name": "Install Docker",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_APPTAINER",
+      "display_name": "Install Apptainer",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_EMACS_GOTTY",
+      "display_name": "Install Emacs web-support",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_CODE_SERVER",
+      "display_name": "Install Code server",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_MINICONDA3",
+      "display_name": "Install Miniconda3",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_SPYDER",
+      "display_name": "Install Spyder Python IDE",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_NIX",
+      "display_name": "Install Nix package manager",
+      "type": "bool"
+    }
+  ]
 }

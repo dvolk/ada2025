@@ -1,0 +1,15 @@
+[Unit]
+Description=Jupyter Lab
+
+[Service]
+Type=simple
+PIDFile=/run/jupyter-lab.pid
+ExecStart=/home/ubuntu/jupyter-env/bin/jupyter lab --config=/home/ubuntu/.jupyter-lab/jupyter_lab_config.py
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

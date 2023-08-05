@@ -4,17 +4,19 @@
 <br/>
 
 <div class="w3-container w3-blue">
-    <h2>Images</h2>
+    <h2>Managed Images</h2>
 </div>
 
 <div class="w3-container w3-pale-blue">
+    {{ info(gettext("This lists images in Ada. Click the trash icon to delete an image.")) }}
     <p>
         <table class="w3-table-all">
             <thead>
-                <th>Image name</th>
+                <th>Name</th>
+                <th>Display name</th>
                 <th>Created</th>
                 <th>Machine templates</th>
-                <th>Image template name</th>
+                <th>Build Job</th>
                 <th style="float: right;">Actions</th>
             </thead>
             {% for image in images %}
@@ -23,18 +25,24 @@
                     {{ image.name }}
                 </td>
                 <td style="vertical-align: middle;">
+                    {{ image.display_name }}
+                </td>
+                <td style="vertical-align: middle;">
                     {{ humanize.naturaldelta(now - image.creation_date) }} ago
                 </td>
                 <td style="vertical-align: middle;">
                     {{ image.machine_templates|map(attribute="name")|join("<br/>") }}
                 </td>
                 <td style="vertical-align: middle;">
-                    To-do
+                    {{ image.image_build_job.name }}
                 </td>
                 <td style="float: right;">
-                    <button class="w3-button w3-red w3-round">
+                    <a href="#"
+                       title="Delete image"
+                       class="w3-button w3-red w3-round image-delete"
+                       data-image-id="{{ image.id }}">
                         {{ icon('trash') }}
-                    </button>
+                    </a>
                 </td>
             </tr>
             {% endfor %}
@@ -45,19 +53,21 @@
 <br/>
 
 <div class="w3-container w3-blue">
-    <h2>Build Jobs</h2>
+    <h2>Image Build Jobs</h2>
 </div>
 
 <div class="w3-container w3-pale-blue">
+    {{ info(gettext("This lists image build jobs. Click the checkmark to hide a job")) }}
     <p>
         <table class="w3-table-all">
             <thead>
                 <th>Name</th>
                 <th>State</th>
                 <th>Created</th>
-                <th>Template</th>
+                <th>Image Template</th>
                 <th>Provider</th>
                 <th>Image</th>
+                <th style="float: right;">Actions</th>
             </thead>
             {% for job in image_build_jobs %}
             <tr>
@@ -65,7 +75,7 @@
                     {{ job.name }}
                 </td>
                 <td style="vertical-align: middle;">
-                    {{ job.state }}
+                    {{ (job.state|string)[19:] }}
                 </td>
                 <td style="vertical-align: middle;">
                     {{ humanize.naturaldelta(now - job.creation_date) }} ago
@@ -76,8 +86,16 @@
                 <td style="vertical-align: middle;">
                     {{ job.machine_provider.name }}
                 </td>
-                <td style="float: right;">
+                <td style="vertical-align: middle;">
                     {{ job.image.name }}
+                </td>
+                <td style="float: right;">
+                    <a href="#"
+                       title="Hide job"
+                       class="w3-button w3-teal w3-round hide-job"
+                       data-job-id="{{ job.id }}">
+                        {{ icon('check') }}
+                    </a>
                 </td>
             </tr>
             {% endfor %}
@@ -87,11 +105,12 @@
 
 <br/>
 
-<div class="w3-container w3-dark-gray">
+<div class="w3-container w3-blue">
     <h2>Image templates</h2>
 </div>
 
-<div class="w3-container w3-light-gray">
+<div class="w3-container w3-pale-blue">
+    {{ info(gettext("This lists image templates that can be used to build images. Click the arrow to continue to the next page")) }}
     <p>
         <table class="w3-table-all">
             <thead>
@@ -115,4 +134,37 @@
 </div>
 
 <br/>
+{% endblock %}
+
+{% block javascript %}
+<script type="text/javascript">
+ document.querySelectorAll('.image-delete').forEach(item => {
+     item.addEventListener('click', event => {
+         var result = window.confirm('Are you sure you want to delete this image? Press OK to confirm this action.');
+         if (result) {
+             event.preventDefault();
+             fetch("/delete_image", {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ image_id_to_delete: item.dataset.imageId })
+             })
+                 .then(response => location.reload())
+                 .catch(error => console.error('Error:', error));
+         }
+     });
+ });
+ document.querySelectorAll('.hide-job').forEach(item => {
+     item.addEventListener('click', event => {
+         event.preventDefault();
+         fetch("/dismiss_imagebuildjob", {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ job_id: item.dataset.jobId })
+         })
+             .then(response => location.reload())
+             .catch(error => console.error('Error:', error));
+     }
+     )}
+ );
+</script>
 {% endblock %}
