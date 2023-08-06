@@ -1,5 +1,5 @@
 {
-  "name": "ubuntu22_mini",
+  "name": "ubuntu22",
   "script": "setup.bash",
   "reboots_required": 2,
   "params":
