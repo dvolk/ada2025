@@ -181,7 +181,7 @@ apt install -y firefox webext-ublock-origin-firefox
 if [ "$BUILD_INSTALL_RSTUDIO" = "True" ]; then
     apt install -y r-base
     # TODO host this file locally
-    wget https://download2.rstudio.org/server/jammy/amd64/rstudio-server-2023.06.0-421-amd64.deb
+    wget -q https://download2.rstudio.org/server/jammy/amd64/rstudio-server-2023.06.0-421-amd64.deb
     set +e
     dpkg -i rstudio-server-2023.06.0-421-amd64.deb
     apt install -y -f
@@ -220,11 +220,11 @@ fi
 
 # OPTIONAL: Install CUDA, tensorflow and tensorboard
 if [ "$BUILD_INSTALL_CUDA_ETC" = "True" ]; then
-    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin
+    wget -q https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin
     mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600 # what does this do?
 
     # cuda 11.8 (and nvidia driver 520)
-    wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda-repo-ubuntu2204-11-8-local_11.8.0-520.61.05-1_amd64.deb
+    wget -q https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda-repo-ubuntu2204-11-8-local_11.8.0-520.61.05-1_amd64.deb
     dpkg -i cuda-repo-ubuntu2204-11-8-local_11.8.0-520.61.05-1_amd64.deb
     sudo cp /var/cuda-repo-ubuntu2204-11-8-local/cuda-D95DBBE2-keyring.gpg /usr/share/keyrings/
     apt update
@@ -232,7 +232,7 @@ if [ "$BUILD_INSTALL_CUDA_ETC" = "True" ]; then
     rm cuda-repo-ubuntu2204-11-8-local_11.8.0-520.61.05-1_amd64.deb
 
     # cudnn 8.6.0
-    wget https://developer.download.nvidia.com/compute/redist/cudnn/v8.6.0/local_installers/11.8/cudnn-local-repo-ubuntu2204-8.6.0.163_1.0-1_amd64.deb
+    wget -q https://developer.download.nvidia.com/compute/redist/cudnn/v8.6.0/local_installers/11.8/cudnn-local-repo-ubuntu2204-8.6.0.163_1.0-1_amd64.deb
     dpkg -i cudnn-local-repo-ubuntu2204-8.6.0.163_1.0-1_amd64.deb
     sudo cp /var/cudnn-local-repo-ubuntu2204-8.6.0.163/cudnn-local-FAED14DD-keyring.gpg /usr/share/keyrings/
     apt update
@@ -240,7 +240,7 @@ if [ "$BUILD_INSTALL_CUDA_ETC" = "True" ]; then
     rm cudnn-local-repo-ubuntu2204-8.6.0.163_1.0-1_amd64.deb
 
     # tensorrt 8.6.1 for cuda 11.8
-    wget https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/secure/8.6.1/local_repos/nv-tensorrt-local-repo-ubuntu2204-8.6.1-cuda-11.8_1.0-1_amd64.deb
+    wget -q https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/secure/8.6.1/local_repos/nv-tensorrt-local-repo-ubuntu2204-8.6.1-cuda-11.8_1.0-1_amd64.deb
     dpkg -i nv-tensorrt-local-repo-ubuntu2204-8.6.1-cuda-11.8_1.0-1_amd64.deb
     sudo cp /var/nv-tensorrt-local-repo-ubuntu2204-8.6.1-cuda-11.8/nv-tensorrt-local-0628887B-keyring.gpg /usr/share/keyrings/
     apt update
@@ -269,8 +269,8 @@ fi
 
 # OPTIONAL: Install apptainer
 if [ "$BUILD_INSTALL_APPTAINER" = "True" ]; then
-    wget https://github.com/apptainer/apptainer/releases/download/v1.1.9/apptainer_1.1.9_amd64.deb
-    wget https://github.com/apptainer/apptainer/releases/download/v1.1.9/apptainer-suid_1.1.9_amd64.deb
+    wget -q https://github.com/apptainer/apptainer/releases/download/v1.1.9/apptainer_1.1.9_amd64.deb
+    wget -q https://github.com/apptainer/apptainer/releases/download/v1.1.9/apptainer-suid_1.1.9_amd64.deb
 
     set +e
     dpkg -i apptainer_1.1.9_amd64.deb
@@ -292,7 +292,7 @@ cp .tmux.conf /home/ubuntu/.tmux.conf
 EOF
     chown ubuntu:ubuntu /home/ubuntu/.emacs.d/init.el
 
-    wget https://github.com/yudai/gotty/releases/download/v1.0.1/gotty_linux_amd64.tar.gz
+    wget -q https://github.com/yudai/gotty/releases/download/v1.0.1/gotty_linux_amd64.tar.gz
     tar xf gotty_linux_amd64.tar.gz
     mv gotty /usr/bin
     rm gotty_linux_amd64.tar.gz
@@ -316,7 +316,7 @@ fi
 # OPTIONAL: Install miniconda3
 if [ "$BUILD_INSTALL_MINICONDA3" = "True" ]; then
     su ubuntu <<EOF
-wget https://repo.anaconda.com/miniconda/Miniconda3-py310_23.3.1-0-Linux-x86_64.sh
+wget -q https://repo.anaconda.com/miniconda/Miniconda3-py310_23.3.1-0-Linux-x86_64.sh
 bash ./Miniconda3-py310_23.3.1-0-Linux-x86_64.sh -b
 /home/ubuntu/miniconda3/bin/conda init
 # /home/ubuntu/miniconda3/bin/conda config --set auto_activate_base false?
@@ -328,7 +328,7 @@ fi
 if [ "$BUILD_INSTALL_SPYDER" = "True" ]; then
     su ubuntu << EOF
 /home/ubuntu/jupyter-env/bin/pip3 install spyder==5.4.3
-wget https://raw.githubusercontent.com/spyder-ide/spyder/master/img_src/spyder.png
+wget -q https://raw.githubusercontent.com/spyder-ide/spyder/master/img_src/spyder.png
 cp spyder.png /home/ubuntu/Downloads/spyder.png
 cp spyder.desktop /home/ubuntu/Desktop/spyder.desktop
 chmod a+x /home/ubuntu/Desktop/spyder.desktop
@@ -337,7 +337,7 @@ fi
 
 # OPTIONAL: Install the nix package manager
 if [ "$BUILD_INSTALL_NIX" = "True" ]; then
-    wget https://nixos.org/nix/install
+    wget -q https://nixos.org/nix/install
     chmod a+x install
     yes | ./install --daemon
 fi
@@ -359,7 +359,7 @@ xfconf-query -c xsettings -p /Net/ThemeName -s 'Adwaita'
 xfconf-query -c xfwm4 -p /general/theme -s 'Adwaita'
 xfconf-query -c xsettings -p /Net/IconThemeName -s 'Tango'
 xfconf-query -c xfce4-panel -p /panels/dark-mode -s false
-wget https://www.scd.stfc.ac.uk/Gallery/pixabay_artificial-intelligence-3382521_1920.jpg -O /home/ubuntu/.sciml_bg.jpg
+wget -q https://www.scd.stfc.ac.uk/Gallery/pixabay_artificial-intelligence-3382521_1920.jpg -O /home/ubuntu/.sciml_bg.jpg
 xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitorVNC-0/workspace0/last-image -s /home/ubuntu/.sciml_bg.jpg
 EOF
 fi
