@@ -3702,6 +3702,8 @@ def new_image():
             "reboots": int(buildjson["reboots_required"]),
             "buildjson": buildjson,
             "build_script_env": build_script_env,
+            "ada_version": version,
+            "ada_hostname": hostname,
         }
         print(json.dumps(job_extra_data, indent=4))
 
