@@ -36,7 +36,7 @@
                 <td style="vertical-align: middle;">
                     {{ image.image_build_job.name }}
                 </td>
-                <td style="float: right;">
+                <td style="vertical-align: middle; float: right;">
                     <a href="#"
                        title="Delete image"
                        class="w3-button w3-red w3-round image-delete"
@@ -89,7 +89,7 @@
                 <td style="vertical-align: middle;">
                     {{ job.image.name }}
                 </td>
-                <td style="float: right;">
+                <td style="vertical-align: middle; float: right;">
                     <a href="#"
                        title="Hide job"
                        class="w3-button w3-teal w3-round hide-job"
@@ -120,12 +120,10 @@
             {% for image_template in image_templates %}
             <tr>
                 <td style="vertical-align: middle;">{{ image_template }}</td>
-                <td style="float: right;">
-                    <button class="w3-button w3-blue w3-round">
-                        <a href="{{ url_for('new_image', image_template=image_template) }}">
-                            {{ icon('right-long') }}
-                        </a>
-                    </button>
+                <td style="vertical-align: middle; float: right;">
+                    <a class="w3-button w3-blue w3-round" href="{{ url_for('new_image', image_template=image_template) }}">
+                        {{ icon('right-long') }}
+                    </a>
                 </td>
             </tr>
             {% endfor %}
