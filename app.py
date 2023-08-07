@@ -2083,8 +2083,13 @@ def not_activated():
 @login_required
 @limiter.limit("60 per minute")
 def email_not_confirmed():
-    if current_user.is_email_confirmed: return redirect(url_for("welcome"))
-    return render_template("email_not_confirmed.jinja2", title=gettext("Not activated"), current_user_id=current_user.id)
+    if current_user.is_email_confirmed:
+        return redirect(url_for("welcome"))
+    return render_template(
+        "email_not_confirmed.jinja2",
+        title=gettext("Not activated"),
+        current_user_id=current_user.id,
+    )
 
 
 class PickGroupForm(FlaskForm):
@@ -2693,7 +2698,7 @@ You're receiving this email because you've registered on {site_root}.
 """
 
     threading.Thread(target=send_email, args=(msg,)).start()
-    
+
     finish_audit(audit, state="ok")
     if user_requested == "True":
         flash("Confirmation email sent")
