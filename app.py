@@ -2430,11 +2430,15 @@ def settings():
             current_user.family_name = settings_form.family_name.data
             current_user.organization = settings_form.organization.data
             current_user.job_title = settings_form.job_title.data
-            current_user.email = settings_form.email.data
             current_user.language = settings_form.language.data
             current_user.timezone = settings_form.timezone.data
             if settings_form.password.data:
                 current_user.set_password(settings_form.password.data)
+            email_changed = False
+            if current_user.email != settings_form.email.data:
+                email_changed = True
+                current_user.is_email_confirmed = False
+                current_user.email = settings_form.email.data
 
             db.session.commit()
             form1_ok = True
@@ -2460,6 +2464,19 @@ def settings():
 
             flash(f"Sorry, the form could not be validated:<br/> {error_msg}", "danger")
 
+        if email_changed:
+            flash(
+                gettext(
+                    f'Please confirm your email using the link that has been sent to your new address. If you did not recieve this email, you can request another one <a style="text-decoration: underline;" href="/send_confirmation_email/{current_user.id}/True">here</a>.'
+                )
+            )
+            return redirect(
+                url_for(
+                    "send_confirmation_email",
+                    user_id=current_user.id,
+                    user_requested=False,
+                )
+            )
         return redirect(url_for("settings"))
 
     elif request.method == "GET":
@@ -2562,7 +2579,7 @@ def login():
             if user and not user.is_email_confirmed:
                 finish_audit(audit, "unconfirmed email")
                 flash(
-                    f'This account has not had its associated email address confirmed. Please click <a style="text-decoration: underline;" href="/send_confirmation_email/{user.id}">here</a> to recieve a confirmation link via email.',
+                    f'This account has not had its associated email address confirmed. Please click <a style="text-decoration: underline;" href="/send_confirmation_email/{user.id}/True">here</a> to recieve a confirmation link via email.',
                     "danger",
                 )
                 return redirect(url_for("login"))
@@ -2640,9 +2657,9 @@ def login():
     )
 
 
-@app.route("/send_confirmation_email/<user_id>")
+@app.route("/send_confirmation_email/<user_id>/<user_requested>")
 @limiter.limit("60 per hour")
-def send_confirmation_email(user_id):
+def send_confirmation_email(user_id, user_requested="False"):
     def send_email(msg):
         with app.app_context():
             mail.send(msg)
@@ -2678,8 +2695,10 @@ You're receiving this email because you've registered on {site_root}.
 """
 
     threading.Thread(target=send_email, args=(msg,)).start()
-    flash("Confirmation email sent")
+    if user_requested == "True":
+        flash("Confirmation email sent")
     return redirect(url_for("login"))
+
 
 class ForgotPasswordForm(FlaskForm):
     username = StringField(
@@ -2701,14 +2720,18 @@ def confirm_email(confirmation_token):
         logging.warning(f"token exception: {e}")
         flash(
             gettext(
-                f'That link is invalid or expired. Please attempt to login below in order to request a new confirmation link.'
+                f"That link is invalid or expired. Please attempt to login below in order to request a new confirmation link."
             ),
             "danger",
         )
         return redirect(url_for("login"))
 
     if ip != request.remote_addr:
-        flash(gettext(f'Please confirm the email address from the same IP that you requested the confirmation link from. You can request a new link <a style="text-decoration: underline;" href="/send_confirmation_email/{user_id}">here</a>.'))
+        flash(
+            gettext(
+                f'Please confirm the email address from the same IP that you requested the confirmation link from. You can request a new link <a style="text-decoration: underline;" href="/send_confirmation_email/{user_id}/True">here</a>.'
+            )
+        )
         return redirect(url_for("login"))
 
     user = User.query.filter_by(id=user_id).first_or_404()
@@ -2720,9 +2743,6 @@ def confirm_email(confirmation_token):
     db.session.commit()
     flash(gettext("Your email has been confirmed. You may now login below."))
     return redirect(url_for("login"))
-
-
-
 
 
 @app.route("/forgot_password", methods=["GET", "POST"])
@@ -6014,7 +6034,7 @@ def main(debug=False):
 
     create_initial_db()
     clean_up_db()
-    # init_users_keys()
+    init_users_keys()
 
     VirtService.set_app(app)
 
