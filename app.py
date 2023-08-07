@@ -2353,6 +2353,10 @@ class UserInfoForm(FlaskForm):
     email = StringField(
         lazy_gettext("Email"), validators=[DataRequired(), Email(), Length(max=200)]
     )
+    email_confirm = StringField(
+        lazy_gettext("Confirm Email"),
+        validators=[EqualTo("email", message=lazy_gettext("Emails must match."))],
+    )
     language = SelectField(
         lazy_gettext("Language"),
         validators=[DataRequired()],
@@ -2392,6 +2396,8 @@ class EditAuthorizedKeysForm(FlaskForm):
 def settings():
     settings_form = UserInfoForm()
     auth_keys_form = EditAuthorizedKeysForm()
+
+    email_changed = False
 
     if request.method == "POST":
         form1_ok = False
@@ -2434,11 +2440,13 @@ def settings():
             current_user.timezone = settings_form.timezone.data
             if settings_form.password.data:
                 current_user.set_password(settings_form.password.data)
-            email_changed = False
             if current_user.email != settings_form.email.data:
-                email_changed = True
-                current_user.is_email_confirmed = False
-                current_user.email = settings_form.email.data
+                if settings_form.email.data != settings_form.email_confirm.data:
+                    error_msg = gettext("The emails that you entered don't match.")
+                else:
+                    email_changed = True
+                    current_user.is_email_confirmed = False
+                    current_user.email = settings_form.email.data
 
             db.session.commit()
             form1_ok = True
@@ -2485,6 +2493,7 @@ def settings():
         settings_form.organization.data = current_user.organization
         settings_form.job_title.data = current_user.job_title
         settings_form.email.data = current_user.email
+        settings_form.email_confirm.data = current_user.email
         settings_form.language.data = current_user.language
         settings_form.timezone.data = current_user.timezone
 
