@@ -2664,10 +2664,13 @@ def send_confirmation_email(user_id, user_requested="False"):
         with app.app_context():
             mail.send(msg)
 
+    audit = create_audit("send confirmation email")
+
     if not MAIL_SENDER:
         abort(404)
 
     user = User.query.filter_by(id=user_id).first_or_404()
+    logging.info(f"Sending confirmation email to {user.email}")
 
     s = URLSafeTimedSerializer(ADA2025_EMAIL_CONFIRMATION_SECRET_KEY)
     data_to_encode = [user_id, request.remote_addr]
@@ -2697,6 +2700,7 @@ You're receiving this email because you've registered on {site_root}.
     threading.Thread(target=send_email, args=(msg,)).start()
     if user_requested == "True":
         flash("Confirmation email sent")
+    finish_audit(audit, state="ok")
     return redirect(url_for("login"))
 
 
