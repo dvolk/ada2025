@@ -1,0 +1,27 @@
+{% extends 'base-bare.jinja2' %}
+
+{% block head %}
+<meta http-equiv="refresh" content="60">
+{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            {% if category == "danger" %}
+                <p class="w3-red w3-padding-large w3-round">{{ message }}</p>
+            {% else %}
+                <p class="w3-green w3-padding-large w3-round">{{ message }}</p>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<h2>Verifying your email.</h2>
+
+<p>You need to verify the email address associated with this account. This can be done by visiting the confirmation link present in the email sent to you.</p>
+
+<p>If you require another confirmation link, you can request one <a style="text-decoration: underline;" href="/send_confirmation_email/{{current_user_id}}/True">here</a>.</p>
+
+{% endblock %}

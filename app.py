@@ -1842,6 +1842,8 @@ def profile_complete_required(f):
             return redirect(url_for("pick_group"))
         if not current_user.is_enabled:
             return redirect(url_for("not_activated"))
+        if not current_user.is_email_confirmed:
+            return redirect(url_for("email_not_confirmed"))
         return f(*args, **kwargs)
 
     return decorated_function
@@ -2075,6 +2077,14 @@ def not_activated():
         return render_template("not_activated.jinja2", title=gettext("Not activated"))
     else:
         return redirect("/welcome")
+
+
+@app.route("/email_not_confirmed")
+@login_required
+@limiter.limit("60 per minute")
+def email_not_confirmed():
+    if current_user.is_email_confirmed: return redirect(url_for("welcome"))
+    return render_template("email_not_confirmed.jinja2", title=gettext("Not activated"), current_user_id=current_user.id)
 
 
 class PickGroupForm(FlaskForm):
@@ -2397,8 +2407,6 @@ def settings():
     settings_form = UserInfoForm()
     auth_keys_form = EditAuthorizedKeysForm()
 
-    email_changed = False
-
     if request.method == "POST":
         form1_ok = False
         form2_ok = False
@@ -2444,9 +2452,9 @@ def settings():
                 if settings_form.email.data != settings_form.email_confirm.data:
                     error_msg = gettext("The emails that you entered don't match.")
                 else:
-                    email_changed = True
                     current_user.is_email_confirmed = False
                     current_user.email = settings_form.email.data
+                    send_confirmation_email(current_user.id, "False")
 
             db.session.commit()
             form1_ok = True
@@ -2472,19 +2480,6 @@ def settings():
 
             flash(f"Sorry, the form could not be validated:<br/> {error_msg}", "danger")
 
-        if email_changed:
-            flash(
-                gettext(
-                    f'Please confirm your email using the link that has been sent to your new address. If you did not recieve this email, you can request another one <a style="text-decoration: underline;" href="/send_confirmation_email/{current_user.id}/True">here</a>.'
-                )
-            )
-            return redirect(
-                url_for(
-                    "send_confirmation_email",
-                    user_id=current_user.id,
-                    user_requested=False,
-                )
-            )
         return redirect(url_for("settings"))
 
     elif request.method == "GET":
@@ -2583,15 +2578,6 @@ def login():
                 )
                 .first()
             )
-
-            # users who haven't confirmed their email
-            if user and not user.is_email_confirmed:
-                finish_audit(audit, "unconfirmed email")
-                flash(
-                    f'This account has not had its associated email address confirmed. Please click <a style="text-decoration: underline;" href="/send_confirmation_email/{user.id}/True">here</a> to recieve a confirmation link via email.',
-                    "danger",
-                )
-                return redirect(url_for("login"))
 
             # oauth2 returning users
             if user and user.provider_id:
@@ -2707,10 +2693,11 @@ You're receiving this email because you've registered on {site_root}.
 """
 
     threading.Thread(target=send_email, args=(msg,)).start()
+    
+    finish_audit(audit, state="ok")
     if user_requested == "True":
         flash("Confirmation email sent")
-    finish_audit(audit, state="ok")
-    return redirect(url_for("login"))
+        return redirect(url_for("welcome"))
 
 
 class ForgotPasswordForm(FlaskForm):
@@ -2754,8 +2741,8 @@ def confirm_email(confirmation_token):
 
     user.is_email_confirmed = True
     db.session.commit()
-    flash(gettext("Your email has been confirmed. You may now login below."))
-    return redirect(url_for("login"))
+    flash(gettext("Your email has been confirmed."))
+    return redirect(url_for("welcome"))
 
 
 @app.route("/forgot_password", methods=["GET", "POST"])
