@@ -77,6 +77,8 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 import jinja2
 from flask_mail import Mail, Message
 from itsdangerous.url_safe import URLSafeTimedSerializer
+from io import StringIO
+from sshpubkeys import AuthorizedKeysFile
 
 # flask recaptcha uses jinja2.Markup, which doesn't exist any more,
 # so we monkey-patch to use markupsafe.Markup
@@ -2495,11 +2497,16 @@ def settings():
         elif (
             auth_keys_form.validate_on_submit() and auth_keys_form.submit_auth_keys.data
         ):
-            current_user.ssh_keys.authorized_keys = auth_keys_form.content.data
-
-            db.session.commit()
             form2_ok = True
-            flash(gettext("Your SSH public keys have been saved."))
+            ssh_keys = auth_keys_form.content.data
+            try:
+                mock_file = StringIO(ssh_keys)
+                AuthorizedKeysFile(mock_file, strict=False)
+                current_user.ssh_keys.authorized_keys = ssh_keys
+                db.session.commit()
+                flash(gettext("Your SSH public keys have been saved."))
+            except Exception as e:
+                flash(gettext("Could not validate your SSH keys. Please check that the format is correct. In particular, ensure that you are not adding private keys."), "danger")
 
         if not (form1_ok or form2_ok):
             problematic_form = settings_form
