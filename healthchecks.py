@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
                 _, stdout, _ = client.exec_command("systemctl is-active vncserver")
                 output = stdout.read().decode()
-                print("vncserver: "+ output)
+                print("vncserver: " + output)
 
                 _, stdout, _ = client.exec_command("systemctl is-active nginx")
                 output = stdout.read().decode()
