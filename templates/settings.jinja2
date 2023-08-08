@@ -33,9 +33,16 @@
         {{ settings_form.job_title(class="w3-input w3-round w3-border") }}
       </p>
       <p>
-        {{ settings_form.email.label() }}
-        {{ settings_form.email(class="w3-input w3-round w3-border") }}
+        <div class="w3-half" style="padding-right: 5px;">
+          {{ settings_form.email.label() }}
+          {{ settings_form.email(class="w3-input w3-round w3-border") }}
+        </div>
+        <div class="w3-half" style="padding-right: 5px;">
+          {{ settings_form.email_confirm.label() }}
+          {{ settings_form.email_confirm(class="w3-input w3-round w3-border") }}
+        </div>
       </p>
+      <br/><br/><br/> {# what? why? #}
       <p>
         <div class="w3-half" style="padding-right: 5px;">
           {{ settings_form.language.label() }}

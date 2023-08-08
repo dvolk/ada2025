@@ -184,6 +184,14 @@ ADA2025_SHARE_TOKEN_SECRET_KEY = os.getenv(
     "ADA2025_SHARE_TOKEN_SECRET_KEY"
 ) or gen_token(32)
 
+ADA2025_EMAIL_CONFIRMATION_SECRET_KEY = os.getenv(
+    "ADA2025_EMAIL_CONFIRMATION_SECRET_KEY"
+) or gen_token(32)
+
+ADA2025_USE_EMAIL_CONFIRMATION = str_to_bool(
+    os.environ.get("ADA2025_USE_EMAIL_CONFIRMATION", "False")
+)
+
 ADA2025_DNS_SECRET_KEY = os.getenv("ADA2025_DNS_SECRET_KEY") or gen_token(32)
 
 admin = Admin(
@@ -609,6 +617,7 @@ class User(db.Model, UserMixin):
     is_banned = db.Column(db.Boolean, nullable=False, default=False)
     is_group_admin = db.Column(db.Boolean, nullable=False, default=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    is_email_confirmed = db.Column(db.Boolean, nullable=False, default=False)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(200))
     given_name = db.Column(db.String(100))
@@ -798,10 +807,12 @@ class ProtectedUserModelView(ProtectedModelView):
         "email",
         "group",
         "is_admin",
+        "is_email_confirmed",
         "creation_date",
     )
     form_columns = (
         "is_enabled",
+        "is_email_confirmed",
         "is_banned",
         "is_group_admin",
         "group",
@@ -825,7 +836,14 @@ class ProtectedUserModelView(ProtectedModelView):
     )
     column_searchable_list = ("username", "email")
     column_sortable_list = ("id", "username", "email", "creation_date")
-    column_filters = ("is_enabled", "is_banned", "is_group_admin", "is_admin", "group")
+    column_filters = (
+        "is_enabled",
+        "is_banned",
+        "is_group_admin",
+        "is_admin",
+        "is_email_confirmed",
+        "group",
+    )
     column_auto_select_related = True
     form_extra_fields = {"password": PasswordField("Password")}
 
@@ -1890,6 +1908,8 @@ class SwitchGroupForm(FlaskForm):
 def profile_complete_required(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
+        if not current_user.is_email_confirmed and ADA2025_USE_EMAIL_CONFIRMATION:
+            return redirect(url_for("email_not_confirmed"))
         if not current_user.group:
             return redirect(url_for("pick_group"))
         if not current_user.is_enabled:
@@ -2127,6 +2147,19 @@ def not_activated():
         return render_template("not_activated.jinja2", title=gettext("Not activated"))
     else:
         return redirect("/welcome")
+
+
+@app.route("/email_not_confirmed")
+@login_required
+@limiter.limit("60 per minute")
+def email_not_confirmed():
+    if current_user.is_email_confirmed or not ADA2025_USE_EMAIL_CONFIRMATION:
+        return redirect(url_for("welcome"))
+    return render_template(
+        "email_not_confirmed.jinja2",
+        title=gettext("Not activated"),
+        current_user_id=current_user.id,
+    )
 
 
 class PickGroupForm(FlaskForm):
@@ -2405,6 +2438,10 @@ class UserInfoForm(FlaskForm):
     email = StringField(
         lazy_gettext("Email"), validators=[DataRequired(), Email(), Length(max=200)]
     )
+    email_confirm = StringField(
+        lazy_gettext("Confirm Email"),
+        validators=[EqualTo("email", message=lazy_gettext("Emails must match."))],
+    )
     language = SelectField(
         lazy_gettext("Language"),
         validators=[DataRequired()],
@@ -2482,11 +2519,17 @@ def settings():
             current_user.family_name = settings_form.family_name.data
             current_user.organization = settings_form.organization.data
             current_user.job_title = settings_form.job_title.data
-            current_user.email = settings_form.email.data
             current_user.language = settings_form.language.data
             current_user.timezone = settings_form.timezone.data
             if settings_form.password.data:
                 current_user.set_password(settings_form.password.data)
+            if current_user.email != settings_form.email.data:
+                if settings_form.email.data != settings_form.email_confirm.data:
+                    error_msg = gettext("The emails that you entered don't match.")
+                else:
+                    current_user.is_email_confirmed = False
+                    current_user.email = settings_form.email.data
+                    send_confirmation_email(current_user.id, "False")
 
             db.session.commit()
             form1_ok = True
@@ -2520,6 +2563,7 @@ def settings():
         settings_form.organization.data = current_user.organization
         settings_form.job_title.data = current_user.job_title
         settings_form.email.data = current_user.email
+        settings_form.email_confirm.data = current_user.email
         settings_form.language.data = current_user.language
         settings_form.timezone.data = current_user.timezone
 
@@ -2609,6 +2653,7 @@ def login():
                 )
                 .first()
             )
+
             # oauth2 returning users
             if user and user.provider_id:
                 if user.provider == "google":
@@ -2682,6 +2727,54 @@ def login():
     )
 
 
+@app.route("/send_confirmation_email/<user_id>/<user_requested>")
+@limiter.limit("60 per hour")
+def send_confirmation_email(user_id, user_requested="False"):
+    def send_email(msg):
+        with app.app_context():
+            mail.send(msg)
+
+    audit = create_audit("send confirmation email")
+
+    if not MAIL_SENDER:
+        abort(404)
+
+    user = User.query.filter_by(id=user_id).first_or_404()
+    logging.info(f"Sending confirmation email to {user.email}")
+
+    s = URLSafeTimedSerializer(ADA2025_EMAIL_CONFIRMATION_SECRET_KEY)
+    data_to_encode = [user_id, request.remote_addr]
+    confirmation_token = s.dumps(data_to_encode)
+    site_root = request.url_root
+    confirmation_link = request.url_root + "confirm_email/" + confirmation_token
+    email_to = user.email
+
+    msg = Message(
+        "Ada Data Analysis email confirmation",
+        sender=MAIL_SENDER,
+        recipients=[email_to],
+    )
+    msg.body = f"""Hi,
+
+The email address for your account on Ada Data Analysis needs to be confirmed.
+
+You can do this by clicking the following link:
+
+{confirmation_link}
+
+If you did not request this email, then you can safely ignore it.
+
+You're receiving this email because you've registered on {site_root}.
+"""
+
+    threading.Thread(target=send_email, args=(msg,)).start()
+
+    finish_audit(audit, state="ok")
+    if user_requested == "True":
+        flash("Confirmation email sent")
+        return redirect(url_for("welcome"))
+
+
 class ForgotPasswordForm(FlaskForm):
     username = StringField(
         lazy_gettext(
@@ -2690,6 +2783,41 @@ class ForgotPasswordForm(FlaskForm):
         validators=[DataRequired(), Length(min=2, max=200)],
     )
     submit = SubmitField("Forgot Password")
+
+
+@app.route("/confirm_email/<confirmation_token>")
+@limiter.limit("60 per hour")
+def confirm_email(confirmation_token):
+    try:
+        s = URLSafeTimedSerializer(ADA2025_EMAIL_CONFIRMATION_SECRET_KEY)
+        user_id, ip = s.loads(confirmation_token, max_age=1800)
+    except Exception as e:
+        logging.warning(f"token exception: {e}")
+        flash(
+            gettext(
+                f"That link is invalid or expired. Please attempt to login below in order to request a new confirmation link."
+            ),
+            "danger",
+        )
+        return redirect(url_for("login"))
+
+    if ip != request.remote_addr:
+        flash(
+            gettext(
+                f'Please confirm the email address from the same IP that you requested the confirmation link from. You can request a new link <a style="text-decoration: underline;" href="/send_confirmation_email/{user_id}/True">here</a>.'
+            )
+        )
+        return redirect(url_for("login"))
+
+    user = User.query.filter_by(id=user_id).first_or_404()
+
+    if not user:
+        abort(404)
+
+    user.is_email_confirmed = True
+    db.session.commit()
+    flash(gettext("Your email has been confirmed."))
+    return redirect(url_for("welcome"))
 
 
 @app.route("/forgot_password", methods=["GET", "POST"])
@@ -2806,6 +2934,9 @@ def email_login(login_token):
         logging.info(f"User {user_id} doesn't exist")
         finish_audit(audit, "not user")
         return redirect(url_for("login"))
+
+    user.is_email_confirmed = True
+    db.session.commit()
 
     login_user(user)
     logging.info(f"Logged user {current_user.id} in using email login")
@@ -5984,6 +6115,7 @@ def create_initial_db():
                 group=localtester_group,
                 language="en",
                 is_admin=True,
+                is_email_confirmed=True,
                 email="denis.volk@stfc.ac.uk",
                 data_sources=[demo_source1, demo_source2],
             )
@@ -5998,6 +6130,7 @@ def create_initial_db():
                 group=stfctester_group,
                 language="en",
                 is_admin=False,
+                is_email_confirmed=True,
                 email="noname@example.com",
                 data_sources=[demo_source2, demo_source3],
             )
@@ -6012,6 +6145,7 @@ def create_initial_db():
                 group=imperialtester_group,
                 language="en",
                 is_admin=False,
+                is_email_confirmed=True,
                 email="imperium@example.com",
                 data_sources=[demo_source2, demo_source3],
             )
@@ -6026,6 +6160,7 @@ def create_initial_db():
                 group=localtester_group,
                 language="en",
                 is_admin=False,
+                is_email_confirmed=True,
                 email="local@example.com",
                 data_sources=[demo_source2, demo_source3],
             )
@@ -6038,6 +6173,7 @@ def create_initial_db():
                 family_name="NoFamilyName",
                 language="en",
                 email="local1@example.com",
+                is_email_confirmed=True,
             )
             notactivated1_user_password = gen_token(8)
             notactivated1_user.set_password(notactivated1_user_password)
@@ -6048,6 +6184,7 @@ def create_initial_db():
                 family_name="NoFamilyName",
                 language="en",
                 email="local2@example.com",
+                is_email_confirmed=True,
             )
             notactivated2_user_password = gen_token(8)
             notactivated2_user.set_password(notactivated2_user_password)
@@ -6420,7 +6557,7 @@ def main(debug=False):
 
     create_initial_db()
     clean_up_db()
-    # init_users_keys()
+    init_users_keys()
 
     VirtService.set_app(app)
 
