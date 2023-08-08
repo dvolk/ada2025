@@ -1842,12 +1842,12 @@ class SwitchGroupForm(FlaskForm):
 def profile_complete_required(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
+        if not current_user.is_email_confirmed and ADA2025_USE_EMAIL_CONFIRMATION:
+            return redirect(url_for("email_not_confirmed"))
         if not current_user.group:
             return redirect(url_for("pick_group"))
         if not current_user.is_enabled:
             return redirect(url_for("not_activated"))
-        if not current_user.is_email_confirmed and ADA2025_USE_EMAIL_CONFIRMATION:
-            return redirect(url_for("email_not_confirmed"))
         return f(*args, **kwargs)
 
     return decorated_function
