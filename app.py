@@ -2506,7 +2506,12 @@ def settings():
                 db.session.commit()
                 flash(gettext("Your SSH public keys have been saved."))
             except Exception as e:
-                flash(gettext("Could not validate your SSH keys. Please check that the format is correct. In particular, ensure that you are not adding private keys."), "danger")
+                flash(
+                    gettext(
+                        "Could not validate your SSH keys. Please check that the format is correct. In particular, ensure that you are not adding private keys."
+                    ),
+                    "danger",
+                )
 
         if not (form1_ok or form2_ok):
             problematic_form = settings_form
