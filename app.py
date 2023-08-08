@@ -1916,6 +1916,11 @@ def profile_complete_required(f):
             return redirect(url_for("pick_group"))
         if not current_user.is_enabled:
             return redirect(url_for("not_activated"))
+        if not current_user.ssh_keys:
+            logging.info(f"user {current_user.id} is missing ssh keys, creating...")
+            current_user.ssh_keys = gen_ssh_keys(current_user.id)
+            db.session.commit()
+            logging.info(f"ssh key added for {current_user.id} ok")
         return f(*args, **kwargs)
 
     return decorated_function
@@ -3581,12 +3586,6 @@ def machines():
     """
     The machine page displays and controls the user's machines
     """
-    if not current_user.ssh_keys:
-        logging.info(f"user {current_user.id} is missing ssh keys, creating...")
-        current_user.ssh_keys = gen_ssh_keys(current_user.id)
-        db.session.commit()
-        logging.info(f"ssh key added for {current_user.id} ok")
-
     # Query for user's owned machines
     owned_machines_query = db.session.query(Machine).filter(
         and_(
