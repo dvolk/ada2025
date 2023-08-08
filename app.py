@@ -187,6 +187,10 @@ ADA2025_EMAIL_CONFIRMATION_SECRET_KEY = os.getenv(
     "ADA2025_EMAIL_CONFIRMATION_SECRET_KEY"
 ) or gen_token(32)
 
+ADA2025_USE_EMAIL_CONFIRMATION = str_to_bool(
+    os.environ.get("ADA2025_USE_EMAIL_CONFIRMATION", "False")
+)
+
 ADA2025_DNS_SECRET_KEY = os.getenv("ADA2025_DNS_SECRET_KEY") or gen_token(32)
 
 admin = Admin(
@@ -1842,7 +1846,7 @@ def profile_complete_required(f):
             return redirect(url_for("pick_group"))
         if not current_user.is_enabled:
             return redirect(url_for("not_activated"))
-        if not current_user.is_email_confirmed:
+        if not current_user.is_email_confirmed and ADA2025_USE_EMAIL_CONFIRMATION:
             return redirect(url_for("email_not_confirmed"))
         return f(*args, **kwargs)
 
@@ -2083,7 +2087,7 @@ def not_activated():
 @login_required
 @limiter.limit("60 per minute")
 def email_not_confirmed():
-    if current_user.is_email_confirmed:
+    if current_user.is_email_confirmed or not ADA2025_USE_EMAIL_CONFIRMATION:
         return redirect(url_for("welcome"))
     return render_template(
         "email_not_confirmed.jinja2",
