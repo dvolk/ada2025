@@ -1,9 +1,6 @@
 import paramiko
 import time
 import logging
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import aliased
-from sqlalchemy import Index, JSON, desc, and_, or_, union, asc
 from app import app, db, Machine, MachineState
 
 logging.getLogger("paramiko").setLevel(logging.WARNING)
