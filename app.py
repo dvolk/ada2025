@@ -2267,6 +2267,7 @@ def google_authorize():
 
         user = User.query.filter_by(email=user_info.get("email")).first()
 
+        new_user_flag = False
         # Update or create the user
         if user:
             update_audit(audit, "existing user", user=user)
@@ -2278,6 +2279,7 @@ def google_authorize():
         else:
             # Create a new user
             update_audit(audit, "new user 1")
+            new_user_flag = True
             user = User(
                 username=gen_unique_username(user_info.get("email", "")),
                 given_name=user_info.get("given_name", ""),
@@ -2292,6 +2294,8 @@ def google_authorize():
             update_audit(audit, "new user 2", user=user)
 
         db.session.commit()
+        if new_user_flag and ADA2025_USE_EMAIL_CONFIRMATION:
+            send_confirmation_email(user.id)
 
         # log the user in
         user.sesh_id = gen_token(2)
@@ -2334,6 +2338,7 @@ def iris_iam_authorize():
         user = User.query.filter_by(email=user_info.get("email")).first()
 
         # Update or create the user
+        new_user_flag = False
         if user:
             update_audit(audit, "existing user", user=user)
             # Update user info if needed
@@ -2344,6 +2349,7 @@ def iris_iam_authorize():
         else:
             # Create a new user
             update_audit(audit, "new user 1")
+            new_user_flag = True
             user = User(
                 username=gen_unique_username(user_info.get("email", "")),
                 given_name=user_info.get("given_name", ""),
@@ -2358,6 +2364,8 @@ def iris_iam_authorize():
             update_audit(audit, "new user 2", user=user)
 
         db.session.commit()
+        if new_user_flag and ADA2025_USE_EMAIL_CONFIRMATION:
+            send_confirmation_email(user.id)
 
         # log the user in
         user.sesh_id = gen_token(2)
@@ -3111,6 +3119,8 @@ def register():
             db.session.commit()
 
             login_user(new_user)
+            if ADA2025_USE_EMAIL_CONFIRMATION:
+                send_confirmation_email(new_user.id)
 
             finish_audit(audit, "ok", user=new_user)
 
