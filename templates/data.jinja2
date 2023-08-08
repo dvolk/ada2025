@@ -18,7 +18,7 @@
             <th>{{ gettext("From (Data Source)") }}</th>
             <th>{{ gettext("To (Machine)") }}</th>
             <th>{{ gettext("Status") }}</th>
-            <th>{{ gettext("Actions") }}</th>
+            <th style="text-align: right;">{{ gettext("Actions") }}</th>
           </thead>
           {% for j in sorted_jobs %}
             <tr>
@@ -31,7 +31,7 @@
               {% endif %}
               <td style="vertical-align: middle;">{{ j.state.name }}</td>
 
-              <td style="vertical-align: middle;">
+              <td  style="vertical-align: middle; text-align: right">
                 <a href="#" class="w3-button w3-green w3-small w3-round"
                    onclick="event.preventDefault();
                    var xhr = new XMLHttpRequest();
