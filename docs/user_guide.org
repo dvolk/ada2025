@@ -50,6 +50,14 @@ How you sign in will depend on what type of account you have:
 
 If you've forgotten your password, please select the "Forgot Password?" button on the login page in order to request an email which will allow you to login and change your password.
 
+** Confirming your email
+
+Once you sign up for an account, you will be asked to verify your email address. You will be sent an email with a link that allows you to do this.
+
+If you do not recieve your email verification message upon signing up, then you can request another one by attempting to log in and then following the on screen instructions.
+
+Note that changing your email address will necessitate verification of the new address before you can continue to use your account.
+
 * Machines
 
 On Ada, you can launch new virtual desktops to perform your work. We call these desktops machines. They are based on Linux and come with software pre-installed. You're also given administrator access so you can install more software.
