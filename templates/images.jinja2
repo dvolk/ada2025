@@ -36,7 +36,7 @@
                 <td style="vertical-align: middle;">
                     {{ image.image_build_job.name }}
                 </td>
-                <td style="vertical-align: middle; float: right;">
+                <td style="vertical-align: middle; text-align: right;">
                     <a href="#"
                        title="Delete image"
                        class="w3-button w3-red w3-round image-delete"
@@ -67,7 +67,7 @@
                 <th>Image Template</th>
                 <th>Provider</th>
                 <th>Image</th>
-                <th style="float: right;">Actions</th>
+                <th style="text-align: right;">Actions</th>
             </thead>
             {% for job in image_build_jobs %}
             <tr>
@@ -89,7 +89,7 @@
                 <td style="vertical-align: middle;">
                     {{ job.image.name }}
                 </td>
-                <td style="vertical-align: middle; float: right;">
+                <td style="vertical-align: middle; text-align: right;">
                     <a href="#"
                        title="Hide job"
                        class="w3-button w3-teal w3-round hide-job"
@@ -115,12 +115,12 @@
         <table class="w3-table-all">
             <thead>
                 <th>Template name</th>
-                <th style="float: right;">Actions</th>
+                <th style="text-align: right;">Actions</th>
             </thead>
             {% for image_template in image_templates %}
             <tr>
                 <td style="vertical-align: middle;">{{ image_template }}</td>
-                <td style="vertical-align: middle; float: right;">
+                <td style="vertical-align: middle; text-align: right;">
                     <a class="w3-button w3-blue w3-round" href="{{ url_for('new_image', image_template=image_template) }}">
                         {{ icon('right-long') }}
                     </a>
