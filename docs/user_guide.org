@@ -97,6 +97,10 @@ Clicking this button will send you to a page on which you can choose to revoke a
 
 You can rename machines that you own. To do that click the pen button on the machine card that you want to rename, and enter a new name for it.
 
+** Starting/stopping a machine
+
+You can start/stop a machine by pressing the power button on the machine card. Note that not all kinds of machine support this functionality.
+
 ** Deleting a machine
 
 To delete a machine, click the red rubbish bin icon on the machine card.
