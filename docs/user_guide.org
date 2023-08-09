@@ -129,9 +129,13 @@ sudo -s
 
 Ada offers users the ability to copy data from various data sources into their machines. To do this please visit the Data tab.
 
-** Copy data into machine
+** Copy data into machine from data source
 
 On the data page, select the data source you wish to copy, and the machine you want to copy it to and then submit the form.
+
+** Transfer data between machines
+
+On the data page, select the source and destination machines. Submit the form in order to start the trasnfer. Note that data will be copied from /home/ubuntu/ on the host machine to /home/ubuntu on the destination machine.
 
 ** Monitor progress of data transfers
 
