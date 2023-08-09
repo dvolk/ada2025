@@ -26,7 +26,7 @@ If you suspect that a machine is not being used, you can email the owner with a 
 
 Simply select the envelope icon next to the relevant machine in order to send the following email to the machine owner:
 
-#+BEGIN_SRC bash
+#+BEGIN_SRC
 Hi,
 
 Your machine named [MACHINE NAME] on Ada Data Analysis may be deleted or shut down by a group admin in order to free up resources.
@@ -43,8 +43,5 @@ On some machines you may have the option to turn the machine off. To do that cli
 ** Turn on machine
 
 If you have turned a machine off, you can turn it back on by clicking on the orange power button.
-
-
-**
 
 #+HTML: <hr/>
