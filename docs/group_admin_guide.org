@@ -48,4 +48,12 @@ On some machines you may have the option to turn the machine off. To do that cli
 
 If you have turned a machine off, you can turn it back on by clicking on the power button.
 
+* Welcome page management
+
+You can set a custom welcome page for your group. It should be formatted in HTML. You should paste your custom HTML in the "Welcome Page" section and then press the "Update Welcome Page" button.
+
+* Changing group name
+
+You can change your group name in the "Group Name" section. Simply type in the new name and then press the "Update Group Name" button.
+
 #+HTML: <hr/>
