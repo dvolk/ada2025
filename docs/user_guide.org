@@ -163,7 +163,7 @@ You can also set or change your password.
 
 From the settings page, you can enter public SSH keys that will be placed in the authorized_keys file on your new machines.
 
-** Downloading your private keys
+** Downloading your private key
 
 On the settings page, you can easily download your private SSH key by pressing the red "Download Your Private SSH Key" button. Note that you should not share this key with anyone.
 
