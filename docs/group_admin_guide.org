@@ -36,6 +36,10 @@ Please contact them if you do not want this to happen.
 You're receiving this email because you've registered on [WEBSITE URL].
 #+END_SRC
 
+** Deleting a machine
+
+To delete a machine, click the red rubbish bin icon on the machine row.
+
 ** Turn off machine
 
 On some machines you may have the option to turn the machine off. To do that click the orange power button. The machine won't be available while it is turned off.
