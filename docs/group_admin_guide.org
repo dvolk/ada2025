@@ -1,0 +1,59 @@
+#+INCLUDE: head.org
+
+#+TITLE: Ada Data Analysis Group Management Guide
+
+* User management
+
+** Activating/deactivating users
+
+Once a user signs up and selects your group, they will be unable to use  Ada until you enable their account. Likewise, you can disable users if necessary.
+
+These operations can be performed from the "Users" section of the group management page. Users listed in red are disabled, and those in green are enabled. You can enable/disable users using the button in their corresponding row.
+
+** Setting user data sources
+
+You can set the data sources for a given user in your group. Simply select the cog icon next to the respective user and tick the data sources that you want them to have access to.
+
+** Removing users from a group
+
+You can remove a user from your group. To do so, press the remove user button in their respective row in the users table. 
+
+* Group machine management
+
+** Emailing machine owners
+
+If you suspect that a machine is not being used, you can email the owner with a warning message informing them that their machine may be stopped/deleted.
+
+Simply select the envelope icon next to the relevant machine in order to send the following email to the machine owner:
+
+#+BEGIN_SRC
+Hi,
+
+Your machine named [MACHINE NAME] on Ada Data Analysis may be deleted or shut down by a group admin in order to free up resources.
+
+Please contact them if you do not want this to happen.
+
+You're receiving this email because you've registered on [WEBSITE URL].
+#+END_SRC
+
+** Deleting a machine
+
+To delete a machine, click the rubbish bin icon on the machine row.
+
+** Turn off machine
+
+On some machines you may have the option to turn the machine off. To do that click the power button. The machine won't be available while it is turned off.
+
+** Turn on machine
+
+If you have turned a machine off, you can turn it back on by clicking on the power button.
+
+* Welcome page management
+
+You can set a custom welcome page for your group. It should be formatted in HTML. You should paste your custom HTML in the "Welcome Page" section and then press the "Update Welcome Page" button.
+
+* Changing group name
+
+You can change your group name in the "Group Name" section. Simply type in the new name and then press the "Update Group Name" button.
+
+#+HTML: <hr/>

@@ -1,0 +1,29 @@
+#+INCLUDE: head.org
+
+#+TITLE: Ada Data Analysis System Admin Guide
+
+* Accessing the flask-admin interface
+
+The flask-admin interface allows admins to view and modify database information in a web UI. It can be accessed by pressing "Click here to access the flask-admin interface" from the admin tab.
+
+* Changing groups
+
+As a system admin, you can become a member/group admin of any group without the need for activation. Simply select the desired group from the drop down menu on the sidebar, and then press the blue refresh button.
+
+* Problem Reports
+
+You can view a summary list of problem reports on your welcome page. These can be viewed in more detail in the "Problem Reports" page of the flask-admin interface.
+
+* Testing email functionality
+
+From the admin tab, you can press the button titled "Send a test email to the email address associated with your account" in order to send yourself a test email to ensure that your email configuration is correct.
+
+* View app configuration
+
+You can view app configuration variables from the admin tab.
+
+* View group information
+
+You can view basic information on all groups from the admin tab.
+
+#+HTML: <hr/>

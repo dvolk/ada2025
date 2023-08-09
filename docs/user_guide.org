@@ -48,9 +48,15 @@ How you sign in will depend on what type of account you have:
 
 ** Forgotten password
 
-If you've forgotten your password please email
-{{{denis}}}
-and you will be given a temporary password.
+If you've forgotten your password, please select the "Forgot Password?" button on the login page in order to request an email which will allow you to login and change your password.
+
+** Confirming your email
+
+Once you sign up for an account, you will be asked to verify your email address. You will be sent an email with a link that allows you to do this.
+
+If you do not recieve your email verification message upon signing up, then you can request another one by attempting to log in and then following the on screen instructions.
+
+Note that changing your email address will necessitate verification of the new address before you can continue to use your account.
 
 * Machines
 
@@ -74,6 +80,18 @@ You will be presented with a new page that opens on the machine itself. This pag
 - The File browser, which you can use to upload, download and manage files on the machine
 
 You may also have different services installed, such as VS Code and Jupyter Notebook.
+
+** Sharing a machine
+
+To share a machine with other Ada users, go to the machines tab and select the share button next to the machine that you wish to share.
+
+Clicking this button will send you to a page with a share link which can be sent to other Ada users so that they can access the machine.
+
+** Revoking shares
+
+To revoke a share for a machine, you must be the machine owner. Go to the machines tab and select the share button next to the machine that you wish to revoke a share for.
+
+Clicking this button will send you to a page on which you can choose to revoke all shares, or select a specific user to revoke a share for.
 
 ** Renaming a machine
 
@@ -111,9 +129,13 @@ sudo -s
 
 Ada offers users the ability to copy data from various data sources into their machines. To do this please visit the Data tab.
 
-** Copy data into machine
+** Copy data into machine from data source
 
 On the data page, select the data source you wish to copy, and the machine you want to copy it to and then submit the form.
+
+** Transfer data between machines
+
+On the data page, select the source and destination machines. Submit the form in order to start the transfer. Note that data will be copied from /home/ubuntu/ on the host machine to /home/ubuntu on the destination machine.
 
 ** Monitor progress of data transfers
 
@@ -136,6 +158,14 @@ Note that if you're using an external account provider, your name and email will
 ** Change password
 
 You can also set or change your password.
+
+** Updating your authorized public keys
+
+From the settings page, you can enter public SSH keys that will be placed in the authorized_keys file on your new machines.
+
+** Downloading your private key
+
+On the settings page, you can easily download your private SSH key by pressing the red "Download Your Private SSH Key" button. Note that you should not share this key with anyone.
 
 * Common tasks
 
