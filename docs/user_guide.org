@@ -48,9 +48,7 @@ How you sign in will depend on what type of account you have:
 
 ** Forgotten password
 
-If you've forgotten your password please email
-{{{denis}}}
-and you will be given a temporary password.
+If you've forgotten your password, please select the "Forgot Password?" button on the login page in order to request an email which will allow you to login and change your password.
 
 * Machines
 
