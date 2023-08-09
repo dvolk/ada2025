@@ -2,7 +2,7 @@
 
 #+TITLE: Ada Data Analysis Group Management Guide
 
-* Group user management
+* User management
 
 ** Activating/deactivating users
 
