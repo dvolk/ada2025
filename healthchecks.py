@@ -1,7 +1,6 @@
 import paramiko
-import time
 import logging
-from app import app, db, Machine, MachineState
+from app import app, Machine, MachineState
 
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 
