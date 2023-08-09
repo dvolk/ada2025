@@ -73,6 +73,18 @@ You will be presented with a new page that opens on the machine itself. This pag
 
 You may also have different services installed, such as VS Code and Jupyter Notebook.
 
+** Sharing a machine
+
+To share a machine with other Ada users, go to the machines tab and select the share button next to the machine that you wish to share.
+
+Clicking this button will send you to a page with a share link which can be sent to other Ada users so that they can access the machine.
+
+** Revoking shares
+
+To revoke a share for a machine, you must be the machine owner. Go to the machines tab and select the share button next to the machine that you wish to revoke a share for.
+
+Clicking this button will send you to a page on which you can choose to revoke all shares, or select a specific user to revoke a share for.
+
 ** Renaming a machine
 
 You can rename machines that you own. To do that click the pen button on the machine card that you want to rename, and enter a new name for it.
