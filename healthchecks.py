@@ -1,8 +1,19 @@
 import paramiko
 import logging
+import socket
 from app import app, Machine, MachineState
 
 logging.getLogger("paramiko").setLevel(logging.WARNING)
+
+def check_port(host, port):
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(5)
+        sock.connect((host,port))
+        sock.close
+        return True
+    except:
+        return False
 
 if __name__ == "__main__":
     with app.app_context():
@@ -33,6 +44,10 @@ if __name__ == "__main__":
                 _, stdout, _ = client.exec_command("systemctl is-active websockify")
                 output = stdout.read().decode()
                 print("websockify: " + output)
+
+                print("can connect over http: " + str(check_port(machine.ip, 80)))
+
+                print("can connect over https: " + str(check_port(machine.ip, 443)))
 
                 print("\n")
 
