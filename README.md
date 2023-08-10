@@ -29,6 +29,7 @@ Ada2025 allows you to create, run, and share machines from various templates, al
 - Colorful admin interface with action auditing for increased transparency
 - Easy deployment options with bare metal or Docker
 - Email notifications for group admins and users
+  One click image building with customization
 
 # Tech Stack
 
