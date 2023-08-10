@@ -26,7 +26,8 @@ if __name__ == "__main__":
             print("\n")
 
             for machine in machines:
-                print(f"{machine.name} (ip={machine.ip}) [id={machine.id}] {str(machine.machine_template)}")
+                print(f"{machine.name} (ip={machine.ip}) [id={machine.id}]")
+                print(f"{str(machine.machine_template)}")
                 print("-------")
 
                 client.connect(
