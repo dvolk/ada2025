@@ -43,19 +43,29 @@
         <div style="margin-bottom: 5px;">
             <a  href="/google_login"
                 class="w3-button w3-round w3-white w3-border"
-                style="font-family: Roboto !important; text-align: left; width: 150px;">
+                style="font-family: Roboto !important; text-align: left; width: 150px; height: 40px;">
                 <img src="{{ url_for('static', filename='google.png') }}">&nbsp;&nbsp;
                 {{ gettext("Google") }}
             </a>
         </div>
         {% endif %}
         {% if show_iris_iam_button %}
-        <div>
+        <div style="margin-bottom: 5px;">
             <a href="/iris_iam_login"
                class="w3-button w3-round w3-white w3-border"
-               style="font-family: Roboto !important; text-align: left; width: 150px;">
+               style="font-family: Roboto !important; text-align: left; width: 150px; height: 40px;">
                 <i class="fa fa-fw fa-eye"></i>&nbsp;&nbsp;
                 {{ gettext("IRIS IAM") }}
+            </a>
+        </div>
+        {% endif %}
+        {% if show_orcid_button %}
+        <div style="margin-bottom: 5px;">
+            <a href="/orcid_login"
+               class="w3-button w3-round w3-white w3-border"
+               style="font-family: Roboto !important; text-align: left; width: 150px; height: 40px;">
+                <i class="fa fa-fw fa-tree"></i>&nbsp;&nbsp;
+                {{ gettext("ORCID") }}
             </a>
         </div>
         {% endif %}
