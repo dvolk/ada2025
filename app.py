@@ -2831,6 +2831,21 @@ def settings():
     )
 
 
+@app.route("/get_github_keys/<username>")
+@limiter.limit("60 per hour")
+@login_required
+@profile_complete_required
+def get_github_keys(username):
+    url = f"https://github.com/{username}.keys"
+    text_data = None
+    try:
+        response = requests.get(url)
+        response.raise_for_status() 
+        text_data = response.text
+    except requests.exceptions.RequestException as e:
+        logging.info(f"Could not get GitHub public SSH keys for {username}")
+    return text_data
+
 @app.route("/download_priv_key")
 @limiter.limit("60 per hour")
 @login_required

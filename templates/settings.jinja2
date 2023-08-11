@@ -84,8 +84,9 @@
       {{ auth_keys_form.hidden_tag() }}
       <p>
         {{ idea(gettext("You can add additional SSH public keys and they will be deployed on new machines. The text box below provides support for SSH keys generated using the following algorithms: ssh-rsa, ssh-dss (DSA), ecdsa keys (with NIST curves) and ssh-ed25519.")) }}
-        <p>{{ auth_keys_form.content(class="w3-input w3-border w3-round") }}</p>
+        <p>{{ auth_keys_form.content(class="w3-input w3-border w3-round", id="auth_keys_form") }}</p>
         {{ auth_keys_form.submit_auth_keys(class="w3-button w3-round w3-blue") }}
+        <a id="add_github_keys_button"  href="/download_priv_key" class="w3-button w3-round w3-blue" style="margin-left: 5px;">Append Public Keys From Your GitHub Account</a>
         <a id="download_priv_key_button"  href="/download_priv_key" class="w3-button w3-round w3-red" style="margin-left: 5px;">Download Your Private SSH Key</a>
       </p>
     </form>
@@ -99,6 +100,28 @@
   document.getElementById('download_priv_key_button').addEventListener('click', function(event) {
     if (!confirm('Are you sure you want to download your private key? Misplacing it could potentially allow bad actors to access your machines.')) {
       event.preventDefault();
+    }
+  });
+
+  document.getElementById('add_github_keys_button').addEventListener('click', function(event) {
+    event.preventDefault();
+    var gh_username = prompt("Please your GitHub username:");
+    if (gh_username !== null) {
+      var response_text = ""
+      fetch("get_github_keys/" + gh_username)
+        .then(async response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          response_text = await response.text();
+          auth_keys_form = document.getElementById("auth_keys_form")
+          auth_keys_form.value = auth_keys_form.value + response_text
+        })
+        .catch(error => {
+          alert("Could not get keys. Did you type your username correctly?")
+        });
+    } else {
+      alert("No username provided.");
     }
   });
   </script>
