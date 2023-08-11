@@ -114,7 +114,6 @@
             throw new Error('Network response was not ok');
           }
           response_text = await response.text();
-          console.log(response_text)
           auth_keys_form = document.getElementById("auth_keys_form")
           auth_keys_form.value = auth_keys_form.value + response_text
         })
