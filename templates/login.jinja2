@@ -43,10 +43,10 @@
         </p>
         <p>
           {{ form.password.label() }}
+          {{ form.password(class="w3-input w3-round w3-border w3-light-grey") }}
           {% if MAIL_SENDER %}
             <a href="/forgot_password" style="float: right; text-decoration: underline; color: blue;"> (Forgot Password?)</a>
           {% endif %}
-          {{ form.password(class="w3-input w3-round w3-border w3-light-grey") }}
         </p>
 
 
