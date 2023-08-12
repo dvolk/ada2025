@@ -6335,7 +6335,7 @@ def create_initial_db():
     # add initial data for testing
     # this will also print the passwords so you can log in
     with app.app_context():
-        if not User.query.filter_by(username="admin").first():
+        if not User.query.filter_by(id=1).first():
             logging.warning("Creating default data.")
             demo_source1 = DataSource(
                 import_name="manual",
