@@ -50,19 +50,13 @@
         </p>
 
         {% if LOGIN_RECAPTCHA %}
+          <br/>
           {{ recaptcha }}
-        {% endif %}
-
-        {% if not LOGIN_RECAPTCHA %}
-          <p>
         {% endif %}
 
         <button class="w3-btn w3-round ada-blue" type="submit">{{ gettext("Log In") }}</button>
         <a class="w3-btn w3-round ada-blue" href="/register">{{ gettext("Register") }}</a>
 
-        {% if not LOGIN_RECAPTCHA %}
-          </p>
-        {% endif %}
       </div>
 
 
