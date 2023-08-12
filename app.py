@@ -2148,7 +2148,9 @@ def orcid_login():
     return iris_iam.authorize_redirect(redirect_uri, nonce=nonce)
 
 
-def gen_unique_username(given_name, family_name, email, max_attempts=1000):
+def gen_unique_username(
+    given_name, family_name, email, max_attempts=1000, current_user_id=None
+):
     # try really hard to generate a unique username from name and email
     username = ""
     attempt = 0
@@ -2164,6 +2166,14 @@ def gen_unique_username(given_name, family_name, email, max_attempts=1000):
     email_prefix = "".join([ch for ch in email_prefix if ch.isalnum() or ch == "."])
     email_prefix = email_prefix[:24]
 
+    all_other_usernames = (
+        db.session.query(User)
+        .filter(User.id != current_user_id)
+        .with_entities(User.username)
+        .all()
+    )
+    all_other_usernames = [x[0] for x in all_other_usernames]
+
     while True:
         if not email_prefix:
             username = gen_token(16)
@@ -2172,7 +2182,7 @@ def gen_unique_username(given_name, family_name, email, max_attempts=1000):
         else:
             username = email_prefix + "." + gen_token(4)
 
-        if not User.query.filter_by(username=username).first():
+        if not username in all_other_usernames:
             return username
 
         if attempt > max_attempts // 2:
@@ -2287,6 +2297,7 @@ def complete_profile():
                 current_user.given_name,
                 current_user.family_name,
                 current_user.email,
+                current_user_id=current_user.id,
             )
             db.session.commit()
 
@@ -2839,11 +2850,12 @@ def get_github_keys(username):
     text_data = None
     try:
         response = requests.get(url)
-        response.raise_for_status() 
+        response.raise_for_status()
         text_data = response.text
     except requests.exceptions.RequestException as e:
         logging.info(f"Could not get GitHub public SSH keys for {username}")
     return text_data
+
 
 @app.route("/download_priv_key")
 @limiter.limit("60 per hour")
