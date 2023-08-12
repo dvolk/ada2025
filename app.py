@@ -2125,9 +2125,9 @@ def google_login():
 @app.route("/iris_iam_login")
 @limiter.limit("60 per hour")
 def iris_iam_login():
-    # send the users to google to log in. once they're logged
-    # in, they're sent back to google_authorize, where we
-    # make an account for them from the data that google
+    # send the users to iris iam  to log in. once they're logged
+    # in, they're sent back to iris_iam_authorize, where we
+    # make an account for them from the data that iris
     # provided
     audit = create_audit("iris login")
     iris_iam = oauth.create_client("iris_iam")
@@ -2149,7 +2149,7 @@ def orcid_login():
 
 
 def gen_unique_username(given_name, family_name, email, max_attempts=1000):
-    # try really hard to generate a unique username from an email
+    # try really hard to generate a unique username from name and email
     username = ""
     attempt = 0
     try:
@@ -2184,6 +2184,9 @@ def gen_unique_username(given_name, family_name, email, max_attempts=1000):
 
 
 def generate_complete_profile_form(user):
+    # dynamically generate the flask-wtform, based on what fields the user
+    # is missing. the user will typically be missing information if they
+    # used an external provider. for example orcid only gives the orcid id
     class CompleteProfileForm(FlaskForm):
         pass
 
@@ -2248,20 +2251,22 @@ def generate_complete_profile_form(user):
 def complete_profile():
     form, fields = generate_complete_profile_form(current_user)
 
-    # don't allow users to revisit this site after they've set all their data
+    # don't allow users to revisit this page after they've set all their data
     if not fields:
-        abort(404)
+        return redirect(url_for("settings"))
 
     if request.method == "POST":
         if form.validate_on_submit():
             form_data = dict()
             error_msg = ""
 
+            # do some basic checking on each field in dynamic form
             for field in fields:
                 form_data[field] = getattr(form, field).data
                 if not is_name_safe(form_data[field]):
                     error_msg = f"that {field} can't be used"
 
+            # we don't want (can't have) duplicate emails
             if "email" in fields:
                 if u := User.query.filter_by(email=form_data["email"]).first():
                     if u != current_user:
@@ -2272,20 +2277,16 @@ def complete_profile():
             if error_msg:
                 logging.warning(f"user settings change failed: {error_msg}")
                 flash(error_msg, "danger")
-                return redirect(url_for("settings"))
+                return render_template("complete_profile.jinja2", form=form)
 
             for field in fields:
                 setattr(current_user, field, form_data[field])
 
             # reset the username with new data
-            setattr(
-                current_user,
-                "username",
-                gen_unique_username(
-                    current_user.given_name,
-                    current_user.family_name,
-                    current_user.email,
-                ),
+            current_user.username = gen_unique_username(
+                current_user.given_name,
+                current_user.family_name,
+                current_user.email,
             )
             db.session.commit()
 
@@ -2559,15 +2560,14 @@ def orcid_authorize():
     audit = create_audit("orcid auth")
     try:
         token = orcid.authorize_access_token()
-        user_info = orcid.parse_id_token(token, nonce=session["nonce"])
-        print(type(user_info))
-        print(user_info)
-        print(dict(user_info))
 
+        user_info = orcid.parse_id_token(token, nonce=session["nonce"])
+
+        # orcid only gives us the orcid id, given name and family name, so
+        # we disambiguate users based on that instead of username/password
         user = User.query.filter_by(orcid=user_info.get("sub")).first()
 
         # Update or create the user
-        new_user_flag = False
         if user:
             update_audit(audit, "existing user", user=user)
             # Update user info if needed
@@ -2578,7 +2578,6 @@ def orcid_authorize():
         else:
             # Create a new user
             update_audit(audit, "new user 1")
-            new_user_flag = True
             given_name, family_name, email = (
                 user_info.get("given_name", ""),
                 user_info.get("family_name", ""),
