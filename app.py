@@ -4074,9 +4074,6 @@ def new_image():
         args = request.args
         form = request.form
 
-        print(request.args)
-        print(request.form)
-
         build_script_env = dict()
 
         # process form to extract dynamic form values
@@ -4095,15 +4092,10 @@ def new_image():
                     f"param_textline_{opt['name']}", ""
                 )
 
-        print(build_script_env)
-
         provider_opts = dict()
         for form_opt in openstack_form_opts:
-            print(form_opt)
             name = form_opt["name"]
             provider_opts[name] = form_opt["options"][int(request.form.get(name))]
-
-        print(provider_opts)
 
         job_extra_data = {
             **provider_opts,
@@ -4115,10 +4107,6 @@ def new_image():
             "ada_version": version,
             "ada_hostname": hostname,
         }
-        print(json.dumps(job_extra_data, indent=4))
-
-        # flash("Building new image")
-        # return redirect(url_for("images"))
 
         mp = MachineProvider.query.filter_by(
             id=form.get("machine_provider")
@@ -5560,8 +5548,6 @@ class OpenStackService(VirtService):
                     logging.info("\n\n" + cmd + "\n")
 
                     stdin, stdout, stderr = ssh.exec_command(cmd)
-                    print(stdout.read().decode())
-                    print(stderr.read().decode())
 
                     # Wait for some time for the system to reboot
                     logging.warning("waiting")
