@@ -64,6 +64,31 @@
       "name": "BUILD_INSTALL_NIX",
       "display_name": "Install Nix package manager",
       "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_ICY",
+      "display_name": "Install Icy",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_ILASTIK",
+      "display_name": "Install Ilastik",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_IMAGEJ",
+      "display_name": "Install ImageJ",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_MIB",
+      "display_name": "Install MIB",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_NAPARI",
+      "display_name": "Install Napari",
+      "type": "bool"
     }
   ]
 }
