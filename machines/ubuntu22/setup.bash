@@ -377,7 +377,7 @@ fi
 # OPTIONAL: Install NAPARI
 if [ "$BUILD_INSTALL_NAPARI" = "True" ]; then
     cd /
-    wget -q https://ada-files.oxfordfun.com/software/NAPARI/Napari-0.4.17.tar.gz
+    wget -q https://ada-files.oxfordfun.com/software/Napari/Napari-0.4.17.tar.gz
     tar -xf Napari-0.4.17.tar.gz
     rm -f Napari-0.4.17.tar.gz
 fi
