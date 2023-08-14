@@ -342,6 +342,46 @@ if [ "$BUILD_INSTALL_NIX" = "True" ]; then
     yes | ./install --daemon
 fi
 
+# OPTIONAL: Install Icy
+if [ "$BUILD_INSTALL_ICY" = "True" ]; then
+    cd /
+    wget -q https://ada-files.oxfordfun.com/software/Icy/Icy-2.4.3.tar.gz
+    tar -xf Icy-2.4.3.tar.gz
+    rm Icy-2.4.3.tar.gz
+fi
+
+# OPTIONAL: Install Ilastik
+if [ "$BUILD_INSTALL_ILASTIK" = "True" ]; then
+    cd /
+    wget -q https://ada-files.oxfordfun.com/software/Ilastik/Ilasktik-1.4.0.tar.gz
+    tar -xf Ilasktik-1.4.0.tar.gz
+    rm Ilasktik-1.4.0.tar.gz
+fi
+
+# OPTIONAL: Install ImageJ
+if [ "$BUILD_INSTALL_IMAGEJ" = "True" ]; then
+    cd /
+    wget -q https://ada-files.oxfordfun.com/software/ImageJ/ImageJ-1.53.tar.gz
+    tar -xf ImageJ-1.53.tar.gz
+    rm -f ImageJ-1.53.tar.gz
+fi
+
+# OPTIONAL: Install MIB
+if [ "$BUILD_INSTALL_MIB" = "True" ]; then
+    cd /
+    wget -q https://ada-files.oxfordfun.com/software/MIB/MIB-2.48.tar.gz
+    tar -xf MIB-2.48.tar.gz
+    rm -f MIB-2.48.tar.gz
+fi
+
+# OPTIONAL: Install NAPARI
+if [ "$BUILD_INSTALL_NAPARI" = "True" ]; then
+    cd /
+    wget -q https://ada-files.oxfordfun.com/software/NAPARI/Napari-0.4.17.tar.gz
+    tar -xf Napari-0.4.17.tar.gz
+    rm -f Napari-0.4.17.tar.gz
+fi
+
 if [ "$BUILD_GROUP_FLAVOR" = "sciml" ]; then
     # - Change the theme to Adwaita
     # - Change the icons to Tango
