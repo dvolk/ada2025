@@ -348,6 +348,8 @@ if [ "$BUILD_INSTALL_ICY" = "True" ]; then
     wget -q https://ada-files.oxfordfun.com/software/Icy/Icy-2.4.3.tar.gz
     tar -xf Icy-2.4.3.tar.gz
     rm Icy-2.4.3.tar.gz
+    apt install -y default-jre
+    chmod +x /home/ubuntu/Desktop/Icy.desktop
 fi
 
 # OPTIONAL: Install Ilastik
@@ -356,6 +358,7 @@ if [ "$BUILD_INSTALL_ILASTIK" = "True" ]; then
     wget -q https://ada-files.oxfordfun.com/software/Ilastik/Ilasktik-1.4.0.tar.gz
     tar -xf Ilasktik-1.4.0.tar.gz
     rm Ilasktik-1.4.0.tar.gz
+    chmod +x /home/ubuntu/Desktop/Ilastik.desktop
 fi
 
 # OPTIONAL: Install ImageJ
@@ -364,6 +367,7 @@ if [ "$BUILD_INSTALL_IMAGEJ" = "True" ]; then
     wget -q https://ada-files.oxfordfun.com/software/ImageJ/ImageJ-1.53.tar.gz
     tar -xf ImageJ-1.53.tar.gz
     rm -f ImageJ-1.53.tar.gz
+    chmod +x /home/ubuntu/Desktop/ImageJ2.desktop
 fi
 
 # OPTIONAL: Install MIB
@@ -372,6 +376,7 @@ if [ "$BUILD_INSTALL_MIB" = "True" ]; then
     wget -q https://ada-files.oxfordfun.com/software/MIB/MIB-2.48.tar.gz
     tar -xf MIB-2.48.tar.gz
     rm -f MIB-2.48.tar.gz
+    chmod +x /home/ubuntu/Desktop/MIB.desktop
 fi
 
 # OPTIONAL: Install NAPARI
@@ -380,6 +385,8 @@ if [ "$BUILD_INSTALL_NAPARI" = "True" ]; then
     wget -q https://ada-files.oxfordfun.com/software/Napari/Napari-0.4.17.tar.gz
     tar -xf Napari-0.4.17.tar.gz
     rm -f Napari-0.4.17.tar.gz
+    apt install -y libqt5core5a:amd64 libqt5gui5:amd64
+    chmod +x /home/ubuntu/Desktop/Napari.desktop
 fi
 
 if [ "$BUILD_GROUP_FLAVOR" = "sciml" ]; then
