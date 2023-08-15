@@ -196,6 +196,8 @@ ADA2025_USE_EMAIL_CONFIRMATION = str_to_bool(
 
 ADA2025_DNS_SECRET_KEY = os.getenv("ADA2025_DNS_SECRET_KEY") or gen_token(32)
 
+ADA2025_INSTANCE_IDENTIFIER = os.getenv("ADA2025_INSTANCE_IDENTIFIER") or socket.gethostname()
+
 admin = Admin(
     url="/flaskyadmin",
     template_mode="bootstrap4",
@@ -4120,7 +4122,7 @@ def new_image():
         )
         db.session.add(job)
         db.session.commit()
-        job.name = f"ada-image-bot_{job.id}"
+        job.name = f"ada-image-bot_{ADA2025_INSTANCE_IDENTIFIER}_{job.id}"
         db.session.commit()
 
         threading.Thread(target=OpenStackService.build_image, args=(job.id,)).start()
