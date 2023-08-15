@@ -389,19 +389,14 @@ if [ "$BUILD_INSTALL_NAPARI" = "True" ]; then
     chmod +x /home/ubuntu/Desktop/Napari.desktop
 fi
 
-# OPTIONAL: Install Aspera
+# OPTIONAL: Install Aspera. REQUIRES conda above
 if [ "BUILD_INSTALL_ASPERA" = "True" ]; then
-    cd /
-    apt update
-    curl -sSL https://get.rvm.io | bash -s -- --path /usr/local
-    mv /etc/profile.d/rvm.sh /etc/profile.d/rvm.sh.ok
-    source /etc/profile.d/rvm.sh.ok
-    apt-get -qy install ruby
-    gem install aspera-cli
-    gem update aspera-cli
-    ascli conf ascp install
-    curl -Lso SDK.zip https://ibm.biz/aspera_sdk
-    ascli conf ascp install --sdk-url=file:///SDK.zip
+    conda install -c hcc aspera-cli -y
+fi
+
+# OPTIONAL: Install Aspera. REQUIRES conda above
+if [ "BUILD_INSTALL_GLOBUS" = "True" ]; then
+    conda install -c conda-forge globus-cli -y
 fi
 
 if [ "$BUILD_GROUP_FLAVOR" = "sciml" ]; then
