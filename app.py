@@ -196,7 +196,7 @@ ADA2025_USE_EMAIL_CONFIRMATION = str_to_bool(
 
 ADA2025_DNS_SECRET_KEY = os.getenv("ADA2025_DNS_SECRET_KEY") or gen_token(32)
 
-ADA2025_INSTANCE_IDENTIFIER = os.getenv("ADA2025_INSTANCE_IDENTIFIER") or socket.gethostname()
+ADA2025_INSTANCE_IDENTIFIER = os.getenv("ADA2025_INSTANCE_IDENTIFIER") or ""
 
 admin = Admin(
     url="/flaskyadmin",
