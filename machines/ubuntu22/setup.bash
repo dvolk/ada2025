@@ -411,6 +411,28 @@ xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitorVNC-0/workspace0/last-
 EOF
 fi
 
+if [ "$BUILD_GROUP_FLAVOR" = "rfi" ]; then
+    # - Change the theme to Adwaita
+    # - Change the icons to Tango
+    # - Turn off xfce panel dark mode
+    # - Set the background to the stfc sciml image
+
+    # xfconf-query requires DBUS_SESSION_BUS_ADDRESS
+    pid=$(pgrep -u ubuntu xfce4-session)
+    dbus_address=$(grep -z DBUS_SESSION_BUS_ADDRESS /proc/$pid/environ | cut -d= -f2-)
+
+    su ubuntu << EOF
+export DISPLAY=:0
+export DBUS_SESSION_BUS_ADDRESS="$dbus_address"
+xfconf-query -c xsettings -p /Net/ThemeName -s 'Adwaita'
+xfconf-query -c xfwm4 -p /general/theme -s 'Adwaita'
+xfconf-query -c xsettings -p /Net/IconThemeName -s 'Tango'
+xfconf-query -c xfce4-panel -p /panels/dark-mode -s false
+wget -q https://ada-files.oxfordfun.com/software/misc/vEMlogo_purwhitecell.jpg -O /home/ubuntu/.rfi_bg.jpg
+xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitorVNC-0/workspace0/last-image -s /home/ubuntu/.rfi_bg.jpg
+EOF
+fi
+
 # -------------------------------------------------------------------------
 # -------------------------------------------------------------------------
 # -------------------------------------------------------------------------
