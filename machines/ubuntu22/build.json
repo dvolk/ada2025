@@ -94,7 +94,6 @@
       "name": "BUILD_INSTALL_ASPERA",
       "display_name": "Install Aspera CLI",
       "type": "bool"
-    }
     },
     {
       "name": "BUILD_INSTALL_GLOBUS",
