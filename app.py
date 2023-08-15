@@ -4122,7 +4122,10 @@ def new_image():
         )
         db.session.add(job)
         db.session.commit()
-        job.name = f"ada-image-bot_{ADA2025_INSTANCE_IDENTIFIER}_{job.id}"
+        if ADA2025_INSTANCE_IDENTIFIER:
+            job.name = f"ada-image-bot_{ADA2025_INSTANCE_IDENTIFIER}_{job.id}"
+        else:
+            job.name = f"ada-image-bot_{job.id}"
         db.session.commit()
 
         threading.Thread(target=OpenStackService.build_image, args=(job.id,)).start()
