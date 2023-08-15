@@ -89,6 +89,11 @@
       "name": "BUILD_INSTALL_NAPARI",
       "display_name": "Install Napari",
       "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_ASPERA",
+      "display_name": "Install Aspera",
+      "type": "bool"
     }
   ]
 }
