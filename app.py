@@ -5553,6 +5553,8 @@ class OpenStackService(VirtService):
                     logging.info("\n\n" + cmd + "\n")
 
                     stdin, stdout, stderr = ssh.exec_command(cmd)
+                    logging.info(stdout.read().decode())
+                    logging.info(stderr.read().decode())
 
                     # Wait for some time for the system to reboot
                     logging.warning("waiting")
