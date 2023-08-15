@@ -5489,7 +5489,7 @@ class OpenStackService(VirtService):
                 job.state = ImageBuildJobState.MAKING_VM
                 db.session.commit()
 
-                logging.info("creating server")
+                logging.info("creating image build machine")
                 server = conn.compute.create_server(
                     name=job.name,
                     flavor_id=flavor.id,
@@ -5503,13 +5503,13 @@ class OpenStackService(VirtService):
                 job.state = ImageBuildJobState.WAITING_FOR_VM
                 db.session.commit()
 
-                logging.info("waiting for server to come up")
+                logging.info("waiting for image build machine to come up")
                 OpenStackService.wait_for_vm_state(
                     env, server.id, "ACTIVE", timeout=2400
                 )
 
                 # wait for an ip
-                logging.info("waiting for server to acquire ip")
+                logging.info("waiting for image build machine to acquire ip")
                 server_ip = OpenStackService.wait_for_vm_ip(conn, server.id, network.id)
 
                 time.sleep(2)
@@ -5535,7 +5535,7 @@ class OpenStackService(VirtService):
                 # to the user's home directory on the remote host
                 build_dir = buildjson.get("name")
                 build_script = buildjson.get("script")
-                logging.warning("copying files")
+                logging.warning("copying build directory files to build machine")
                 scpclient.put(job.template_name, recursive=True, remote_path="~/")
                 scpclient.put("secrets", recursive=True, remote_path=f"~/{build_dir}")
                 scpclient.close()
@@ -5545,7 +5545,9 @@ class OpenStackService(VirtService):
 
                 for i in range(reboots + 1):
                     ssh.connect(server_ip, username=username)
-                    logging.warning(f"starting loop {i}")
+                    logging.info(
+                        f"{i} running build machine script... start of loop iteration"
+                    )
 
                     # pass in user build.json parameters into setup.bash
                     env_str = " ".join(f"{k}={v}" for k, v in build_script_env.items())
@@ -5553,13 +5555,21 @@ class OpenStackService(VirtService):
                     logging.info("\n\n" + cmd + "\n")
 
                     stdin, stdout, stderr = ssh.exec_command(cmd)
+                    logging.info(f"{i} Command stdout:")
                     logging.info(stdout.read().decode())
+                    logging.info(f"{i} Command stderr:")
                     logging.info(stderr.read().decode())
+                    exit_status = stdout.channel.recv_exit_status()
+                    logging.info(f"{i} Command return code: {exit_status}")
 
-                    # Wait for some time for the system to reboot
-                    logging.warning("waiting")
+                    logging.info(f"{i} waiting for build machine to come up...")
+                    # Wait for two minutes for the system to reboot
                     time.sleep(120)
+                    logging.info(
+                        f"{i} finished sleep. Hopefully the instance is up... end of loop iteration"
+                    )
 
+                logging.info("End of build machine loop. Removing build directory.")
                 ssh.connect(server_ip, username=username)
                 stdin, stdout, stderr = ssh.exec_command(f"rm -rf {build_dir}")
                 ssh.close()
@@ -5616,6 +5626,7 @@ class OpenStackService(VirtService):
                         time.sleep(30)
 
                 if create_image:
+                    logging.info("Creating image from build machine")
                     job.state = ImageBuildJobState.SAVING_IMAGE
                     db.session.commit()
 
@@ -5632,7 +5643,7 @@ class OpenStackService(VirtService):
                     db.session.commit()
 
                 if create_image and delete_build_machine:
-                    logging.info("deleting build machine")
+                    logging.info("deleting build machine after image created")
                     conn.compute.delete_server(server)
 
                 job.state = ImageBuildJobState.DONE
