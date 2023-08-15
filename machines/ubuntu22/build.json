@@ -95,6 +95,7 @@
       "display_name": "Install Aspera CLI",
       "type": "bool"
     }
+    },
     {
       "name": "BUILD_INSTALL_GLOBUS",
       "display_name": "Install Globus CLI",
