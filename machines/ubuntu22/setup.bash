@@ -392,14 +392,14 @@ fi
 # OPTIONAL: Install Aspera. REQUIRES conda above
 if [ "$BUILD_INSTALL_ASPERA" = "True" ]; then
     su ubuntu << EOF
-    conda install -c hcc aspera-cli -y
+/home/ubuntu/miniconda3/bin/conda install -c hcc aspera-cli -y
 EOF
 fi
 
 # OPTIONAL: Install Aspera. REQUIRES conda above
 if [ "$BUILD_INSTALL_GLOBUS" = "True" ]; then
     su ubuntu << EOF
-conda install -c conda-forge globus-cli -y
+/home/ubuntu/miniconda3/bin/conda install -c conda-forge globus-cli -y
 EOF
 fi
 
