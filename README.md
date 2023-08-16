@@ -24,12 +24,12 @@ Ada2025 allows you to create, run, and share machines from various templates, al
 - Group admins can approve/remove users from groups, manage what data users have access to, and define a custom welcome page.
 - Integrated file browser for uploading and downloading files
 - Multi-language support: English, Chinese, Slovenian
-- Login with local account, IRIS IAM, or Google, with optional reCaptcha for added security
+- Login with local account, IRIS IAM, Google, or ORCID with optional reCaptcha for added security
 - In-app user problem reporting system
 - Colorful admin interface with action auditing for increased transparency
 - Easy deployment options with bare metal or Docker
 - Email notifications for group admins and users
-  One click image building with customization
+- One click image building from image templates with customization
 
 # Tech Stack
 
