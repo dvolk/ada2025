@@ -29,9 +29,13 @@
                     <form method="POST" action="/new_machine">
                       <input type="hidden" name="machine_template_id" value="{{ mt.id }}">
                       <button
+                        {% if not mt.image %}
+                        title="Machine template missing an image. Please contact a system admin in order to resolve this."
+                        {% else %}
                         title="Create an instance of this machine template"
+                        {% endif %}
                         type="submit"
-                        {% if quota_reached %}
+                        {% if quota_reached or not mt.image %}
                           disabled
                         {% endif %}
                         class="w3-button w3-green w3-round">
@@ -44,16 +48,23 @@
                   <div class="w3-col m7">
                     <p>{{ mt.description }}</p>
                     <p>
-                      {% for s in mt.image.softwares %}
-                        <span class="w3-light-gray w3-round" style="padding: 2px 5px 2px 5px;">{{ s.name }}</span>
-                      {% endfor %}
+                      {% if mt.image %}
+                        {% for s in mt.image.softwares %}
+                          <span class="w3-light-gray w3-round" style="padding: 2px 5px 2px 5px;">{{ s.name }}</span>
+                        {% endfor %}
+                      {% endif %}
                     </p>
 
                   </div>
                   <div class="w3-col m5 w3-right-align">
                     <p>
                       {{ gettext("Provider:") }} {{ mt.machine_provider.name }}<br/>
-                      {{ gettext("Image:") }} {{ mt.image.name }}<br/>
+                      {{ gettext("Image:") }} 
+                      {% if mt.image %} 
+                        {{ mt.image.name }} 
+                      {% else %} 
+                        {{ icon("triangle-exclamation") }} 
+                      {% endif %}<br/>
                       {% if mt.cpu_limit_cores %}
                         {{ gettext("CPUs:") }} {{ mt.cpu_limit_cores }}
                       {% endif %}
@@ -66,7 +77,11 @@
                         {{ gettext("Disk:") }} {{ mt.disk_size_gb }} GB
                       {% endif %}
                       <br/>
-                    {{ gettext("Updated:") }} {{ humanize.naturaldelta(now - mt.image.creation_date) }} {{ gettext("ago") }}<br/>
+                    {{ gettext("Updated:") }} {% if mt.image %} 
+                      {{ humanize.naturaldelta(now - mt.image.creation_date) }} {{ gettext("ago") }} 
+                    {% else %} 
+                      {{ gettext("N/A") }} 
+                    {% endif %}<br/>
                     {{ gettext("Instances running:") }} {{ count }}
                       {% if quota %}
                         / {{ quota }}
