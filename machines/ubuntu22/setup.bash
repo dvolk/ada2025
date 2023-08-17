@@ -159,8 +159,8 @@ if [ "$BUILD_NGINX_TLS_KEYS" = "machine.ada.oxfordfun.com" ]; then
     cp secrets/machine.ada.oxfordfun.com.fullchain.cer /etc/nginx/keys
     cp secrets/machine.ada.oxfordfun.com.key /etc/nginx/keys
 
-    sed -i 's|nubes.stfc.ac.uk-combined.crt|machine.ada.oxfordfun.com.fullchain.cer|' nginx-ada.conf
-    sed -i 's|nubes.stfc.ac.uk.key|machine.ada.oxfordfun.com.key|' nginx-ada.conf
+    sed -i 's|nubes.stfc.ac.uk-combined.crt|machine.ada.oxfordfun.com.fullchain.cer|' /etc/nginx/sites-enabled/nginx-ada.conf
+    sed -i 's|nubes.stfc.ac.uk.key|machine.ada.oxfordfun.com.key|' /etc/nginx/sites-enabled/nginx-ada.conf
 fi
 
 # remove snap firefox and install deb version
