@@ -4036,28 +4036,44 @@ def new_image():
         {
             "name": "openstack_image_flavor",
             "label": "Openstack instance image build flavor",
-            "options": ["l3.tiny"],
+            "options": [
+                "l3.tiny",
+                "daaas.xsmall",
+            ],
             "info": "The flavor instance disk space will determine the minimum disk space required on template flavors",
         },
         {
             "name": "openstack_network_uuid",
             "label": "Openstack network UUID",
-            "options": ["5be315b7-7ebd-4254-97fe-18c1df501538"],
+            "options": [
+                "5be315b7-7ebd-4254-97fe-18c1df501538",
+                "91d10ac1-989c-42d0-a67f-e64dd6c04dc3",
+            ],
         },
         {
             "name": "openstack_security_groups",
             "label": "Openstack security_groups",
-            "options": [["HTTP", "HTTPS", "SSH"], ["SSH"]],
+            "options": [
+                ["HTTP", "HTTPS", "SSH"],
+                ["SSH"],
+                ["DAaaS_DMZ_policy_custom"],
+            ],
         },
         {
             "name": "openstack_volume_image",
             "label": "Openstack volume image",
-            "options": ["ubuntu-focal-20.04-nogui"],
+            "options": [
+                "ubuntu-focal-20.04-nogui",
+                "Ubuntu-22.04-LTS-CloudImg-amd64",
+            ],
         },
         {
             "name": "openstack_bool_assign_floating_ip",
             "label": "Openstack assign floating ip",
-            "options": [False, True],
+            "options": [
+                False,
+                True,
+            ],
             "info": "Can Ada ssh into the instance without assigning a floating ip?",
         },
         {
