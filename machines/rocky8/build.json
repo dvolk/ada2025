@@ -1,7 +1,7 @@
 {
-  "name": "ubuntu22",
+  "name": "rocky8",
   "script": "setup.bash",
-  "reboots_required": 2,
+  "reboots_required": 0,
   "params":
   [
     {

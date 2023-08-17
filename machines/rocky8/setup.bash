@@ -8,59 +8,26 @@ export DEBIAN_FRONTEND=noninteractive
 export VNC_PORT=5900
 export NOVNC_PORT=6080
 export VNC_PW=vncpassword
-export USER=ubuntu
+export USER=rocky
 export FILEBROWSER_DL=https://github.com/filebrowser/filebrowser/releases/download/v2.23.0/linux-amd64-filebrowser.tar.gz
 
 # -------------------------------------------------------------------------
 # -------------------------------------------------------------------------
 # -------------------------------------------------------------------------
 
-echo "Running apt update..."
-apt update
-
-echo "Checking current Ubuntu version..."
-
-if [ "$(cat /etc/issue | head -c 12)" != "Ubuntu 22.04" ]; then
-
-    if [ -n "$(apt list --upgradable 2>/dev/null | grep -v Listing)" ]; then
-        echo "Upgradable packages found. Running apt upgrade in 10 seconds..."
-        sleep 10
-        apt upgrade -o Dpkg::Options::='--force-confold' --force-yes -fuy -y
-
-        echo "System will reboot in 10 seconds..."
-        sleep 10
-        reboot
-    else
-        echo "No upgradable packages found."
-    fi
-fi
-
-if [ "$(cat /etc/issue | head -c 12)" != "Ubuntu 22.04" ]; then
-    echo "Starting Ubuntu upgrade in 10 seconds..."
-    sleep 10
-    export DEBIAN_FRONTEND=noninteractive
-    echo 'Dpkg::Options {
-"--force-confdef";
-"--force-confold";
-}'>/etc/apt/apt.conf.d/local
-
-    yes N | do-release-upgrade -m server -f DistUpgradeViewNonInteractive
-
-    echo "System will reboot in 10 seconds..."
-    sleep 10
-    reboot
-fi
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-
 # Update packages and install required packages
-apt-get update
-apt-get install -y dbus-x11 xfce4 xfce4-goodies xfonts-base xfonts-100dpi \
-    xfonts-75dpi xfonts-scalable tigervnc-standalone-server tigervnc-common \
-    tigervnc-xorg-extension websockify nginx nginx-extras sudo curl \
-    unzip scrot cron
+dnf install -y epel-release
+dnf update -y
+dnf --enablerepo=epel group
+dnf groupinstall -y "Xfce" "base-x"
+echo "exec /usr/bin/xfce4-session" >> ~/.xinitrc
+systemctl set-default graphical
+
+
+dnf install -y tar xorg-x11-fonts-Type1 \
+    tigervnc-server tigervnc tigervnc-server-minimal nginx \
+    nginx-mod-stream unzip xfce4-screenshooter
+pip3 install websockify
 
 
 # Download and install filebrowser
@@ -72,9 +39,11 @@ rm -f filebrowser.tar.gz
 
 
 
-# Install some more useful utilities
-apt-get install -y coreutils findutils grep sed gawk gzip tar curl wget git openssl \
-    vim nano tmux htop ncdu tree file less bc zip unzip ssh rsync procps screenfetch
+# Install some more useful utilities - can we get screenfetch in here, it doesn't seem to be on any of the repos?
+dnf install -y wget git vim-enhanced nano\
+    tmux htop ncdu tree bc zip unzip \
+    rsync
+
 
 
 # Install novnc
@@ -84,15 +53,16 @@ git checkout 24dbf21474ca88928c5a7d63b39fc950240591f7
 cd -
 
 
-# Install desktop applications
-apt-get -y install emacs materia-gtk-theme
 
+# Install desktop applications - can we get materia-gtk-theme in here?
+dnf install -y emacs
 
-# Setup desktop user 'ubuntu'
+# Setup desktop user 'rocky'
 #echo "$USER:$USER" | chpasswd
 #echo "$USER ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/$USER
 #chmod 0440 /etc/sudoers.d/$USER
-usermod -aG audio,video,cdrom,plugdev,staff,adm,dialout,sudo $USER
+useradd -m -s /bin/bash rocky
+usermod -aG audio,video,cdrom,adm,dialout,wheel $USER
 
 
 
@@ -101,18 +71,18 @@ mkdir -p /home/$USER/.vnc
 echo $VNC_PW | vncpasswd -f > /home/$USER/.vnc/passwd
 chown -R $USER:$USER /home/$USER/.vnc
 chmod 600 /home/$USER/.vnc/passwd
-apt purge -y xfce4-power-manager xfce4-screensaver
-rm /etc/nginx/sites-enabled/default
+dnf remove -y xfce4-power-manager
 
 
 
 # Allow the user to save screenshots to web server
-mkdir /var/www/html/screenshots
+mkdir -p /var/www/html/screenshots
 chown -R $USER:$USER /var/www/html/screenshots
 
 
 
 # Copy the nginx config file
+mkdir -p /etc/nginx/sites-enabled/
 cp nginx-ada.conf /etc/nginx/sites-enabled/nginx-ada.conf
 # Copy nginx front page
 cp index.html /var/www/html/index.html
@@ -121,7 +91,7 @@ cp ada.png /var/www/html/ada.png
 
 
 # cronjob: take a screenshot every minute
-crontab -l -u $USER | { cat; echo '* * * * * DISPLAY=:0 scrot -z -t 20 -o /var/www/html/screenshots/screenshot.png'; } | crontab -u $USER -
+crontab -u $USER -l | { cat; echo '* * * * * DISPLAY=:0 scrot -z -t 20 -o /var/www/html/screenshots/screenshot.png'; } | crontab -u $USER -
 
 
 
@@ -152,26 +122,6 @@ mkdir -p /etc/nginx/keys
 cp secrets/nubes.stfc.ac.uk-combined.crt /etc/nginx/keys
 cp secrets/nubes.stfc.ac.uk.key /etc/nginx/keys
 
-
-# remove snap firefox and install deb version
-
-# snap firefox doesn't seem to work with the way the desktop
-# is started with vncserver. This seems to be a common
-# problem with no obvious solution, but it might be solved
-# in future ubuntu releases
-snap remove firefox
-
-add-apt-repository -y ppa:mozillateam/ppa
-
-echo '
-Package: *
-Pin: release o=LP-PPA-mozillateam
-Pin-Priority: 1001
-' | tee /etc/apt/preferences.d/mozilla-firefox
-
-echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codename}";' | tee /etc/apt/apt.conf.d/51unattended-upgrades-firefox
-
-apt install -y firefox webext-ublock-origin-firefox
 
 # -------------------------------------------------------------------------
 # -------------------------------------------------------------------------
@@ -410,7 +360,7 @@ if [ "$BUILD_GROUP_FLAVOR" = "sciml" ]; then
     # - Set the background to the stfc sciml image
 
     # xfconf-query requires DBUS_SESSION_BUS_ADDRESS
-    pid=$(pgrep -u ubuntu xfce4-session)
+    pid=$(pgrep -u root xfce4-session)
     dbus_address=$(grep -z DBUS_SESSION_BUS_ADDRESS /proc/$pid/environ | cut -d= -f2-)
 
     su ubuntu << EOF
@@ -432,7 +382,7 @@ if [ "$BUILD_GROUP_FLAVOR" = "rfi" ]; then
     # - Set the background to the stfc sciml image
 
     # xfconf-query requires DBUS_SESSION_BUS_ADDRESS
-    pid=$(pgrep -u ubuntu xfce4-session)
+    pid=$(pgrep -u root xfce4-session)
     dbus_address=$(grep -z DBUS_SESSION_BUS_ADDRESS /proc/$pid/environ | cut -d= -f2-)
 
     su ubuntu << EOF
