@@ -196,6 +196,8 @@ ADA2025_USE_EMAIL_CONFIRMATION = str_to_bool(
 
 ADA2025_DNS_SECRET_KEY = os.getenv("ADA2025_DNS_SECRET_KEY") or gen_token(32)
 
+ADA2025_INSTANCE_IDENTIFIER = os.getenv("ADA2025_INSTANCE_IDENTIFIER") or ""
+
 admin = Admin(
     url="/flaskyadmin",
     template_mode="bootstrap4",
@@ -626,6 +628,7 @@ class User(db.Model, UserMixin):
     family_name = db.Column(db.String(100))
     organization = db.Column(db.String(200))
     job_title = db.Column(db.String(200))
+    orcid = db.Column(db.String(32))
     email = db.Column(db.String(200), unique=True, nullable=False)
     language = db.Column(db.String(5), default="en", nullable=False)
     timezone = db.Column(db.String(50), default="Europe/London", nullable=False)
@@ -1910,6 +1913,14 @@ class SwitchGroupForm(FlaskForm):
 def profile_complete_required(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
+        if not (
+            current_user.given_name
+            and current_user.family_name
+            and current_user.email
+            and current_user.organization
+            and current_user.job_title
+        ):
+            return redirect(url_for("complete_profile"))
         if not current_user.is_email_confirmed and ADA2025_USE_EMAIL_CONFIRMATION:
             return redirect(url_for("email_not_confirmed"))
         if not current_user.group:
@@ -2074,6 +2085,19 @@ if os.environ.get("ADA2025_IRIS_IAM_OAUTH2_CLIENT_ID"):
         client_kwargs={"scope": "email profile openid"},
     )
 
+if os.environ.get("ADA2025_ORCID_OAUTH2_CLIENT_ID"):
+    # OAuth configuration
+    orcid = oauth.register(
+        name="orcid",
+        client_id=os.environ.get("ADA2025_ORCID_OAUTH2_CLIENT_ID"),
+        client_secret=os.environ.get("ADA2025_ORCID_OAUTH2_CLIENT_SECRET"),
+        access_token_url="https://orcid.org/oauth/token",
+        authorize_url="https://orcid.org/oauth/authorize",
+        server_metadata_url="https://orcid.org/.well-known/openid-configuration",
+        userinfo_endpoint="https://orcid.org/oauth/userinfo",
+        client_kwargs={"scope": "openid profile email"},
+    )
+
 
 @app.route("/error_test")
 @limiter.limit("60 per hour")
@@ -2103,9 +2127,9 @@ def google_login():
 @app.route("/iris_iam_login")
 @limiter.limit("60 per hour")
 def iris_iam_login():
-    # send the users to google to log in. once they're logged
-    # in, they're sent back to google_authorize, where we
-    # make an account for them from the data that google
+    # send the users to iris iam  to log in. once they're logged
+    # in, they're sent back to iris_iam_authorize, where we
+    # make an account for them from the data that iris
     # provided
     audit = create_audit("iris login")
     iris_iam = oauth.create_client("iris_iam")
@@ -2114,16 +2138,43 @@ def iris_iam_login():
     return iris_iam.authorize_redirect(redirect_uri)
 
 
-def gen_unique_username(email, max_attempts=1000):
-    # try really hard to generate a unique username from an email
+@app.route("/orcid_login")
+@limiter.limit("60 per hour")
+def orcid_login():
+    audit = create_audit("orcid login")
+    iris_iam = oauth.create_client("orcid")
+    nonce = os.urandom(20).hex()  # Generate a random nonce
+    session["nonce"] = nonce
+    redirect_uri = url_for("orcid_authorize", _external=True)
+    finish_audit(audit, state="ok")
+    return iris_iam.authorize_redirect(redirect_uri, nonce=nonce)
+
+
+def gen_unique_username(
+    given_name, family_name, email, max_attempts=1000, current_user_id=None
+):
+    # try really hard to generate a unique username from name and email
     username = ""
     attempt = 0
     try:
         email_prefix = email.split("@")[0]
     except:
         email_prefix = ""
+
+    if not email_prefix:
+        email_prefix = given_name + family_name
+
     # emails can have lots of characters, but we only want [a-Z,0-9,.]
     email_prefix = "".join([ch for ch in email_prefix if ch.isalnum() or ch == "."])
+    email_prefix = email_prefix[:24]
+
+    all_other_usernames = (
+        db.session.query(User)
+        .filter(User.id != current_user_id)
+        .with_entities(User.username)
+        .all()
+    )
+    all_other_usernames = [x[0] for x in all_other_usernames]
 
     while True:
         if not email_prefix:
@@ -2133,7 +2184,7 @@ def gen_unique_username(email, max_attempts=1000):
         else:
             username = email_prefix + "." + gen_token(4)
 
-        if not User.query.filter_by(username=username).first():
+        if not username in all_other_usernames:
             return username
 
         if attempt > max_attempts // 2:
@@ -2142,6 +2193,119 @@ def gen_unique_username(email, max_attempts=1000):
             abort(500)
 
         attempt = attempt + 1
+
+
+def generate_complete_profile_form(user):
+    # dynamically generate the flask-wtform, based on what fields the user
+    # is missing. the user will typically be missing information if they
+    # used an external provider. for example orcid only gives the orcid id
+    class CompleteProfileForm(FlaskForm):
+        pass
+
+    fields = []
+
+    if not user.given_name:
+        setattr(
+            CompleteProfileForm,
+            "given_name",
+            StringField(
+                gettext("Given name"), validators=[DataRequired(), Length(max=100)]
+            ),
+        )
+        fields.append("given_name")
+    if not user.family_name:
+        setattr(
+            CompleteProfileForm,
+            "family_name",
+            StringField(
+                gettext("Family name"), validators=[DataRequired(), Length(max=100)]
+            ),
+        )
+        fields.append("family_name")
+    if not user.email:
+        setattr(
+            CompleteProfileForm,
+            "email",
+            StringField(
+                gettext("Email address"),
+                validators=[DataRequired(), Email(), Length(max=200)],
+            ),
+        )
+        fields.append("email")
+    if not user.organization:
+        setattr(
+            CompleteProfileForm,
+            "organization",
+            StringField(
+                gettext("Organization/affiliation"),
+                validators=[DataRequired(), Length(max=200)],
+            ),
+        )
+        fields.append("organization")
+    if not user.job_title:
+        setattr(
+            CompleteProfileForm,
+            "job_title",
+            StringField(
+                gettext("Job title"), validators=[DataRequired(), Length(max=200)]
+            ),
+        )
+        fields.append("job_title")
+
+    setattr(CompleteProfileForm, "submit", SubmitField("Submit"))
+
+    return CompleteProfileForm(), fields
+
+
+@app.route("/complete_profile", methods=["GET", "POST"])
+@login_required
+@limiter.limit("60 per minute")
+def complete_profile():
+    form, fields = generate_complete_profile_form(current_user)
+
+    # don't allow users to revisit this page after they've set all their data
+    if not fields:
+        return redirect(url_for("settings"))
+
+    if request.method == "POST":
+        if form.validate_on_submit():
+            form_data = dict()
+            error_msg = ""
+
+            # do some basic checking on each field in dynamic form
+            for field in fields:
+                form_data[field] = getattr(form, field).data
+                if not is_name_safe(form_data[field]):
+                    error_msg = f"that {field} can't be used"
+
+            # we don't want (can't have) duplicate emails
+            if "email" in fields:
+                if u := User.query.filter_by(email=form_data["email"]).first():
+                    if u != current_user:
+                        error_msg = gettext(
+                            "Sorry, that email can't be used. Please choose another or contact us for support."
+                        )
+
+            if error_msg:
+                logging.warning(f"user settings change failed: {error_msg}")
+                flash(error_msg, "danger")
+                return render_template("complete_profile.jinja2", form=form)
+
+            for field in fields:
+                setattr(current_user, field, form_data[field])
+
+            # reset the username with new data
+            current_user.username = gen_unique_username(
+                current_user.given_name,
+                current_user.family_name,
+                current_user.email,
+                current_user_id=current_user.id,
+            )
+            db.session.commit()
+
+            return redirect(url_for("welcome"))
+
+    return render_template("complete_profile.jinja2", form=form)
 
 
 @app.route("/not_activated")
@@ -2286,7 +2450,11 @@ def google_authorize():
             update_audit(audit, "new user 1")
             new_user_flag = True
             user = User(
-                username=gen_unique_username(user_info.get("email", "")),
+                username=gen_unique_username(
+                    user_info.get("given_name", ""),
+                    user_info.get("family_name", ""),
+                    user_info.get("email", ""),
+                ),
                 given_name=user_info.get("given_name", ""),
                 family_name=user_info.get("family_name", ""),
                 email=user_info.get("email", ""),
@@ -2356,7 +2524,11 @@ def iris_iam_authorize():
             update_audit(audit, "new user 1")
             new_user_flag = True
             user = User(
-                username=gen_unique_username(user_info.get("email", "")),
+                username=gen_unique_username(
+                    user_info.get("given_name", ""),
+                    user_info.get("family_name", ""),
+                    user_info.get("email", ""),
+                ),
                 given_name=user_info.get("given_name", ""),
                 family_name=user_info.get("family_name", ""),
                 email=user_info.get("email", ""),
@@ -2386,6 +2558,75 @@ def iris_iam_authorize():
         flash(
             gettext(
                 "An error occurred while processing your IRIS login. Please try again."
+            ),
+            "danger",
+        )
+        return redirect(url_for("login"))
+
+
+@app.route("/orcid_authorize")
+@limiter.limit("60 per hour")
+def orcid_authorize():
+    # orcid iam has authenticated the user and sent them back
+    # here, make an account if they don't have one and log
+    # them in
+    audit = create_audit("orcid auth")
+    try:
+        token = orcid.authorize_access_token()
+
+        user_info = orcid.parse_id_token(token, nonce=session["nonce"])
+
+        # orcid only gives us the orcid id, given name and family name, so
+        # we disambiguate users based on that instead of username/password
+        user = User.query.filter_by(orcid=user_info.get("sub")).first()
+
+        # Update or create the user
+        if user:
+            update_audit(audit, "existing user", user=user)
+            # Update user info if needed
+            user.given_name = user_info.get("given_name", user.given_name)
+            user.family_name = user_info.get("family_name", user.family_name)
+            user.provider = "orcid"
+            user.provider_id = user_info.get("id", user.provider_id)
+        else:
+            # Create a new user
+            update_audit(audit, "new user 1")
+            given_name, family_name, email = (
+                user_info.get("given_name", ""),
+                user_info.get("family_name", ""),
+                user_info.get("email", ""),
+            )
+            username = gen_unique_username(given_name, family_name, email)
+            user = User(
+                username=username,
+                given_name=given_name,
+                family_name=family_name,
+                email=email,
+                provider="orcid",
+                provider_id=user_info.get("id", ""),
+                language="en",
+                timezone="Europe/London",
+                orcid=user_info.get("sub", ""),
+            )
+            db.session.add(user)
+            update_audit(audit, "new user 2", user=user)
+
+        db.session.commit()
+
+        # log the user in
+        user.sesh_id = gen_token(2)
+        login_user(user)
+        finish_audit(audit, "ok")
+
+        return determine_redirect(session.get("share_accept_token"))
+
+    except Exception as e:
+        finish_audit(audit, "error")
+        # Log the error and show an error message
+        app.logger.error(e)
+        flash(
+            gettext(
+                "An error occurred while processing your ORCID login. Please try again."
             ),
             "danger",
         )
@@ -2602,6 +2843,22 @@ def settings():
     )
 
 
+@app.route("/get_github_keys/<username>")
+@limiter.limit("60 per hour")
+@login_required
+@profile_complete_required
+def get_github_keys(username):
+    url = f"https://github.com/{username}.keys"
+    text_data = None
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        text_data = response.text
+    except requests.exceptions.RequestException as e:
+        logging.info(f"Could not get GitHub public SSH keys for {username}")
+    return text_data
+
+
 @app.route("/download_priv_key")
 @limiter.limit("60 per hour")
 @login_required
@@ -2630,10 +2887,13 @@ def login():
     # show the google login button or not
     show_google_button = False
     show_iris_iam_button = False
+    show_orcid_button = False
     if os.environ.get("GOOGLE_OAUTH2_CLIENT_ID"):
         show_google_button = True
     if os.environ.get("ADA2025_IRIS_IAM_OAUTH2_CLIENT_ID"):
         show_iris_iam_button = True
+    if os.environ.get("ADA2025_ORCID_OAUTH2_CLIENT_ID"):
+        show_orcid_button = True
 
     form = LoginForm()
 
@@ -2649,7 +2909,7 @@ def login():
             form=form,
             show_google_button=show_google_button,
             show_iris_iam_button=show_iris_iam_button,
-            show_stfc_logo=True,
+            show_orcid_button=show_orcid_button,
         )
 
     # POST path
@@ -2665,7 +2925,7 @@ def login():
                     form=form,
                     show_google_button=show_google_button,
                     show_iris_iam_button=show_iris_iam_button,
-                    show_stfc_logo=True,
+                    show_orcid_button=show_orcid_button,
                 )
         if form.validate_on_submit():
             user = (
@@ -2698,7 +2958,7 @@ def login():
                         form=form,
                         show_google_button=show_google_button,
                         show_iris_iam_button=show_iris_iam_button,
-                        show_stfc_logo=True,
+                        show_orcid_button=show_orcid_button,
                     )
 
             # oauth2 users trying to log in locally but don't have a password
@@ -2716,7 +2976,7 @@ def login():
                     form=form,
                     show_google_button=show_google_button,
                     show_iris_iam_button=show_iris_iam_button,
-                    show_stfc_logo=True,
+                    show_orcid_button=show_orcid_button,
                 )
 
             # local users or oauth2 users who have set a password
@@ -2748,7 +3008,7 @@ def login():
         form=form,
         show_google_button=show_google_button,
         show_iris_iam_button=show_iris_iam_button,
-        show_stfc_logo=True,
+        show_orcid_button=show_orcid_button,
     )
 
 
@@ -3832,9 +4092,6 @@ def new_image():
         args = request.args
         form = request.form
 
-        print(request.args)
-        print(request.form)
-
         build_script_env = dict()
 
         # process form to extract dynamic form values
@@ -3853,15 +4110,10 @@ def new_image():
                     f"param_textline_{opt['name']}", ""
                 )
 
-        print(build_script_env)
-
         provider_opts = dict()
         for form_opt in openstack_form_opts:
-            print(form_opt)
             name = form_opt["name"]
             provider_opts[name] = form_opt["options"][int(request.form.get(name))]
-
-        print(provider_opts)
 
         job_extra_data = {
             **provider_opts,
@@ -3873,10 +4125,6 @@ def new_image():
             "ada_version": version,
             "ada_hostname": hostname,
         }
-        print(json.dumps(job_extra_data, indent=4))
-
-        # flash("Building new image")
-        # return redirect(url_for("images"))
 
         mp = MachineProvider.query.filter_by(
             id=form.get("machine_provider")
@@ -3890,7 +4138,10 @@ def new_image():
         )
         db.session.add(job)
         db.session.commit()
-        job.name = f"ada-image-bot_{job.id}"
+        if ADA2025_INSTANCE_IDENTIFIER:
+            job.name = f"ada-image-bot_{ADA2025_INSTANCE_IDENTIFIER}_{job.id}"
+        else:
+            job.name = f"ada-image-bot_{job.id}"
         db.session.commit()
 
         threading.Thread(target=OpenStackService.build_image, args=(job.id,)).start()
@@ -5254,7 +5505,7 @@ class OpenStackService(VirtService):
                 job.state = ImageBuildJobState.MAKING_VM
                 db.session.commit()
 
-                logging.info("creating server")
+                logging.info("creating image build machine")
                 server = conn.compute.create_server(
                     name=job.name,
                     flavor_id=flavor.id,
@@ -5268,13 +5519,13 @@ class OpenStackService(VirtService):
                 job.state = ImageBuildJobState.WAITING_FOR_VM
                 db.session.commit()
 
-                logging.info("waiting for server to come up")
+                logging.info("waiting for image build machine to come up")
                 OpenStackService.wait_for_vm_state(
                     env, server.id, "ACTIVE", timeout=2400
                 )
 
                 # wait for an ip
-                logging.info("waiting for server to acquire ip")
+                logging.info("waiting for image build machine to acquire ip")
                 server_ip = OpenStackService.wait_for_vm_ip(conn, server.id, network.id)
 
                 time.sleep(2)
@@ -5300,7 +5551,7 @@ class OpenStackService(VirtService):
                 # to the user's home directory on the remote host
                 build_dir = buildjson.get("name")
                 build_script = buildjson.get("script")
-                logging.warning("copying files")
+                logging.warning("copying build directory files to build machine")
                 scpclient.put(job.template_name, recursive=True, remote_path="~/")
                 scpclient.put("secrets", recursive=True, remote_path=f"~/{build_dir}")
                 scpclient.close()
@@ -5310,7 +5561,9 @@ class OpenStackService(VirtService):
 
                 for i in range(reboots + 1):
                     ssh.connect(server_ip, username=username)
-                    logging.warning(f"starting loop {i}")
+                    logging.info(
+                        f"{i} running build machine script... start of loop iteration"
+                    )
 
                     # pass in user build.json parameters into setup.bash
                     env_str = " ".join(f"{k}={v}" for k, v in build_script_env.items())
@@ -5318,13 +5571,21 @@ class OpenStackService(VirtService):
                     logging.info("\n\n" + cmd + "\n")
 
                     stdin, stdout, stderr = ssh.exec_command(cmd)
-                    print(stdout.read().decode())
-                    print(stderr.read().decode())
+                    logging.info(f"{i} Command stdout:")
+                    logging.info(stdout.read().decode())
+                    logging.info(f"{i} Command stderr:")
+                    logging.info(stderr.read().decode())
+                    exit_status = stdout.channel.recv_exit_status()
+                    logging.info(f"{i} Command return code: {exit_status}")
 
-                    # Wait for some time for the system to reboot
-                    logging.warning("waiting")
+                    logging.info(f"{i} waiting for build machine to come up...")
+                    # Wait for two minutes for the system to reboot
                     time.sleep(120)
+                    logging.info(
+                        f"{i} finished sleep. Hopefully the instance is up... end of loop iteration"
+                    )
 
+                logging.info("End of build machine loop. Removing build directory.")
                 ssh.connect(server_ip, username=username)
                 stdin, stdout, stderr = ssh.exec_command(f"rm -rf {build_dir}")
                 ssh.close()
@@ -5381,6 +5642,7 @@ class OpenStackService(VirtService):
                         time.sleep(30)
 
                 if create_image:
+                    logging.info("Creating image from build machine")
                     job.state = ImageBuildJobState.SAVING_IMAGE
                     db.session.commit()
 
@@ -5397,7 +5659,7 @@ class OpenStackService(VirtService):
                     db.session.commit()
 
                 if create_image and delete_build_machine:
-                    logging.info("deleting build machine")
+                    logging.info("deleting build machine after image created")
                     conn.compute.delete_server(server)
 
                 job.state = ImageBuildJobState.DONE
@@ -6105,7 +6367,7 @@ def create_initial_db():
     # add initial data for testing
     # this will also print the passwords so you can log in
     with app.app_context():
-        if not User.query.filter_by(username="admin").first():
+        if not User.query.filter_by(id=1).first():
             logging.warning("Creating default data.")
             demo_source1 = DataSource(
                 import_name="manual",

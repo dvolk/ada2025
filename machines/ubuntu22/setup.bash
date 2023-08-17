@@ -352,6 +352,67 @@ if [ "$BUILD_INSTALL_NIX" = "True" ]; then
     yes | ./install --daemon
 fi
 
+# OPTIONAL: Install Icy
+if [ "$BUILD_INSTALL_ICY" = "True" ]; then
+    cd /
+    wget -q https://ada-files.oxfordfun.com/software/Icy/Icy-2.4.3.tar.gz
+    tar -xf Icy-2.4.3.tar.gz
+    rm Icy-2.4.3.tar.gz
+    apt install -y default-jre
+    chmod +x /home/ubuntu/Desktop/Icy.desktop
+fi
+
+# OPTIONAL: Install Ilastik
+if [ "$BUILD_INSTALL_ILASTIK" = "True" ]; then
+    cd /
+    wget -q https://ada-files.oxfordfun.com/software/Ilastik/Ilasktik-1.4.0.tar.gz
+    tar -xf Ilasktik-1.4.0.tar.gz
+    rm Ilasktik-1.4.0.tar.gz
+    chmod +x /home/ubuntu/Desktop/Ilastik.desktop
+fi
+
+# OPTIONAL: Install ImageJ
+if [ "$BUILD_INSTALL_IMAGEJ" = "True" ]; then
+    cd /
+    wget -q https://ada-files.oxfordfun.com/software/ImageJ/ImageJ-1.53.tar.gz
+    tar -xf ImageJ-1.53.tar.gz
+    rm -f ImageJ-1.53.tar.gz
+    chmod +x /home/ubuntu/Desktop/ImageJ2.desktop
+fi
+
+# OPTIONAL: Install MIB
+if [ "$BUILD_INSTALL_MIB" = "True" ]; then
+    cd /
+    wget -q https://ada-files.oxfordfun.com/software/MIB/MIB-2.48.tar.gz
+    tar -xf MIB-2.48.tar.gz
+    rm -f MIB-2.48.tar.gz
+    chmod +x /home/ubuntu/Desktop/MIB.desktop
+fi
+
+# OPTIONAL: Install NAPARI
+if [ "$BUILD_INSTALL_NAPARI" = "True" ]; then
+    cd /
+    wget -q https://ada-files.oxfordfun.com/software/Napari/Napari-0.4.17.tar.gz
+    tar -xf Napari-0.4.17.tar.gz
+    rm -f Napari-0.4.17.tar.gz
+    apt install -y libqt5core5a:amd64 libqt5gui5:amd64
+    chmod +x /home/ubuntu/Desktop/Napari.desktop
+fi
+
+# OPTIONAL: Install Aspera. REQUIRES conda above
+if [ "$BUILD_INSTALL_ASPERA" = "True" ]; then
+    su ubuntu << EOF
+/home/ubuntu/miniconda3/bin/conda install -c hcc aspera-cli -y
+EOF
+fi
+
+# OPTIONAL: Install Aspera. REQUIRES conda above
+if [ "$BUILD_INSTALL_GLOBUS" = "True" ]; then
+    su ubuntu << EOF
+/home/ubuntu/miniconda3/bin/conda install -c conda-forge globus-cli -y
+EOF
+fi
+
 if [ "$BUILD_GROUP_FLAVOR" = "sciml" ]; then
     # - Change the theme to Adwaita
     # - Change the icons to Tango
@@ -371,6 +432,28 @@ xfconf-query -c xsettings -p /Net/IconThemeName -s 'Tango'
 xfconf-query -c xfce4-panel -p /panels/dark-mode -s false
 wget -q https://www.scd.stfc.ac.uk/Gallery/pixabay_artificial-intelligence-3382521_1920.jpg -O /home/ubuntu/.sciml_bg.jpg
 xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitorVNC-0/workspace0/last-image -s /home/ubuntu/.sciml_bg.jpg
+EOF
+fi
+
+if [ "$BUILD_GROUP_FLAVOR" = "rfi" ]; then
+    # - Change the theme to Adwaita
+    # - Change the icons to Tango
+    # - Turn off xfce panel dark mode
+    # - Set the background to the stfc sciml image
+
+    # xfconf-query requires DBUS_SESSION_BUS_ADDRESS
+    pid=$(pgrep -u ubuntu xfce4-session)
+    dbus_address=$(grep -z DBUS_SESSION_BUS_ADDRESS /proc/$pid/environ | cut -d= -f2-)
+
+    su ubuntu << EOF
+export DISPLAY=:0
+export DBUS_SESSION_BUS_ADDRESS="$dbus_address"
+xfconf-query -c xsettings -p /Net/ThemeName -s 'Adwaita'
+xfconf-query -c xfwm4 -p /general/theme -s 'Adwaita'
+xfconf-query -c xsettings -p /Net/IconThemeName -s 'Tango'
+xfconf-query -c xfce4-panel -p /panels/dark-mode -s false
+wget -q https://ada-files.oxfordfun.com/software/misc/vEMlogo_purwhitecell.jpg -O /home/ubuntu/.rfi_bg.jpg
+xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitorVNC-0/workspace0/last-image -s /home/ubuntu/.rfi_bg.jpg
 EOF
 fi
 

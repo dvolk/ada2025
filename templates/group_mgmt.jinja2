@@ -34,9 +34,15 @@
                 <td style="vertical-align: middle;">
                   {{ u.given_name }} {{ u.family_name }}<br/>
 
-                  {{ u.email }} {% if u.provider == "google" %}
-                  <i class="fa-brands fa-fw fa-google"></i>
-                {% endif %}
+                  {{ u.email }}
+
+                  {% if u.provider == "google" %}
+                    <i class="fa-brands fa-fw fa-google"></i>
+                  {% elif u.provider == "iris_iam" %}
+                    <i class="fa fa-fw fa-eye"></i>
+                  {% elif u.provider == "orcid" %}
+                    <i class="fa fa-fw fa-tree"></i>
+                  {% endif %}
 
                 </td>
                 <td style="vertical-align: middle;">{{ humanize.naturaldelta(time_now - u.creation_date) }} ago</td>

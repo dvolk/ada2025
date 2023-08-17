@@ -1,5 +1,24 @@
 {% extends 'base-bare.jinja2' %}
-
+{% block head %}
+<style>
+ .my-half1 {
+     text-align: center;
+     border: 5px solid white;
+     background-color: #fafafa;
+ }
+ .my-half2 {
+     text-align: center;
+     border: 5px solid white;
+     background-color: #fafafa;
+ }
+ .g-recaptcha{
+     transform:scale(0.77);
+     -webkit-transform:scale(0.77);
+     transform-origin:0 0;
+     -webkit-transform-origin:0 0;
+ }
+</style>
+{% endblock %}
 {% block content %}
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -14,57 +33,75 @@
   {% endwith %}
 
   <form method="POST" action="{{ url_for('login') }}">
-    {{ form.hidden_tag() }}
-
-    <p>
-      {{ form.username.label() }}
-      {{ form.username(class="w3-input w3-round w3-border w3-light-grey") }}
-    </p>
-    <p>
-      {{ form.password.label() }}
-      {% if MAIL_SENDER %}
-      <a href="/forgot_password" style="float: right; text-decoration: underline; color: blue;"> (Forgot Password?)</a>
-      {% endif %}
-      {{ form.password(class="w3-input w3-round w3-border w3-light-grey") }}
-    </p>
-
     <div class="w3-row">
-      <div class="w3-half">
+      <div class="w3-half my-half1 w3-padding">
+        {{ form.hidden_tag() }}
+
+        <p>
+          {{ form.username.label() }}
+          {{ form.username(class="w3-input w3-round w3-border w3-light-grey") }}
+        </p>
+        <p>
+          {{ form.password.label() }}
+          {{ form.password(class="w3-input w3-round w3-border w3-light-grey") }}
+          {% if MAIL_SENDER %}
+            <a href="/forgot_password" style="float: right; text-decoration: underline; color: blue;"> (Forgot Password?)</a>
+          {% endif %}
+        </p>
+
         {% if LOGIN_RECAPTCHA %}
+          <br/>
           {{ recaptcha }}
-          <br>
         {% endif %}
 
         <button class="w3-btn w3-round ada-blue" type="submit">{{ gettext("Log In") }}</button>
         <a class="w3-btn w3-round ada-blue" href="/register">{{ gettext("Register") }}</a>
-        <br/>
-        <p>Or use federated sign-up/sign-in:</p>
-        {% if show_google_button %}
-        <div style="margin-bottom: 5px;">
-            <a  href="/google_login"
-                class="w3-button w3-round w3-white w3-border"
-                style="font-family: Roboto !important; text-align: left; width: 150px;">
-                <img src="{{ url_for('static', filename='google.png') }}">&nbsp;&nbsp;
-                {{ gettext("Google") }}
-            </a>
-        </div>
-        {% endif %}
-        {% if show_iris_iam_button %}
-        <div>
-            <a href="/iris_iam_login"
-               class="w3-button w3-round w3-white w3-border"
-               style="font-family: Roboto !important; text-align: left; width: 150px;">
-                <i class="fa fa-fw fa-eye"></i>&nbsp;&nbsp;
-                {{ gettext("IRIS IAM") }}
-            </a>
-        </div>
-        {% endif %}
-      </div>
-      <div class="w3-half">
 
-        <a target="_blank" style="float: right; text-decoration: underline; color: blue;" href="{{ url_for('privacy') }}">Privacy policy</a>
       </div>
+
+
+      <div class="w3-half my-half2 w3-padding">
+        <p>Or use federated sign-up/sign-in:</p>
+        <p>
+          {% if show_google_button %}
+            <div style="margin-bottom: 5px;">
+              <a  href="/google_login"
+                  class="w3-button w3-round w3-white w3-border"
+                  style="font-family: Roboto !important; text-align: left; width: 150px; height: 40px;">
+                  <img src="{{ url_for('static', filename='google.png') }}">&nbsp;&nbsp;
+                  {{ gettext("Google") }}
+              </a>
+            </div>
+          {% endif %}
+          {% if show_iris_iam_button %}
+            <div style="margin-bottom: 5px;">
+              <a href="/iris_iam_login"
+                 class="w3-button w3-round w3-white w3-border"
+                 style="font-family: Roboto !important; text-align: left; width: 150px; height: 40px;">
+                 <i class="fa fa-fw fa-eye"></i>&nbsp;&nbsp;
+                 {{ gettext("IRIS IAM") }}
+              </a>
+            </div>
+          {% endif %}
+          {% if show_orcid_button %}
+            <div style="margin-bottom: 5px;">
+              <a href="/orcid_login"
+                 class="w3-button w3-round w3-white w3-border"
+                 style="font-family: Roboto !important; text-align: left; width: 150px; height: 40px;">
+                 <i class="fa fa-fw fa-tree"></i>&nbsp;&nbsp;
+                 {{ gettext("ORCID") }}
+              </a>
+            </div>
+          {% endif %}
+        </p>
+      </div>
+
     </div>
+    <br/>
   </form>
+
+  <div class="w3-center">
+    <a target="_blank" style="text-decoration: underline; color: blue;" href="{{ url_for('privacy') }}">Privacy policy</a>
+  </div>
 
 {% endblock %}
