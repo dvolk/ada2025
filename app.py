@@ -5364,7 +5364,7 @@ def configure_nginx(machine, service_type="systemd"):
 
     # Fetch the existing configuration
     sftp.get(
-        "/etc/nginx/sites-enabled/nginx-ada.conf", f"{new_access_token}_nginx.conf"
+        "/etc/nginx/conf.d/nginx-ada.conf", f"{new_access_token}_nginx.conf"
     )
 
     # Replace the placeholders in the configuration
@@ -5400,7 +5400,7 @@ def configure_nginx(machine, service_type="systemd"):
 
     # Use sudo to move the configuration to its final location
     stdin, stdout, stderr = ssh.exec_command(
-        "sudo mv /tmp/nginx.conf /etc/nginx/sites-enabled/nginx-ada.conf"
+        "sudo mv /tmp/nginx.conf /etc/nginx/conf.d/nginx-ada.conf"
     )
     exit_status = stdout.channel.recv_exit_status()  # Wait for exec_command to finish
 
