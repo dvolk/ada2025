@@ -125,15 +125,3 @@ systemctl start vncserver.service filebrowser.service websockify.service
 mkdir -p /etc/nginx/keys
 cp secrets/nubes.stfc.ac.uk-combined.crt /etc/nginx/keys
 cp secrets/nubes.stfc.ac.uk.key /etc/nginx/keys
-
-
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-
-
-
-echo "System will reboot in 10 seconds..."
-sleep 10
-reboot
