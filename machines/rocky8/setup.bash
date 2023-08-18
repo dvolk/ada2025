@@ -110,6 +110,11 @@ cp vncserver.service /etc/systemd/system
 
 
 
+# copy nginx config
+cp -f nginx.conf /etc/nginx
+
+
+
 # reload systemd
 systemctl daemon-reload
 
