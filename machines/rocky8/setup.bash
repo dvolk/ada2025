@@ -115,13 +115,19 @@ systemctl daemon-reload
 
 
 
-# enable ada services
-systemctl enable vncserver.service filebrowser.service websockify.service
-systemctl start vncserver.service filebrowser.service websockify.service
-
-
-
 # copy certs
-mkdir -p /etc/nginx/keys
-cp secrets/nubes.stfc.ac.uk-combined.crt /etc/nginx/keys
-cp secrets/nubes.stfc.ac.uk.key /etc/nginx/keys
+mkdir -p /etc/nginx/keys/
+cp secrets/nubes.stfc.ac.uk-combined.crt /etc/nginx/keys/
+cp secrets/nubes.stfc.ac.uk.key /etc/nginx/keys/
+
+
+
+# enable ada services
+systemctl enable vncserver.service filebrowser.service websockify.service nginx.service
+systemctl start vncserver.service filebrowser.service websockify.service nginx.service
+
+
+
+# copy .ssh folder to ubuntu
+cp -r /root/.ssh/ /home/ubuntu/.ssh/
+chown -R ubuntu:ubuntu /home/ubuntu/.ssh/
