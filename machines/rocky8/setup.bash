@@ -48,12 +48,6 @@ dnf install -y wget git vim-enhanced nano\
 
 
 
-# stop firewalld
-sudo systemctl stop firewalld
-sudo systemctl disable firewalld
-
-
-
 # Install novnc
 git clone --branch add_clipboard_support https://github.com/juanjoDiaz/noVNC.git /usr/share/novnc
 cd /usr/share/novnc
