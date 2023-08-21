@@ -20,8 +20,7 @@ dnf install -y epel-release
 dnf update -y
 dnf --enablerepo=epel group
 dnf groupinstall -y "Xfce" "base-x"
-echo "exec /usr/bin/xfce4-session" >> ~/.xinitrc
-systemctl set-default graphical
+dnf install -y lightdm
 
 
 
@@ -70,15 +69,6 @@ usermod -aG audio,video,cdrom,adm,dialout,wheel $USER
 
 
 
-# Set up VNC
-mkdir -p /home/$USER/.vnc
-echo $VNC_PW | vncpasswd -f > /home/$USER/.vnc/passwd
-chown -R $USER:$USER /home/$USER/.vnc
-chmod 600 /home/$USER/.vnc/passwd
-dnf remove -y xfce4-power-manager
-
-
-
 # Allow the user to save screenshots to web server
 mkdir -p /var/www/html/screenshots
 chown -R $USER:$USER /var/www/html/screenshots
@@ -95,11 +85,6 @@ cp ada.png /var/www/html/ada.png
 
 # cronjob: take a screenshot every minute
 crontab -u $USER -l | { cat; echo '* * * * * xfce4-screenshooter -f -o /var/www/html/screenshots/screenshot.png'; } | crontab -u $USER -
-
-
-
-# don't boot into X by default since it's started by vncserver
-sudo systemctl set-default multi-user.target
 
 
 
@@ -124,6 +109,34 @@ systemctl daemon-reload
 mkdir -p /etc/nginx/keys/
 cp secrets/nubes.stfc.ac.uk-combined.crt /etc/nginx/keys/
 cp secrets/nubes.stfc.ac.uk.key /etc/nginx/keys/
+
+
+
+# enable xfce, disable gnome
+#echo "exec /usr/bin/xfce4-session" >> /home/$USER/.xinitrc
+sudo systemctl disable gdm
+sudo dnf remove -y gnome-shell gnome-session gnome-control-center
+
+
+
+# Set up VNC
+mkdir -p /home/$USER/.vnc
+echo $VNC_PW | vncpasswd -f > /home/$USER/.vnc/passwd
+cat > /home/$USER/.vnc/xstartup <<EOF
+#!/bin/sh
+unset SESSION_MANAGER
+unset DBUS_SESSION_BUS_ADDRESS
+startxfce4 &
+EOF
+chown -R $USER:$USER /home/$USER/.vnc
+chmod 600 /home/$USER/.vnc/passwd
+chmod +x /home/$USER/.vnc/xstartup
+dnf remove -y xfce4-power-manager
+
+
+
+# don't boot into X by default since it's started by vncserver
+sudo systemctl set-default multi-user.target
 
 
 
