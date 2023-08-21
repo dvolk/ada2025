@@ -81,7 +81,8 @@ chown -R $USER:$USER /var/www/html/screenshots
 
 
 # Copy the nginx config file
-cp nginx-ada.conf /etc/nginx/conf.d/nginx-ada.conf
+mv /etc/nginx/conf.d/ /etc/nginx/sites-enabled/
+cp nginx-ada.conf /etc/nginx/sites-enabled/nginx-ada.conf
 # Copy nginx front page
 cp index.html /var/www/html/index.html
 cp ada.png /var/www/html/ada.png
