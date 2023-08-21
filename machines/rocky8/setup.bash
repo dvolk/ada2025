@@ -20,13 +20,13 @@ dnf install -y epel-release
 dnf update -y
 dnf --enablerepo=epel group
 dnf groupinstall -y "Xfce" "base-x"
-dnf install -y lightdm
 
 
 
 dnf install -y tar xorg-x11-fonts-Type1 \
     tigervnc-server tigervnc tigervnc-server-minimal nginx \
     nginx-mod-stream unzip xfce4-screenshooter
+pip3 install --upgrade --ignore-installed pip setuptools
 pip3 install websockify
 
 
@@ -55,8 +55,13 @@ cd -
 
 
 
-# Install desktop applications - can we get materia-gtk-theme in here?
-dnf install -y emacs
+# Install desktop applications
+dnf install -y emacs firefox
+
+
+
+# Install theming and fonts
+dnf install -y gnome-themes-standard tango-icon-theme mate-themes dejavu-sans-fonts
 
 
 
@@ -113,7 +118,6 @@ cp secrets/nubes.stfc.ac.uk.key /etc/nginx/keys/
 
 
 # enable xfce, disable gnome
-#echo "exec /usr/bin/xfce4-session" >> /home/$USER/.xinitrc
 sudo systemctl disable gdm
 sudo dnf remove -y gnome-shell gnome-session gnome-control-center
 
@@ -122,15 +126,8 @@ sudo dnf remove -y gnome-shell gnome-session gnome-control-center
 # Set up VNC
 mkdir -p /home/$USER/.vnc
 echo $VNC_PW | vncpasswd -f > /home/$USER/.vnc/passwd
-cat > /home/$USER/.vnc/xstartup <<EOF
-#!/bin/sh
-unset SESSION_MANAGER
-unset DBUS_SESSION_BUS_ADDRESS
-startxfce4 &
-EOF
 chown -R $USER:$USER /home/$USER/.vnc
 chmod 600 /home/$USER/.vnc/passwd
-chmod +x /home/$USER/.vnc/xstartup
 dnf remove -y xfce4-power-manager
 
 
