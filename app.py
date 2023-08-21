@@ -5317,7 +5317,7 @@ def run_machine_command(machine, command):
 
 
 @log_function_call
-def wait_for_nginx(machine, timeout=120):
+def wait_for_nginx(machine, timeout=1200):
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
 
