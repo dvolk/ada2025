@@ -4,7 +4,6 @@ set -x
 set -e
 
 # Set environment variables
-export DEBIAN_FRONTEND=noninteractive
 export VNC_PORT=5900
 export NOVNC_PORT=6080
 export VNC_PW=vncpassword
