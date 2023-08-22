@@ -147,3 +147,15 @@ systemctl start vncserver.service filebrowser.service websockify.service nginx.s
 # copy .ssh folder to ubuntu
 cp -r /root/.ssh/ /home/ubuntu/.ssh/
 chown -R ubuntu:ubuntu /home/ubuntu/.ssh/
+
+
+
+# configure xfce4
+su ubuntu << EOF
+export DISPLAY=:0
+xfconf-query -c xsettings -p /Net/ThemeName -s 'Adwaita'
+xfconf-query -c xfwm4 -p /general/theme -s "Adwaita" --create --type string
+xfconf-query -c xsettings -p /Net/IconThemeName -s 'Tango'
+xfconf-query -c xfce4-session -p /general/LockCommand -s "false"
+xfconf-query -c xfce4-panel -p /panels/dark-mode -s false --create --type bool
+EOF
