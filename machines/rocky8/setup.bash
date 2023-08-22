@@ -128,7 +128,7 @@ mkdir -p /home/$USER/.vnc
 echo $VNC_PW | vncpasswd -f > /home/$USER/.vnc/passwd
 chown -R $USER:$USER /home/$USER/.vnc
 chmod 600 /home/$USER/.vnc/passwd
-dnf remove -y xfce4-power-manager
+dnf remove -y xfce4-power-manager xfce4-screensaver
 
 
 
@@ -157,4 +157,5 @@ xfconf-query -c xfwm4 -p /general/theme -s "Adwaita" --create --type string
 xfconf-query -c xsettings -p /Net/IconThemeName -s 'Tango'
 xfconf-query -c xfce4-session -p /general/LockCommand -s "false"
 xfconf-query -c xfce4-panel -p /panels/dark-mode -s false --create --type bool
+xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/lock-screen -s false --create --type bool
 EOF
