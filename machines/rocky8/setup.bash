@@ -132,6 +132,11 @@ sudo systemctl set-default multi-user.target
 
 
 
+# remove polkit
+rm -f /etc/xdg/autostart/xfce-polkit.desktop
+
+
+
 # enable ada services
 systemctl enable vncserver.service filebrowser.service websockify.service nginx.service
 systemctl start vncserver.service filebrowser.service websockify.service nginx.service
