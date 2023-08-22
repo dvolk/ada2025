@@ -119,7 +119,6 @@ cp secrets/nubes.stfc.ac.uk.key /etc/nginx/keys/
 
 
 # enable xfce, disable gnome
-sudo systemctl disable gdm
 sudo dnf remove -y gnome-shell gnome-session gnome-control-center
 
 
