@@ -90,7 +90,7 @@ cp ada.png /var/www/html/ada.png
 
 
 # cronjob: take a screenshot every minute
-crontab -u $USER -l | { cat; echo '* * * * * xfce4-screenshooter -f -o /var/www/html/screenshots/screenshot.png'; } | crontab -u $USER -
+crontab -u $USER -l | { cat; echo '* * * * * xfce4-screenshooter -f -s /var/www/html/screenshots/screenshot.png --display=:0'; } | crontab -u $USER -
 
 
 
