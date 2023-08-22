@@ -5,6 +5,7 @@ After=network.target
 [Service]
 Type=simple
 User=ubuntu
+ExecStartPre=/bin/sleep 5
 ExecStart=/usr/bin/vncserver :0 -geometry 1280x800 -SecurityTypes=None -fg -xstartup startxfce4 
 Restart=always
 RestartSec=5s
