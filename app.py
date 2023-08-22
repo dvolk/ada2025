@@ -4065,6 +4065,7 @@ def new_image():
             "options": [
                 "ubuntu-focal-20.04-nogui",
                 "Ubuntu-22.04-LTS-CloudImg-amd64",
+                "rocky-8-nogui"
             ],
         },
         {
@@ -4079,7 +4080,7 @@ def new_image():
         {
             "name": "openstack_username",
             "label": "Openstack volume image username",
-            "options": ["ubuntu"],
+            "options": ["ubuntu", "root"],
         },
         {
             "name": "openstack_keypair",

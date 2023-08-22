@@ -1,0 +1,6 @@
+{
+  "name": "rocky8",
+  "script": "setup.bash",
+  "reboots_required": 0,
+  "params": []
+}
