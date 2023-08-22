@@ -19,7 +19,7 @@ export FILEBROWSER_DL=https://github.com/filebrowser/filebrowser/releases/downlo
 dnf install -y epel-release
 dnf update -y
 dnf --enablerepo=epel group
-dnf groupinstall -y "Xfce" "base-x"
+dnf groupinstall -y "Xfce" "base-x" --exclude gdm --exclude plymouth*
 
 
 
@@ -115,11 +115,6 @@ systemctl daemon-reload
 mkdir -p /etc/nginx/keys/
 cp secrets/nubes.stfc.ac.uk-combined.crt /etc/nginx/keys/
 cp secrets/nubes.stfc.ac.uk.key /etc/nginx/keys/
-
-
-
-# enable xfce, disable gnome
-sudo dnf remove -y gnome-shell gnome-session gnome-control-center
 
 
 
