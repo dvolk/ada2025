@@ -534,9 +534,11 @@ class Group(db.Model):
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
     is_public = db.Column(db.Boolean(), nullable=False, default=False)
-    pre_approved_users = db.Column(db.Text)
 
     users = db.relationship("User", back_populates="group")
+    pre_approved_users = db.relationship(
+        "GroupPreApprovedUsers", backref="group", uselist=False
+    )
     machine_templates = db.relationship("MachineTemplate", back_populates="group")
     welcome_page = db.relationship("GroupWelcomePage", backref="group", uselist=False)
 
@@ -583,6 +585,15 @@ class GroupWelcomePage(db.Model):
 
     def __repr__(self):
         return f"<GWP {self.id}>"
+
+
+class GroupPreApprovedUsers(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.Text)
+    group_id = db.Column(db.Integer, db.ForeignKey("group.id"), nullable=False)
+
+    def __repr__(self):
+        return f"<GPAU {self.id}>"
 
 
 class ProtectedGroupWelcomePageModelView(ProtectedModelView):
@@ -3514,9 +3525,17 @@ def group_mgmt():
 
             if valid_emails:
                 group = current_user.group
-                group.pre_approved_users = pre_approved_users_form.pau_content.data
+                if group.pre_approved_users:
+                    group.pre_approved_users.content = (
+                        pre_approved_users_form.pau_content.data
+                    )
+                else:
+                    new_pre_approved_emails = GroupPreApprovedUsers(
+                        content=pre_approved_users_form.pau_content.data,
+                        group_id=group.id,
+                    )
+                    db.session.add(new_pre_approved_emails)
                 db.session.commit()
-
                 flash(gettext("Pre-approved users updated"))
             else:
                 flash(
@@ -3558,7 +3577,9 @@ def group_mgmt():
     if current_user.group.welcome_page:
         welcome_page_form.wp_content.data = current_user.group.welcome_page.content
     if current_user.group.pre_approved_users:
-        pre_approved_users_form.pau_content.data = current_user.group.pre_approved_users
+        pre_approved_users_form.pau_content.data = (
+            current_user.group.pre_approved_users.content
+        )
     group_name_form.name_field.data = current_user.group.name
 
     return render_template(
