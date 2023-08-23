@@ -29,7 +29,7 @@ if [ "$(cat /etc/issue | head -c 12)" != "Ubuntu 22.04" ]; then
 
         echo "System will reboot in 10 seconds..."
         sleep 10
-        reboot
+        exit 0
     else
         echo "No upgradable packages found."
     fi
@@ -48,7 +48,7 @@ if [ "$(cat /etc/issue | head -c 12)" != "Ubuntu 22.04" ]; then
 
     echo "System will reboot in 10 seconds..."
     sleep 10
-    reboot
+    exit 0
 fi
 
 # -------------------------------------------------------------------------
@@ -463,4 +463,4 @@ fi
 
 echo "System will reboot in 10 seconds..."
 sleep 10
-reboot
+exit 0
