@@ -5645,6 +5645,7 @@ class OpenStackService(VirtService):
                     if exit_status != 0:
                         logging.info("Build script failed")
                         raise Exception
+                    ssh.exec_command("sudo bash -c 'reboot'")
 
                     logging.info(f"{i} waiting for build machine to come up...")
                     # Wait for two minutes for the system to reboot
