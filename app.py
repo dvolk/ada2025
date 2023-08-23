@@ -2360,6 +2360,12 @@ def pick_group():
             group = Group.query.filter_by(id=form.group.data).first_or_404()
             current_user.group = group
             db.session.commit()
+            pre_approved_emails = [
+                email.rstrip() for email in group.pre_approved_users.split("\n")
+            ]
+            if current_user.email in pre_approved_emails:
+                current_user.is_enabled = True
+                db.session.commit()
 
             def inform_group_admins(group_id, site_root):
                 if not MAIL_SENDER:
@@ -3502,7 +3508,7 @@ def group_mgmt():
             lines = pre_approved_users_form.pau_content.data.splitlines()
             valid_emails = True
             for line in lines:
-                pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+                pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
                 if not re.match(pattern, line):
                     valid_emails = False
 
@@ -3513,7 +3519,10 @@ def group_mgmt():
 
                 flash(gettext("Pre-approved users updated"))
             else:
-                flash(gettext("Invalid email detected. Please check your input."), "danger")
+                flash(
+                    gettext("Invalid email detected. Please check your input."),
+                    "danger",
+                )
 
         if not (form1_ok or form2_ok or form3_ok):
             flash(gettext("Sorry, that didn't work"), "danger")
@@ -4099,7 +4108,7 @@ def new_image():
             "options": [
                 "ubuntu-focal-20.04-nogui",
                 "Ubuntu-22.04-LTS-CloudImg-amd64",
-                "rocky-8-nogui"
+                "rocky-8-nogui",
             ],
         },
         {
