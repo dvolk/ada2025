@@ -5642,6 +5642,12 @@ class OpenStackService(VirtService):
                     logging.info(stderr.read().decode())
                     exit_status = stdout.channel.recv_exit_status()
                     logging.info(f"{i} Command return code: {exit_status}")
+                    if exit_status != 0:
+                        logging.info("Build process failed. Aborting!")
+                        ssh.close()
+                        job.state = ImageBuildJobState.FAILED
+                        db.session.commit()
+                        break
 
                     logging.info(f"{i} waiting for build machine to come up...")
                     # Wait for two minutes for the system to reboot
@@ -5650,33 +5656,34 @@ class OpenStackService(VirtService):
                         f"{i} finished sleep. Hopefully the instance is up... end of loop iteration"
                     )
 
-                logging.info("End of build machine loop. Removing build directory.")
-                ssh.connect(server_ip, username=username)
-                stdin, stdout, stderr = ssh.exec_command(f"rm -rf {build_dir}")
-                ssh.close()
+                if job.state != ImageBuildJobState.FAILED:
+                    logging.info("End of build machine loop. Removing build directory.")
+                    ssh.connect(server_ip, username=username)
+                    stdin, stdout, stderr = ssh.exec_command(f"rm -rf {build_dir}")
+                    ssh.close()
 
-                def create_snapshot(conn, server_name):
-                    snapshot_command = [
-                        "openstack",
-                        "server",
-                        "image",
-                        "create",
-                        "--name",
-                        server_name,
-                        server_name,
-                        "-f",
-                        "json",
-                    ]
-                    result = subprocess.run(
-                        snapshot_command,
-                        check=True,
-                        text=True,
-                        capture_output=True,
-                        env=env,
-                    )
-                    result = json.loads(result.stdout)
-                    image_id = result["id"]
-                    return image_id
+                    def create_snapshot(conn, server_name):
+                        snapshot_command = [
+                            "openstack",
+                            "server",
+                            "image",
+                            "create",
+                            "--name",
+                            server_name,
+                            server_name,
+                            "-f",
+                            "json",
+                        ]
+                        result = subprocess.run(
+                            snapshot_command,
+                            check=True,
+                            text=True,
+                            capture_output=True,
+                            env=env,
+                        )
+                        result = json.loads(result.stdout)
+                        image_id = result["id"]
+                        return image_id
 
                 def get_image_status(conn, image_id):
                     image = conn.compute.get_image(image_id)
@@ -5706,30 +5713,31 @@ class OpenStackService(VirtService):
 
                         time.sleep(30)
 
-                if create_image:
-                    logging.info("Creating image from build machine")
-                    job.state = ImageBuildJobState.SAVING_IMAGE
+                if job.state != ImageBuildJobState.FAILED:
+                    if create_image:
+                        logging.info("Creating image from build machine")
+                        job.state = ImageBuildJobState.SAVING_IMAGE
+                        db.session.commit()
+
+                        image_id = create_snapshot(conn, job.name)
+                        wait_for_image(conn, image_id)
+
+                        new_image = Image(
+                            name=job.name,
+                            display_name=job.name,
+                            image_build_job=job,
+                            machine_providers=[job.machine_provider],
+                        )
+                        db.session.add(new_image)
+                        db.session.commit()
+
+                    if create_image and delete_build_machine:
+                        logging.info("deleting build machine after image created")
+                        conn.compute.delete_server(server)
+
+                    job.state = ImageBuildJobState.DONE
+                    job.finished_date = datetime.datetime.utcnow()
                     db.session.commit()
-
-                    image_id = create_snapshot(conn, job.name)
-                    wait_for_image(conn, image_id)
-
-                    new_image = Image(
-                        name=job.name,
-                        display_name=job.name,
-                        image_build_job=job,
-                        machine_providers=[job.machine_provider],
-                    )
-                    db.session.add(new_image)
-                    db.session.commit()
-
-                if create_image and delete_build_machine:
-                    logging.info("deleting build machine after image created")
-                    conn.compute.delete_server(server)
-
-                job.state = ImageBuildJobState.DONE
-                job.finished_date = datetime.datetime.utcnow()
-                db.session.commit()
 
             except Exception:
                 logging.exception("image build failed: ")
