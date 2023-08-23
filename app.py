@@ -534,6 +534,7 @@ class Group(db.Model):
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
     is_public = db.Column(db.Boolean(), nullable=False, default=False)
+    pre_approved_users = db.Column(db.Text)
 
     users = db.relationship("User", back_populates="group")
     machine_templates = db.relationship("MachineTemplate", back_populates="group")
@@ -3421,8 +3422,8 @@ def index():
 
 
 class EditWelcomePageForm(FlaskForm):
-    content = TextAreaField(
-        "Content",
+    wp_content = TextAreaField(
+        "Welcome Page Content",
         render_kw={"rows": 20},
     )
     submit_welcome_page = SubmitField("Update Welcome Page")
@@ -3438,6 +3439,14 @@ class EditGroupNameForm(FlaskForm):
     submit_group_name = SubmitField("Update Group Name")
 
 
+class PreApprovedUsersForm(FlaskForm):
+    pau_content = TextAreaField(
+        "Pre Approved Users Content",
+        render_kw={"rows": 20},
+    )
+    submit_pre_approved_users = SubmitField("Update Pre-approved Users")
+
+
 @app.route("/group_mgmt", methods=["GET", "POST"])
 @limiter.limit("60 per minute")
 @login_required
@@ -3449,9 +3458,11 @@ def group_mgmt():
 
     welcome_page_form = EditWelcomePageForm()
     group_name_form = EditGroupNameForm()
+    pre_approved_users_form = PreApprovedUsersForm()
 
     form1_ok = False
     form2_ok = False
+    form3_ok = False
 
     if request.method == "POST":  # POST path
         if (
@@ -3460,11 +3471,11 @@ def group_mgmt():
         ):
             group = current_user.group
             if group.welcome_page:
-                group.welcome_page.content = welcome_page_form.content.data
+                group.welcome_page.content = welcome_page_form.wp_content.data
                 group.welcome_page.updated_date = datetime.datetime.utcnow()
             else:
                 new_welcome_page = GroupWelcomePage(
-                    content=welcome_page_form.content.data,
+                    content=welcome_page_form.wp_content.data,
                     group_id=group.id,
                 )
                 db.session.add(new_welcome_page)
@@ -3478,13 +3489,33 @@ def group_mgmt():
         ):
             group = current_user.group
             group.name = group_name_form.name_field.data
-            logging.info(group_name_form.name_field.data)
             db.session.commit()
 
             flash(gettext("Group name updated"))
             form2_ok = True
+        elif (
+            pre_approved_users_form.validate_on_submit()
+            and pre_approved_users_form.submit_pre_approved_users.data
+        ):
+            form3_ok = True
 
-        if not (form1_ok or form2_ok):
+            lines = pre_approved_users_form.pau_content.data.splitlines()
+            valid_emails = True
+            for line in lines:
+                pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+                if not re.match(pattern, line):
+                    valid_emails = False
+
+            if valid_emails:
+                group = current_user.group
+                group.pre_approved_users = pre_approved_users_form.pau_content.data
+                db.session.commit()
+
+                flash(gettext("Pre-approved users updated"))
+            else:
+                flash(gettext("Invalid email detected. Please check your input."), "danger")
+
+        if not (form1_ok or form2_ok or form3_ok):
             flash(gettext("Sorry, that didn't work"), "danger")
 
         return redirect(url_for("group_mgmt"))
@@ -3516,7 +3547,9 @@ def group_mgmt():
     )
 
     if current_user.group.welcome_page:
-        welcome_page_form.content.data = current_user.group.welcome_page.content
+        welcome_page_form.wp_content.data = current_user.group.welcome_page.content
+    if current_user.group.pre_approved_users:
+        pre_approved_users_form.pau_content.data = current_user.group.pre_approved_users
     group_name_form.name_field.data = current_user.group.name
 
     return render_template(
@@ -3525,6 +3558,7 @@ def group_mgmt():
         group_machines=group_machines,
         welcome_page_form=welcome_page_form,
         group_name_form=group_name_form,
+        pre_approved_users_form=pre_approved_users_form,
         title=gettext("Group"),
     )
 
