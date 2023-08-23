@@ -192,7 +192,7 @@
       <form method="POST">
         {{ welcome_page_form.hidden_tag() }}
         {{ info(gettext("You can set the group welcome page content. The page is formatted in HTML format.")) }}
-        <p>{{ welcome_page_form.content(class="w3-input w3-border w3-round") }}</p>
+        <p>{{ welcome_page_form.wp_content(class="w3-input w3-border w3-round") }}</p>
         <p>{{ welcome_page_form.submit_welcome_page(class="w3-button w3-round w3-blue", rows=20) }}</p>
       </form>
     </p>
@@ -209,6 +209,22 @@
         {{ info(gettext("You can enter a new group name below.")) }}
         <p>{{ group_name_form.name_field(class="w3-input w3-border w3-round") }}</p>
         <p>{{ group_name_form.submit_group_name(class="w3-button w3-round w3-blue") }}</p>
+      </form>
+    </p>
+  </div>
+  <br/>
+
+  <div class="w3-container w3-dark-gray">
+    <h3>Pre-approved Users</h3>
+  </div>
+  <div class="w3-container w3-light-gray">
+    <p>
+      <form method="POST">
+        {{ pre_approved_users_form.hidden_tag() }}
+        {{ info(gettext("You can set pre-approved email addresses here. These users will not have to be activated manually whenever they join your group.")) }}
+        {{ info(gettext("Please put no more than one email address on each line.")) }}
+        <p>{{ pre_approved_users_form.pau_content(class="w3-input w3-border w3-round") }}</p>
+        <p>{{ pre_approved_users_form.submit_pre_approved_users(class="w3-button w3-round w3-blue") }}</p>
       </form>
     </p>
   </div>
