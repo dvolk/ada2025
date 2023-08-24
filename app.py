@@ -5642,10 +5642,24 @@ class OpenStackService(VirtService):
                     logging.info("\n\n" + cmd + "\n")
 
                     stdin, stdout, stderr = ssh.exec_command(cmd)
+                    decoded_stdout = stdout.read().decode()
+                    decoded_stderr = stderr.read().decode()
+
+                    if not os.path.exists("logs"):
+                        os.makedirs("logs")
+
+                    with open(f"logs/{job.id}_stdout.txt", "a") as stdout_file:
+                        stdout_file.write(decoded_stdout)
+                        stdout_file.flush()
+
+                    with open(f"logs/{job.id}_stderr.txt", "a") as stderr_file:
+                        stderr_file.write(decoded_stderr)
+                        stderr_file.flush()
+
                     logging.info(f"{i} Command stdout:")
-                    logging.info(stdout.read().decode())
+                    logging.info(decoded_stdout)
                     logging.info(f"{i} Command stderr:")
-                    logging.info(stderr.read().decode())
+                    logging.info(decoded_stderr)
                     exit_status = stdout.channel.recv_exit_status()
                     logging.info(f"{i} Command return code: {exit_status}")
                     if exit_status != 0:

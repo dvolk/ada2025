@@ -10,3 +10,4 @@ translations/**/*.mo
 *.key
 *.swp
 *_nginx.conf
+logs/*
