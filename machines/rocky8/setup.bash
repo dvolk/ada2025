@@ -149,11 +149,19 @@ chown -R ubuntu:ubuntu /home/ubuntu/.ssh/
 
 
 # configure xfce4
+pid=$(pgrep -u ubuntu xfce4-session)
+dbus_address=$(grep -z DBUS_SESSION_BUS_ADDRESS /proc/$pid/environ | cut -d= -f2-)
+
 su ubuntu << EOF
 export DISPLAY=:0
+export DBUS_SESSION_BUS_ADDRESS="$dbus_address"
+
 xfconf-query -c xsettings -p /Net/ThemeName -s 'Adwaita'
-xfconf-query -c xfwm4 -p /general/theme -s "Adwaita" --create --type string
+xfconf-query -c xfwm4 -p /general/theme -s 'Adwaita' --create --type string
 xfconf-query -c xsettings -p /Net/IconThemeName -s 'Tango'
-xfconf-query -c xfce4-panel -p /panels/dark-mode -s false --create --type bool
+xfconf-query -c xfce4-panel -p /panels/dark-mode -s false
 xfconf-query -c xfce4-power-manager -p /xfce4-power-manager/lock-screen -s false --create --type bool
+
+wget -q http://www.dvd3000.ca/wp/content/win95/png/Clouds.png -O /home/ubuntu/.Clouds.png
+xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitorVNC-0/workspace0/last-image -s /home/ubuntu/.Clouds.png
 EOF
