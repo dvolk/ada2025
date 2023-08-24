@@ -24,7 +24,7 @@ dnf groupinstall -y "Xfce" "base-x" --exclude gdm --exclude plymouth*
 
 dnf install -y tar xorg-x11-fonts-Type1 \
     tigervnc-server tigervnc tigervnc-server-minimal nginx \
-    nginx-mod-stream unzip xfce4-screenshooter
+    nginx-mod-stream unzip xfce4-screenshooter ImageMagick redhat-lsb
 pip3 install --upgrade --ignore-installed pip setuptools
 pip3 install websockify
 
