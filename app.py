@@ -1563,6 +1563,7 @@ class ProtectedMachineModelView(ProtectedModelView):
         "owner": _color_formatter,
         "state": _color_formatter,
         "machine_template": _color_formatter,
+        "image": _color_formatter,
         "screenshot": _list_thumbnail,
     }
 
