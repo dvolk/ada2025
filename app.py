@@ -1317,9 +1317,7 @@ class Image(db.Model):
     machine_providers = db.relationship(
         "MachineProvider", secondary=image_provider_table, backref="images"
     )
-    machines = db.relationship(
-        "Machine", back_populates="image"
-    )
+    machines = db.relationship("Machine", back_populates="image")
     image_build_job = db.Relationship("ImageBuildJob", uselist=False)
 
     def __repr__(self):
@@ -2381,7 +2379,8 @@ def pick_group():
             pre_approved = False
             try:
                 pre_approved_emails = [
-                    email.rstrip() for email in group.pre_approved_users.content.split("\n")
+                    email.rstrip()
+                    for email in group.pre_approved_users.content.split("\n")
                 ]
                 if current_user.email in pre_approved_emails:
                     pre_approved = True
@@ -5653,14 +5652,17 @@ class OpenStackService(VirtService):
                     decoded_stdout = stdout.read().decode()
                     decoded_stderr = stderr.read().decode()
 
-                    if not os.path.exists("logs"):
-                        os.makedirs("logs/image_build_jobs/")
+                    os.makedirs("logs/image_build_jobs", exist_ok=True)
 
-                    with open(f"logs/image_build_jobs/{job.id}_stdout.txt", "a") as stdout_file:
+                    with open(
+                        f"logs/image_build_jobs/{job.id}_stdout.txt", "a"
+                    ) as stdout_file:
                         stdout_file.write(decoded_stdout)
                         stdout_file.flush()
 
-                    with open(f"logs/image_build_jobs/{job.id}_stderr.txt", "a") as stderr_file:
+                    with open(
+                        f"logs/image_build_jobs/{job.id}_stderr.txt", "a"
+                    ) as stderr_file:
                         stderr_file.write(decoded_stderr)
                         stderr_file.flush()
 
