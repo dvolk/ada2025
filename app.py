@@ -2371,14 +2371,17 @@ def pick_group():
             group = Group.query.filter_by(id=form.group.data).first_or_404()
             current_user.group = group
             db.session.commit()
-            pre_approved_emails = [
-                email.rstrip() for email in group.pre_approved_users.content.split("\n")
-            ]
             pre_approved = False
-            if current_user.email in pre_approved_emails:
-                pre_approved = True
-                current_user.is_enabled = True
-                db.session.commit()
+            try:
+                pre_approved_emails = [
+                    email.rstrip() for email in group.pre_approved_users.content.split("\n")
+                ]
+                if current_user.email in pre_approved_emails:
+                    pre_approved = True
+                    current_user.is_enabled = True
+                    db.session.commit()
+            except:
+                pass
 
             def inform_group_admins(group_id, site_root):
                 if not MAIL_SENDER:
