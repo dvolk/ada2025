@@ -1317,6 +1317,9 @@ class Image(db.Model):
     machine_providers = db.relationship(
         "MachineProvider", secondary=image_provider_table, backref="images"
     )
+    machines = db.relationship(
+        "Machine", back_populates="image"
+    )
     image_build_job = db.Relationship("ImageBuildJob", uselist=False)
 
     def __repr__(self):
@@ -1465,6 +1468,7 @@ class Machine(db.Model):
     )
     owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     machine_template_id = db.Column(db.Integer, db.ForeignKey("machine_template.id"))
+    image_id = db.Column(db.Integer, db.ForeignKey("image.id"))
 
     owner = db.relationship(
         "User", back_populates="owned_machines", foreign_keys=[owner_id]
@@ -1473,6 +1477,7 @@ class Machine(db.Model):
         "User", secondary=shared_user_machine, back_populates="shared_machines"
     )
     machine_template = db.relationship("MachineTemplate", back_populates="machines")
+    image = db.relationship("Image", back_populates="machines", foreign_keys=[image_id])
     data_transfer_jobs = db.relationship(
         "DataTransferJob",
         foreign_keys=[DataTransferJob.machine_id],
@@ -1514,6 +1519,7 @@ class ProtectedMachineModelView(ProtectedModelView):
         "creation_date",
         "owner",
         "machine_template",
+        "image",
         "screenshot",
     )
     form_columns = (
@@ -1542,7 +1548,7 @@ class ProtectedMachineModelView(ProtectedModelView):
         "state",
         "creation_date",
     )
-    column_filters = ("state", "owner", "machine_template")
+    column_filters = ("state", "owner", "machine_template", "image")
     column_auto_select_related = True
 
     def _list_thumbnail(view, context, model, name):
@@ -1557,6 +1563,7 @@ class ProtectedMachineModelView(ProtectedModelView):
         "owner": _color_formatter,
         "state": _color_formatter,
         "machine_template": _color_formatter,
+        "image": _color_formatter,
         "screenshot": _list_thumbnail,
     }
 
@@ -5009,6 +5016,7 @@ def new_machine():
         owner=current_user,
         shared_users=[],
         machine_template=mt,
+        image=mt.image,
     )
     update_audit(audit, machine=m)
 
