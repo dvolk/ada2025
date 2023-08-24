@@ -2371,12 +2371,17 @@ def pick_group():
             group = Group.query.filter_by(id=form.group.data).first_or_404()
             current_user.group = group
             db.session.commit()
-            pre_approved_emails = [
-                email.rstrip() for email in group.pre_approved_users.content.split("\n")
-            ]
-            if current_user.email in pre_approved_emails:
-                current_user.is_enabled = True
-                db.session.commit()
+            pre_approved = False
+            try:
+                pre_approved_emails = [
+                    email.rstrip() for email in group.pre_approved_users.content.split("\n")
+                ]
+                if current_user.email in pre_approved_emails:
+                    pre_approved = True
+                    current_user.is_enabled = True
+                    db.session.commit()
+            except:
+                pass
 
             def inform_group_admins(group_id, site_root):
                 if not MAIL_SENDER:
@@ -2420,10 +2425,11 @@ You're receiving this email because you're a group admin on {site_root}.
 """
                     mail.send(msg)
 
-            site_root = request.url_root
-            threading.Thread(
-                target=inform_group_admins, args=(group.id, site_root)
-            ).start()
+            if not pre_approved:
+                site_root = request.url_root
+                threading.Thread(
+                    target=inform_group_admins, args=(group.id, site_root)
+                ).start()
             return redirect(url_for("welcome"))
         else:
             flash("There was an error picking the group. Please try again.")
