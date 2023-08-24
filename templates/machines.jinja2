@@ -250,6 +250,7 @@
                 <div class="w3-col m8 w3-right-align">
                   <p>
                     {{ gettext("Template:") }} {{ machine.machine_template.name }}<br/>
+                    {{ gettext("Image:") }} {{ machine.image.name }}<br/>
                     {% if machine.owner.id != current_user.id %}
                       {{ gettext("Shared with you by:") }} {{ machine.owner.username }}<br/>
                     {% else %}
