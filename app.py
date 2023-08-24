@@ -5646,13 +5646,13 @@ class OpenStackService(VirtService):
                     decoded_stderr = stderr.read().decode()
 
                     if not os.path.exists("logs"):
-                        os.makedirs("logs")
+                        os.makedirs("logs/image_build_jobs/")
 
-                    with open(f"logs/{job.id}_stdout.txt", "a") as stdout_file:
+                    with open(f"logs/image_build_jobs/{job.id}_stdout.txt", "a") as stdout_file:
                         stdout_file.write(decoded_stdout)
                         stdout_file.flush()
 
-                    with open(f"logs/{job.id}_stderr.txt", "a") as stderr_file:
+                    with open(f"logs/image_build_jobs/{job.id}_stderr.txt", "a") as stderr_file:
                         stderr_file.write(decoded_stderr)
                         stderr_file.flush()
 
