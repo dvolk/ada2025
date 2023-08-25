@@ -141,6 +141,9 @@ systemctl enable vncserver.service filebrowser.service websockify.service nginx.
 systemctl start vncserver.service filebrowser.service websockify.service nginx.service
 
 
+# wait for desktop to come up?
+sleep 10
+
 
 # copy .ssh folder to ubuntu
 cp -r /root/.ssh/ /home/ubuntu/.ssh/
