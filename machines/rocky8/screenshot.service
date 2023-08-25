@@ -1,0 +1,10 @@
+[Unit]
+Description=Take a screenshot and create a thumbnail
+
+[Service]
+Type=simple
+User=ubuntu
+ExecStart=/bin/bash -c "/usr/bin/xfce4-screenshooter -f -s /var/www/html/screenshots/screenshot.png --display=:0 && /usr/bin/convert /var/www/html/screenshots/screenshot.png -scale '20%' /var/www/html/screenshots/screenshot-thumb.png"
+
+[Install]
+WantedBy=multi-user.target

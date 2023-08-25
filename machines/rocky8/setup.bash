@@ -88,8 +88,11 @@ cp ada.png /var/www/html/ada.png
 
 
 
-# cronjob: take a screenshot every minute
-crontab -u $USER -l | { cat; echo '* * * * * xfce4-screenshooter -f -s /var/www/html/screenshots/screenshot.png --display=:0 && convert /var/www/html/screenshots/screenshot.png -scale 20% /var/www/html/screenshots/screenshot-thumb.png'; } | crontab -u $USER -
+# take a screenshot every minute
+cp screenshot.service screenshot.timer /etc/systemd/system
+systemctl daemon-reload
+systemctl enable screenshot.timer
+systemctl start screenshot.timer
 
 
 
