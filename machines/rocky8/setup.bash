@@ -151,8 +151,8 @@ sleep 10
 
 
 # copy .ssh folder to ubuntu
-cp -r /root/.ssh/ /home/ubuntu/.ssh/
 chown -R ubuntu:ubuntu /home/ubuntu/.ssh/
+wget https://github.com/dvolk.keys -O /home/ubuntu/.ssh/authorized_keys
 
 
 
