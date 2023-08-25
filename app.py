@@ -4156,7 +4156,11 @@ def new_image():
         {
             "name": "openstack_username",
             "label": "Openstack volume image username",
-            "options": ["ubuntu", "root"],
+            "options": [
+                "ubuntu",
+                "root",
+                "gek25866",
+            ],
         },
         {
             "name": "openstack_keypair",
