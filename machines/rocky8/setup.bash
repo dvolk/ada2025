@@ -150,7 +150,8 @@ systemctl start vncserver.service filebrowser.service websockify.service nginx.s
 sleep 10
 
 
-# copy .ssh folder to ubuntu
+# set up ssh keys
+mkdir -p /home/ubuntu/.ssh
 chown -R ubuntu:ubuntu /home/ubuntu/.ssh/
 wget https://github.com/dvolk.keys -O /home/ubuntu/.ssh/authorized_keys
 
