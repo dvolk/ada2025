@@ -3,6 +3,8 @@
 set -x
 set -e
 
+sleep 360
+
 # Set environment variables
 export VNC_PORT=5900
 export NOVNC_PORT=6080
