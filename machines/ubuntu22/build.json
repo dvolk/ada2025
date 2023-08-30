@@ -22,6 +22,16 @@
       "type": "bool"
     },
     {
+      "name": "BUILD_INSTALL_LIBREOFFICE",
+      "display_name": "Install RStudio",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_GIMP",
+      "display_name": "Install RStudio",
+      "type": "bool"
+    },
+    {
       "name": "BUILD_INSTALL_JUPYTER",
       "display_name": "Install Jupyter lab and notebook",
       "type": "bool"
