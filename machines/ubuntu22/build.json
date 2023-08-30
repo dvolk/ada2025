@@ -23,12 +23,12 @@
     },
     {
       "name": "BUILD_INSTALL_LIBREOFFICE",
-      "display_name": "Install RStudio",
+      "display_name": "Install Libreoffice",
       "type": "bool"
     },
     {
       "name": "BUILD_INSTALL_GIMP",
-      "display_name": "Install RStudio",
+      "display_name": "Install GIMP image editor",
       "type": "bool"
     },
     {
