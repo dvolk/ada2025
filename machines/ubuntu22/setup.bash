@@ -84,8 +84,8 @@ git checkout 24dbf21474ca88928c5a7d63b39fc950240591f7
 cd -
 
 
-# Install desktop applications
-apt-get -y install emacs materia-gtk-theme
+# Install desktop applications and themes
+apt-get -y install emacs materia-gtk-theme abiword gnumeric pinta
 
 
 # Setup desktop user 'ubuntu'
