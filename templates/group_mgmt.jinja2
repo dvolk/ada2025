@@ -214,21 +214,55 @@
   </div>
   <br/>
 
-  <div class="w3-container w3-dark-gray">
-    <h3>Pre-approved Users</h3>
-  </div>
-  <div class="w3-container w3-light-gray">
-    <p>
-      <form method="POST">
-        {{ pre_approved_users_form.hidden_tag() }}
-        {{ info(gettext("You can set pre-approved email addresses here. These users will not have to be activated manually whenever they join your group.")) }}
-        {{ info(gettext("Please put no more than one email address on each line.")) }}
-        <p>{{ pre_approved_users_form.pau_content(class="w3-input w3-border w3-round") }}</p>
-        <p>{{ pre_approved_users_form.submit_pre_approved_users(class="w3-button w3-round w3-blue") }}</p>
-      </form>
-    </p>
+  <div class="w3-row">
+    <div class="w3-half my-half" style="padding-right: 5px;">
+      <div class="w3-container w3-dark-gray">
+        <h3>Pre-approved Users</h3>
+      </div>
+      <div class="w3-container w3-light-gray">
+        <p>
+          <form method="POST">
+            {{ pre_approved_users_form.hidden_tag() }}
+            {{ info(gettext("You can set pre-approved email addresses here. These users will not have to be activated manually whenever they join your group.")) }}
+            {{ info(gettext("You can separate emails with the characters <,> <;>, spaces or lines.")) }}
+            <p>{{ pre_approved_users_form.pau_content(class="w3-input w3-border w3-round") }}</p>
+            <p>{{ pre_approved_users_form.submit_pre_approved_users(class="w3-button w3-round w3-blue") }}</p>
+          </form>
+        </p>
+      </div>
+    </div>
+
+    <div class="w3-half my-half" style="padding-right: 5px;">
+      <div class="w3-container w3-dark-gray">
+        <h3>Pre-approved Users List</h3>
+      </div>
+      <div class="w3-container w3-light-gray">
+        <p>
+        <table class="w3-table w3-white w3-border w3-bordered">
+          <thead>
+            <th></th>
+            <th>Email</th>
+          </thead>
+
+          {% for email in pre_approved_users_list %}
+            <tr>
+              <td style="vertical-align: middle; width: 3ch;">
+                {% if email in all_group_user_emails %}
+                  <span class="w3-green w3-round">{{ icon('check') }}</span>
+                {% else %}
+                  <span class="w3-red w3-round">{{ icon('xmark') }}</span>
+                {% endif %}
+              </td>
+              <td style="vertical-align: middle;">{{ email }}</td>
+            </tr>
+          {% endfor %}
+        </table>
+        </p>
+      </div>
+    </div>
   </div>
   <br/>
+
 
 {% endblock %}
 

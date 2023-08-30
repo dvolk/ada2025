@@ -21,6 +21,7 @@ import hashlib
 from functools import cache
 import collections
 import pathlib
+import email_validator
 
 # flask and related imports
 from flask import (
@@ -2376,12 +2377,15 @@ def pick_group():
             group = Group.query.filter_by(id=form.group.data).first_or_404()
             current_user.group = group
             db.session.commit()
+
             pre_approved = False
             try:
-                pre_approved_emails = [
-                    email.rstrip()
-                    for email in group.pre_approved_users.content.split("\n")
-                ]
+                pre_approved_emails = {
+                    email.strip()
+                    for email in re.split(
+                        ";|,| |\n", current_user.group.pre_approved_users.content
+                    )
+                }
                 if current_user.email in pre_approved_emails:
                     pre_approved = True
                     current_user.is_enabled = True
@@ -3476,6 +3480,15 @@ class PreApprovedUsersForm(FlaskForm):
     submit_pre_approved_users = SubmitField("Update Pre-approved Users")
 
 
+def is_valid_email(email_str):
+    """Use wtforms email validator to check if email_str is an email."""
+    try:
+        email_validator.validate_email(email_str, check_deliverability=False)
+        return True
+    except Exception:
+        return False
+
+
 @app.route("/group_mgmt", methods=["GET", "POST"])
 @limiter.limit("60 per minute")
 @login_required
@@ -3484,6 +3497,15 @@ def group_mgmt():
     if not current_user.is_admin and not current_user.is_group_admin:
         flash(gettext("Invalid page"), "danger")
         return redirect(url_for("welcome"))
+
+    # create pre-approved group users if it doesn't exist
+    if not current_user.group.pre_approved_users:
+        group_pre_approved_users = GroupPreApprovedUsers(
+            content="",
+            group_id=current_user.group.id,
+        )
+        db.session.add(group_pre_approved_users)
+        db.session.commit()
 
     welcome_page_form = EditWelcomePageForm()
     group_name_form = EditGroupNameForm()
@@ -3528,11 +3550,10 @@ def group_mgmt():
         ):
             form3_ok = True
 
-            lines = pre_approved_users_form.pau_content.data.splitlines()
+            lines = re.split(";|,| |\n", pre_approved_users_form.pau_content.data)
             valid_emails = True
             for line in lines:
-                pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-                if not re.match(pattern, line):
+                if not is_valid_email(line):
                     valid_emails = False
 
             if valid_emails:
@@ -3588,10 +3609,23 @@ def group_mgmt():
 
     if current_user.group.welcome_page:
         welcome_page_form.wp_content.data = current_user.group.welcome_page.content
-    if current_user.group.pre_approved_users:
-        pre_approved_users_form.pau_content.data = (
-            current_user.group.pre_approved_users.content
-        )
+
+    # fill in the form
+    pre_approved_users_form.pau_content.data = (
+        current_user.group.pre_approved_users.content
+    )
+    # create list of pre-approved users
+    pre_approved_users_list = re.split(
+        ";|,| |\n", current_user.group.pre_approved_users.content
+    )
+    # get list of all group emails so we can compare them to the list above
+    all_group_user_emails = {
+        u[0]
+        for u in db.session.query(User)
+        .filter(User.group == current_user.group)
+        .with_entities(User.email)
+    }
+
     group_name_form.name_field.data = current_user.group.name
 
     return render_template(
@@ -3601,6 +3635,8 @@ def group_mgmt():
         welcome_page_form=welcome_page_form,
         group_name_form=group_name_form,
         pre_approved_users_form=pre_approved_users_form,
+        pre_approved_users_list=pre_approved_users_list,
+        all_group_user_emails=all_group_user_emails,
         title=gettext("Group"),
     )
 
