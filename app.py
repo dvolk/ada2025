@@ -3551,6 +3551,9 @@ def group_mgmt():
             form3_ok = True
 
             lines = re.split(";|,| |\n", pre_approved_users_form.pau_content.data)
+            # remove "" after re.split
+            lines = [x for x in lines if x]
+
             valid_emails = True
             for line in lines:
                 if not is_valid_email(line):
@@ -3618,6 +3621,8 @@ def group_mgmt():
     pre_approved_users_list = re.split(
         ";|,| |\n", current_user.group.pre_approved_users.content
     )
+    # remove "" after re.split
+    pre_approved_users_list = [x for x in pre_approved_users_list if x]
     # get list of all group emails so we can compare them to the list above
     all_group_user_emails = {
         u[0]
