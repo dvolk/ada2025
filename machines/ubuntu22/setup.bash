@@ -189,12 +189,12 @@ apt install -y firefox webext-ublock-origin-firefox
 
 # OPTIONAL: Install libreoffice
 if [ "$BUILD_INSTALL_LIBREOFFICE" = "True" ]; then
-    sudo apt install libreoffice
+    sudo apt -y install libreoffice
 fi
 
 # OPTIONAL: Install the gimp image manipulation tool
 if [ "$BUILD_INSTALL_GIMP" = "True" ]; then
-    sudo apt install gimp
+    sudo apt -y install gimp
 fi
 
 # OPTIONAL: install R and Rstudio server
