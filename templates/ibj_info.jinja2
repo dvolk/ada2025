@@ -1,0 +1,16 @@
+{% extends 'base.jinja2' %}
+
+{% block content %}
+
+  <h2>Image build job logs</h2>
+
+  <h3>Extra data</h3>
+  <pre style="font-family: Jetbrains Mono, Ubuntu Mono, monospace !important; white-space: pre-wrap">{{ job_extra_data_str }}</pre>
+
+  <h3>Stdout</h3>
+  <pre style="font-family: Jetbrains Mono, Ubuntu Mono, monospace !important; white-space: pre-wrap">{{ stdout_log }}</pre>
+
+  <h3>Stderr</h3>
+  <pre style="font-family: Jetbrains Mono, Ubuntu Mono, monospace !important; white-space: pre-wrap">{{ stderr_log }}</pre>
+
+{% endblock %}

@@ -4123,6 +4123,41 @@ def delete_image():
     return "OK"
 
 
+@app.route("/image_build_job_info/<job_id>")
+@limiter.limit("60 per minute")
+@login_required
+@profile_complete_required
+def image_build_job_info(job_id):
+    if not current_user.is_admin:
+        abort(403)
+
+    job = ImageBuildJob.query.filter_by(id=job_id).first_or_404()
+    job_extra_data_str = json.dumps(job.extra_data, indent=4)
+
+    try:
+        stdout_log_f = (
+            pathlib.Path("logs") / "image_build_jobs" / f"{job_id}_stdout.txt"
+        )
+        stdout_log = stdout_log_f.read_text()
+    except Exception as e:
+        stdout_log = str(e)
+    try:
+        stderr_log_f = (
+            pathlib.Path("logs") / "image_build_jobs" / f"{job_id}_stderr.txt"
+        )
+        stderr_log = stderr_log_f.read_text()
+    except Exception as e:
+        stderr_log = str(e)
+
+    return render_template(
+        "ibj_info.jinja2",
+        title=gettext("Images"),
+        job_extra_data_str=job_extra_data_str,
+        stdout_log=stdout_log,
+        stderr_log=stderr_log,
+    )
+
+
 @app.route("/new_image", methods=["GET", "POST"])
 @limiter.limit("60 per minute")
 @login_required

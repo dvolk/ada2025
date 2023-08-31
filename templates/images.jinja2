@@ -96,6 +96,12 @@
                        data-job-id="{{ job.id }}">
                         {{ icon('check') }}
                     </a>
+                    <a href="{{ url_for('image_build_job_info', job_id=job.id) }}"
+                       title="Image build job info"
+                       class="w3-button w3-teal w3-round"
+                       data-job-id="{{ job.id }}">
+                        {{ icon('circle-info') }}
+                    </a>
                 </td>
             </tr>
             {% endfor %}
