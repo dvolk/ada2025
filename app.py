@@ -4068,6 +4068,16 @@ def get_machine_state(machine_id):
     return {"machine_state": str(machine.state)}
 
 
+class ImageShareForm(FlaskForm):
+    image = SelectField(
+        lazy_gettext("Image"), validators=[DataRequired()], coerce=int
+    )
+    machine_provider = SelectField(
+        lazy_gettext("Machine Provider"), validators=[DataRequired()], coerce=int
+    )
+    submit_image_share = SubmitField(lazy_gettext("Submit"))
+
+
 @app.route("/images")
 @limiter.limit("60 per minute")
 @login_required
@@ -4083,12 +4093,19 @@ def images():
         .order_by(desc(Image.id))
     )
 
+    machine_providers = MachineProvider.query.all()
+
     # get image templates from ada2025/machines
     # filter out ada2025/machines directories that don't have a build.json
     image_templates = [
         p for p in pathlib.Path("machines").iterdir() if (p / "build.json").is_file()
     ]
     image_build_jobs = reversed(ImageBuildJob.query.filter_by(is_hidden=False).all())
+
+    image_share_form = ImageShareForm()
+
+    image_share_form.image.choices = [(i.id, i.display_name) for i in images]
+    image_share_form.machine_provider.choices = [(mp.id, mp.name) for mp in machine_providers]
 
     return render_template(
         "images.jinja2",
@@ -4097,6 +4114,7 @@ def images():
         images=images,
         image_templates=image_templates,
         image_build_jobs=image_build_jobs,
+        image_share_form=image_share_form 
     )
 
 
