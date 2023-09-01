@@ -4217,6 +4217,7 @@ def new_image():
             "options": [
                 "ubuntu-focal-20.04-nogui",
                 "Ubuntu-22.04-LTS-CloudImg-amd64",
+                "Ubuntu-20.04-LTS-CloudImg-amd64",
                 "rocky-8-nogui",
             ],
         },
