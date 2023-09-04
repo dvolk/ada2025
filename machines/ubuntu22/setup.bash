@@ -187,6 +187,7 @@ apt install -y firefox webext-ublock-origin-firefox
 # -------------------------------------------------------------------------
 # -------------------------------------------------------------------------
 
+# OPTIONAL: Install Ada 2025 Software Installer
 if [ "$BUILD_INSTALL_ADA2025_SOFTWARE_INSTALLER" = "True" ]; then
     apt install -y python3-pip python3-venv
     cd /
