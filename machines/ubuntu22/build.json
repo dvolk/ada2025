@@ -115,6 +115,11 @@
       "name": "BUILD_INSTALL_GLOBUS",
       "display_name": "Install Globus CLI",
       "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_ADA2025_SOFTWARE_INSTALLER",
+      "display_name": "Install Ada 2025 Software Installer",
+      "type": "bool"
     }
   ]
 }
