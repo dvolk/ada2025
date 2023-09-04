@@ -68,6 +68,7 @@ Pygments==2.15.1
 PyNaCl==1.5.0
 pyparsing==3.1.0
 python-cinderclient==9.3.0
+python-glanceclient==4.4.0
 python-novaclient==18.3.0
 pytz==2023.3
 PyYAML==6.0.1

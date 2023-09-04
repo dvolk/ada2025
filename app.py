@@ -4069,16 +4069,14 @@ def get_machine_state(machine_id):
 
 
 class ImageShareForm(FlaskForm):
-    image = SelectField(
-        lazy_gettext("Image"), validators=[DataRequired()], coerce=int
-    )
+    image = SelectField(lazy_gettext("Image"), validators=[DataRequired()], coerce=int)
     machine_provider = SelectField(
         lazy_gettext("Machine Provider"), validators=[DataRequired()], coerce=int
     )
     submit_image_share = SubmitField(lazy_gettext("Submit"))
 
 
-@app.route("/images")
+@app.route("/images", methods=["GET", "POST"])
 @limiter.limit("60 per minute")
 @login_required
 @profile_complete_required
@@ -4105,7 +4103,21 @@ def images():
     image_share_form = ImageShareForm()
 
     image_share_form.image.choices = [(i.id, i.display_name) for i in images]
-    image_share_form.machine_provider.choices = [(mp.id, mp.name) for mp in machine_providers]
+    image_share_form.machine_provider.choices = [
+        (mp.id, mp.name) for mp in machine_providers
+    ]
+
+    if request.method == "POST":
+        if image_share_form.validate_on_submit():
+            image_id = image_share_form.image.data
+            machine_provider_id = image_share_form.machine_provider.data
+
+            threading.Thread(
+                target=OpenStackService.share_image,
+                args=(image_id, machine_provider_id),
+            ).start()
+
+            flash(gettext("Starting image sharing."))
 
     return render_template(
         "images.jinja2",
@@ -4114,7 +4126,7 @@ def images():
         images=images,
         image_templates=image_templates,
         image_build_jobs=image_build_jobs,
-        image_share_form=image_share_form 
+        image_share_form=image_share_form,
     )
 
 
@@ -5615,6 +5627,121 @@ class VirtService(ABC):
 
 
 class OpenStackService(VirtService):
+    @log_function_call
+    @staticmethod
+    def share_image(image_id, provider_to_id):
+        """Share an openstack image to another project."""
+        with app.app_context():
+            try:
+                image = Image.query.filter_by(id=image_id).first()
+
+                if len(mps := image.machine_providers) < 1:
+                    raise NotImplementedError("Image provider doesn't exist.")
+
+                # create the connection with the credentials from the
+                # image machine provider. We assume this also has access
+                # to the destination machine provider, otherwise this
+                # won't work
+                conn, env = OpenStackService.conn_from_mp(mps[0])
+
+                logging.info(conn)
+                logging.info(env)
+
+                # source machine provider openstack project name
+                provider_from_name = mps[0].provider_data["project_name"]
+                # destination machine provider openstack project name
+                provider_to_name = (
+                    MachineProvider.query.filter_by(id=provider_to_id)
+                    .first()
+                    .provider_data["project_name"]
+                )
+
+                # get the image id from openstack
+                command = [
+                    "openstack",
+                    "image",
+                    "show",
+                    image.name,
+                    "-c",
+                    "id",
+                    "-f",
+                    "value",
+                ]
+                logging.info(" ".join(command))
+                result = subprocess.run(
+                    command, capture_output=True, text=True, env=env
+                )
+                openstack_image_id = result.stdout.strip()
+
+                # get the project id from the project name
+                command = f"openstack project list | grep {provider_to_name} | cut -d ' ' -f 2"
+                result = subprocess.run(
+                    command,
+                    shell=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    env=env,
+                )
+                project_id = result.stdout.decode("utf-8").strip()
+                logging.info(f"project id: {project_id}")
+
+                # set the image visibility to shared
+                command = [
+                    "openstack",
+                    "--os-project-name",
+                    provider_from_name,
+                    "image",
+                    "set",
+                    "--property",
+                    "visibility=shared",
+                    openstack_image_id,
+                ]
+                logging.info(" ".join(command))
+                result = subprocess.run(
+                    command, capture_output=True, text=True, env=env
+                )
+
+                logging.info(result.stdout)
+                logging.info(result.stderr)
+
+                # share image with new project
+                command = [
+                    "glance",
+                    "--os-project-name",
+                    provider_from_name,
+                    "member-create",
+                    openstack_image_id,
+                    project_id,
+                ]
+                logging.info(" ".join(command))
+                result = subprocess.run(
+                    command, capture_output=True, text=True, env=env
+                )
+
+                logging.info(result.stdout)
+                logging.info(result.stderr)
+
+                # accept share in new project
+                command = [
+                    "glance",
+                    "--os-project-name",
+                    provider_to_name,
+                    "member-update",
+                    openstack_image_id,
+                    project_id,
+                    "accepted",
+                ]
+                logging.info(" ".join(command))
+                result = subprocess.run(
+                    command, capture_output=True, text=True, env=env
+                )
+
+                logging.info(result.stdout)
+                logging.info(result.stderr)
+
+            except Exception:
+                logging.exception("Error: ")
+
     @log_function_call
     @staticmethod
     def delete_image(image_id):

@@ -1,7 +1,7 @@
 {% extends 'base.jinja2' %}
 
 {% block content %}
-<br/>
+<br />
 
 <div class="w3-container w3-blue">
     <h2>Managed Images</h2>
@@ -10,47 +10,45 @@
 <div class="w3-container w3-pale-blue">
     {{ info(gettext("This lists images in Ada. Click the trash icon to delete an image.")) }}
     <p>
-        <table class="w3-table-all">
-            <thead>
-                <th>Name</th>
-                <th>Display name</th>
-                <th>Created</th>
-                <th>Machine templates</th>
-                <th>Build Job</th>
-                <th style="float: right;">Actions</th>
-            </thead>
-            {% for image in images %}
-            <tr>
-                <td style="vertical-align: middle;">
-                    {{ image.name }}
-                </td>
-                <td style="vertical-align: middle;">
-                    {{ image.display_name }}
-                </td>
-                <td style="vertical-align: middle;">
-                    {{ humanize.naturaldelta(now - image.creation_date) }} ago
-                </td>
-                <td style="vertical-align: middle;">
-                    {{ image.machine_templates|map(attribute="name")|join("<br/>") }}
-                </td>
-                <td style="vertical-align: middle;">
-                    {{ image.image_build_job.name }}
-                </td>
-                <td style="vertical-align: middle; text-align: right;">
-                    <a href="#"
-                       title="Delete image"
-                       class="w3-button w3-red w3-round image-delete"
-                       data-image-id="{{ image.id }}">
-                        {{ icon('trash') }}
-                    </a>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
+    <table class="w3-table-all">
+        <thead>
+            <th>Name</th>
+            <th>Display name</th>
+            <th>Created</th>
+            <th>Machine templates</th>
+            <th>Build Job</th>
+            <th style="float: right;">Actions</th>
+        </thead>
+        {% for image in images %}
+        <tr>
+            <td style="vertical-align: middle;">
+                {{ image.name }}
+            </td>
+            <td style="vertical-align: middle;">
+                {{ image.display_name }}
+            </td>
+            <td style="vertical-align: middle;">
+                {{ humanize.naturaldelta(now - image.creation_date) }} ago
+            </td>
+            <td style="vertical-align: middle;">
+                {{ image.machine_templates|map(attribute="name")|join("<br />") }}
+            </td>
+            <td style="vertical-align: middle;">
+                {{ image.image_build_job.name }}
+            </td>
+            <td style="vertical-align: middle; text-align: right;">
+                <a href="#" title="Delete image" class="w3-button w3-red w3-round image-delete"
+                    data-image-id="{{ image.id }}">
+                    {{ icon('trash') }}
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
     </p>
 </div>
 
-<br/>
+<br />
 
 <div class="w3-container w3-blue">
     <h2>Image Build Jobs</h2>
@@ -59,85 +57,81 @@
 <div class="w3-container w3-pale-blue">
     {{ info(gettext("This lists image build jobs. Click the checkmark to hide a job")) }}
     <p>
-        <table class="w3-table-all">
-            <thead>
-                <th>Name</th>
-                <th>State</th>
-                <th>Created</th>
-                <th>Image Template</th>
-                <th>Provider</th>
-                <th>Image</th>
-                <th style="text-align: right;">Actions</th>
-            </thead>
-            {% for job in image_build_jobs %}
-            <tr>
-                <td style="vertical-align: middle;">
-                    {{ job.name }}
-                </td>
-                <td style="vertical-align: middle;">
-                    {{ (job.state|string)[19:] }}
-                </td>
-                <td style="vertical-align: middle;">
-                    {{ humanize.naturaldelta(now - job.creation_date) }} ago
-                </td>
-                <td style="vertical-align: middle;">
-                    {{ job.template_name }}
-                </td>
-                <td style="vertical-align: middle;">
-                    {{ job.machine_provider.name }}
-                </td>
-                <td style="vertical-align: middle;">
-                    {{ job.image.name }}
-                </td>
-                <td style="vertical-align: middle; text-align: right;">
-                    <a href="#"
-                       title="Hide job"
-                       class="w3-button w3-teal w3-round hide-job"
-                       data-job-id="{{ job.id }}">
-                        {{ icon('check') }}
-                    </a>
-                    <a href="{{ url_for('image_build_job_info', job_id=job.id) }}"
-                       title="Image build job info"
-                       class="w3-button w3-teal w3-round"
-                       data-job-id="{{ job.id }}">
-                        {{ icon('circle-info') }}
-                    </a>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
+    <table class="w3-table-all">
+        <thead>
+            <th>Name</th>
+            <th>State</th>
+            <th>Created</th>
+            <th>Image Template</th>
+            <th>Provider</th>
+            <th>Image</th>
+            <th style="text-align: right;">Actions</th>
+        </thead>
+        {% for job in image_build_jobs %}
+        <tr>
+            <td style="vertical-align: middle;">
+                {{ job.name }}
+            </td>
+            <td style="vertical-align: middle;">
+                {{ (job.state|string)[19:] }}
+            </td>
+            <td style="vertical-align: middle;">
+                {{ humanize.naturaldelta(now - job.creation_date) }} ago
+            </td>
+            <td style="vertical-align: middle;">
+                {{ job.template_name }}
+            </td>
+            <td style="vertical-align: middle;">
+                {{ job.machine_provider.name }}
+            </td>
+            <td style="vertical-align: middle;">
+                {{ job.image.name }}
+            </td>
+            <td style="vertical-align: middle; text-align: right;">
+                <a href="#" title="Hide job" class="w3-button w3-teal w3-round hide-job" data-job-id="{{ job.id }}">
+                    {{ icon('check') }}
+                </a>
+                <a href="{{ url_for('image_build_job_info', job_id=job.id) }}" title="Image build job info"
+                    class="w3-button w3-teal w3-round" data-job-id="{{ job.id }}">
+                    {{ icon('circle-info') }}
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
     </p>
 </div>
 
-<br/>
+<br />
 
 <div class="w3-container w3-blue">
     <h2>Image templates</h2>
 </div>
 
 <div class="w3-container w3-pale-blue">
-    {{ info(gettext("This lists image templates that can be used to build images. Click the arrow to continue to the next page")) }}
+    {{ info(gettext("This lists image templates that can be used to build images. Click the arrow to continue to the
+    next page")) }}
     <p>
-        <table class="w3-table-all">
-            <thead>
-                <th>Template name</th>
-                <th style="text-align: right;">Actions</th>
-            </thead>
-            {% for image_template in image_templates %}
-            <tr>
-                <td style="vertical-align: middle;">{{ image_template }}</td>
-                <td style="vertical-align: middle; text-align: right;">
-                    <a class="w3-button w3-blue w3-round" href="{{ url_for('new_image', image_template=image_template) }}">
-                        {{ icon('right-long') }}
-                    </a>
-                </td>
-            </tr>
-            {% endfor %}
-        </table>
+    <table class="w3-table-all">
+        <thead>
+            <th>Template name</th>
+            <th style="text-align: right;">Actions</th>
+        </thead>
+        {% for image_template in image_templates %}
+        <tr>
+            <td style="vertical-align: middle;">{{ image_template }}</td>
+            <td style="vertical-align: middle; text-align: right;">
+                <a class="w3-button w3-blue w3-round" href="{{ url_for('new_image', image_template=image_template) }}">
+                    {{ icon('right-long') }}
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
     </p>
 </div>
 
-<br/>
+<br />
 
 <div class="w3-container w3-blue">
     <h2>Image sharing</h2>
@@ -145,59 +139,60 @@
 
 <div class="w3-container w3-pale-blue">
     {{ info(gettext("This form is for sharing images between cloud projects.")) }}
-    
+
     <form action="/images" method="POST">
-    {{ image_share_form.hidden_tag() }}
+        {{ image_share_form.hidden_tag() }}
         <div class="w3-third" style="padding-right: 5px;">
-          {{ image_share_form.image.label() }}
-          {{ image_share_form.image(class="w3-input w3-round w3-white") }}
+            {{ image_share_form.image.label() }}
+            {{ image_share_form.image(class="w3-input w3-round w3-white") }}
         </div>
         <div class="w3-third" style="padding-right: 5px;">
-          {{ image_share_form.machine_provider.label() }}
-          {{ image_share_form.machine_provider(class="w3-input w3-round w3-white") }}
+            {{ image_share_form.machine_provider.label() }}
+            {{ image_share_form.machine_provider(class="w3-input w3-round w3-white") }}
         </div>
         <div class="w3-third" style="padding-top: 21px; padding-right: 5px;">
-          {{ image_share_form.submit_image_share(class="w3-button w3-round w3-blue") }}
+            {{ image_share_form.submit_image_share(class="w3-button w3-round w3-blue") }}
         </div>
     </form>
-    <br/>
-    <br/>
-    <br/>
-    <br/>
+    <br />
+    <br />
+    <br />
+    <br />
 </div>
 
-<br/>
+<br />
 {% endblock %}
 
 {% block javascript %}
 <script type="text/javascript">
- document.querySelectorAll('.image-delete').forEach(item => {
-     item.addEventListener('click', event => {
-         var result = window.confirm('Are you sure you want to delete this image? Press OK to confirm this action.');
-         if (result) {
-             event.preventDefault();
-             fetch("/delete_image", {
-                 method: 'POST',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ image_id_to_delete: item.dataset.imageId })
-             })
-                 .then(response => location.reload())
-                 .catch(error => console.error('Error:', error));
-         }
-     });
- });
- document.querySelectorAll('.hide-job').forEach(item => {
-     item.addEventListener('click', event => {
-         event.preventDefault();
-         fetch("/dismiss_imagebuildjob", {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ job_id: item.dataset.jobId })
-         })
-             .then(response => location.reload())
-             .catch(error => console.error('Error:', error));
-     }
-     )}
- );
+    document.querySelectorAll('.image-delete').forEach(item => {
+        item.addEventListener('click', event => {
+            var result = window.confirm('Are you sure you want to delete this image? Press OK to confirm this action.');
+            if (result) {
+                event.preventDefault();
+                fetch("/delete_image", {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image_id_to_delete: item.dataset.imageId })
+                })
+                    .then(response => location.reload())
+                    .catch(error => console.error('Error:', error));
+            }
+        });
+    });
+    document.querySelectorAll('.hide-job').forEach(item => {
+        item.addEventListener('click', event => {
+            event.preventDefault();
+            fetch("/dismiss_imagebuildjob", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ job_id: item.dataset.jobId })
+            })
+                .then(response => location.reload())
+                .catch(error => console.error('Error:', error));
+        }
+        )
+    }
+    );
 </script>
 {% endblock %}
