@@ -183,7 +183,9 @@ echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codenam
 
 apt install -y firefox webext-ublock-origin-firefox
 
-apt install -y python3-pip python3-venv
+add-apt-repository -y ppa:apptainer/ppa
+apt update
+apt install -y python3-pip python3-venv apptainer
 cd /
 wget -q https://ada-files.oxfordfun.com/software/Ada2025_SI/ada2025_si.tar.gz
 tar -xvf ada2025_si.tar.gz
