@@ -12,6 +12,7 @@ RUN apt update && \
     virtinst \
     libvirt-dev \
     python3-openstackclient \
+    python3-glanceclient \
     libpq-dev
 
 # Copy the requirements file into the container
