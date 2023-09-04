@@ -183,19 +183,19 @@ echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codenam
 
 apt install -y firefox webext-ublock-origin-firefox
 
-add-apt-repository -y ppa:apptainer/ppa
-apt update
-apt install -y python3-pip python3-venv apptainer
-cd /
-wget -q https://ada-files.oxfordfun.com/software/Ada2025_SI/ada2025_si.tar.gz
-tar -xvf ada2025_si.tar.gz
-rm -f ada2025_si.tar.gz
-python3 -m venv /opt/ada2025-software-installer/env
-/opt/ada2025-software-installer/env/bin/pip3 install -r /opt/ada2025-software-installer/requirements.txt
+# -------------------------------------------------------------------------
+# -------------------------------------------------------------------------
+# -------------------------------------------------------------------------
 
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
+if [ "$BUILD_INSTALL_ADA2025_SOFTWARE_INSTALLER" = "True" ]; then
+    apt install -y python3-pip python3-venv
+    cd /
+    wget -q https://ada-files.oxfordfun.com/software/Ada2025_SI/ada2025_si.tar.gz
+    tar -xvf ada2025_si.tar.gz
+    rm -f ada2025_si.tar.gz
+    python3 -m venv /opt/ada2025-software-installer/env
+    /opt/ada2025-software-installer/env/bin/pip3 install -r /opt/ada2025-software-installer/requirements.txt
+fi
 
 # OPTIONAL: Install libreoffice
 if [ "$BUILD_INSTALL_LIBREOFFICE" = "True" ]; then
