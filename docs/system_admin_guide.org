@@ -32,7 +32,7 @@ You can view basic information on all groups from the admin tab.
 
 ** Nginx certificates
 
-Before starting, please put the appropriate Nginx certificates in the "secrets" directory (which you may have to make), which should be in the same directory as app.py.
+Before starting, please put the appropriate Nginx certificates in the "secrets" directory (you may to make this), which should be in the same directory as app.py.
 
 ** Selecting an image template
 
