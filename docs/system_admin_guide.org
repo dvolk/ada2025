@@ -30,6 +30,10 @@ You can view basic information on all groups from the admin tab.
 
 * Creating images
 
+** Nginx certificates
+
+Before starting, please put the appropriate Nginx certificates in the "secrets" directory (which you may have to make), which should be in the same directory as app.py.
+
 ** Selecting an image template
 
 Select an image template based on the OS that you want your image to have.
@@ -105,3 +109,10 @@ It should be specified based on who the users of the image will be (e.g. if the 
 *** Software install checkboxes
 
 These checkboxes determine what software will be installed on the image. They should be tailored to the needs of the user.
+
+** Common issues
+
+There are several common issues that you may run into while attempting to build images:
+
++ If the machine cannot be SSHed into after a certain stage in the build process, it is likely that permissions of the .ssh directory (or indeed the entire home directory) of the build user have been overwritten. Please ensure that any files/directories being downloaded (particularly from the Ada file server) have the appropriate permissions.
++ If the build process gets stuck on "WAITING_FOR_VM" then it is likely that you do not have Nginx certs in the "secrets" directory (which you may need to create in your ada2025 folder). For machines created on the STFC OpenStack, these certificates should be "nubes.stfc.ac.uk-combined.crt" and "nubes.stfc.ac.uk.key".
