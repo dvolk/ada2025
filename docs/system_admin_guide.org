@@ -27,3 +27,81 @@ You can view app configuration variables from the admin tab.
 You can view basic information on all groups from the admin tab.
 
 #+HTML: <hr/>
+
+* Creating images
+
+** Selecting an image template
+
+Select an image template based on the OS that you want your image to have.
+
+** Ada options
+
+*** Selecting a machine provider
+
+A machine provider is where the image will be built (for example, an OpenStack project). Where the image is built determines where machines from that image will also be built.
+
+*** Create image checkbox
+
+This checkbox decides whether or not the build image is saved after the build process has completed. It is useful for debugging purposes.
+
+*** Delete build machine checkbox
+
+This checkbox decides whether the build machine is deleted upon completion of the build process. You may want to disable deletion in order to investigate why a build script is failing.
+
+** Provider parameters
+
+*** OpenStack instance image build flavor
+
+This parameter determines the specifications of the build VM (e.g. RAM, disk space, CPU etc.)
+
+*** OpenStack network UUID
+
+This parameter determines the network that the build machine will occupy on the OpenStack project. Please visit OpenStack in order to determine the appropriate choice for this parameter.
+
+*** OpenStack security groups
+
+This parameter determines which ports will be open on the build machine. You can see which ports that a particular security group opens on your OpenStack project.
+
+Generally, this value should be set to ['HTTP', 'HTTPS', 'SSH'].
+
+*** OpenStack volume image
+
+This parameter determines the base image that the new image will be constructed from. It will determine what OS that an image will have.
+
+Note that in order to construct an ubuntu 22 image, you must select ubuntu 20.04 as the base image, and the build script will update it to ubuntu 22.
+
+*** OpenStack assign floating ip
+
+This parameter determines if a floating (virtual) IP should be assigned to the build machine. This may be necessary to allow for access to the machine from outside of the STFC firewall.
+
+In general, this value should be set to False.
+
+*** OpenStack volume image username
+
+This is the user that Ada will SSH into the machine using, and so it is important that it is correct otherwise the build will fail.
+
+When constructing ubuntu images, this value should generally be set to "ubuntu".
+
+When constructing rocky linux images, it should generally be set to "root".
+
+*** OpenStack keypair
+
+This is the keypair which will be used by Ada in order to access the build machine. OpenStack will place the relevant public key on the build machine. The corresponding private key should be placed in /root/.ssh/id_rsa on the machine on which Ada is run.
+
+The only option available as of writing is "denis-key", and so this value should be used.
+
+** Image build parameters
+
+*** Nginx tls keys to use
+
+???
+
+*** Build group flavor
+
+This parameter is generally used to determine cosmetic configuration in the image (e.g. Desktop background).
+
+It should be specified based on who the users of the image will be (e.g. if the image will be used by SCI-ML users, then "sciml" should be selected).
+
+*** Software install checkboxes
+
+These checkboxes determine what software will be installed on the image. They should be tailored to the needs of the user.
