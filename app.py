@@ -2072,6 +2072,9 @@ class LoginForm(FlaskForm):
     password = PasswordField(
         lazy_gettext("Password"), validators=[DataRequired(), Length(min=8, max=100)]
     )
+    otp_token = PasswordField(
+        lazy_gettext("OTP Token"), validators=[DataRequired(), Length(min=6, max=100)]
+    )
     submit = SubmitField("Sign In")
 
 

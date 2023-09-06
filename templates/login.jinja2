@@ -48,6 +48,11 @@
             <a href="/forgot_password" style="float: right; text-decoration: underline; color: blue;"> (Forgot Password?)</a>
           {% endif %}
         </p>
+        <br/>
+        <p>
+          {{ form.otp_token.label() }}
+          {{ form.otp_token(class="w3-input w3-round w3-border w3-light-grey") }}
+        </p>
 
         {% if LOGIN_RECAPTCHA %}
           <br/>
