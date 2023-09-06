@@ -90,7 +90,7 @@ When constructing rocky linux images, it should generally be set to "root".
 
 *** OpenStack keypair
 
-This is the keypair which will be used by Ada in order to access the build machine. OpenStack will place the relevant public key on the build machine. The corresponding private key should be placed in {{{/root/}}}.ssh/id_rsa on the machine on which Ada is run.
+This is the keypair which will be used by Ada in order to access the build machine. OpenStack will place the relevant public key on the build machine. The corresponding private key should be placed in /root/.ssh/id_rsa on the machine on which Ada is run.
 
 The only option available as of writing is "denis-key", and so this value should be used.
 
