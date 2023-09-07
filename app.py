@@ -3034,7 +3034,7 @@ def login():
             if user and user.check_password(form.password.data):
                 totp = pyotp.TOTP(user.otp_secret)
                 otp_login_perm = False
-                if ADA2025_USE_2FA and totp.verify(form.otp_token.data):
+                if ADA2025_USE_2FA and totp.verify(form.otp_token.data) and user.otp_confirmed:
                     otp_login_perm = True
                 elif not ADA2025_USE_2FA or not user.otp_confirmed:
                     otp_login_perm = True
