@@ -17,7 +17,7 @@
           <table class="w3-table-all">
             <thead>
               <th></th>
-              <th>{{ gettext("Name and email") }}</th>
+              <th>{{ gettext("Name, email, affiliation") }}</th>
               <th>{{ gettext("Account created") }}</th>
               <th style="text-align: right">{{ gettext("Actions") }}</th>
             </thead>
@@ -34,7 +34,9 @@
                 <td style="vertical-align: middle;">
                   {{ u.given_name }} {{ u.family_name }}<br/>
 
-                  {{ u.email }}
+                  {{ u.email }}<br/>
+
+                  {{ u.organization }}
 
                   {% if u.provider == "google" %}
                     <i class="fa-brands fa-fw fa-google"></i>
