@@ -32,11 +32,9 @@
                 </td>
 
                 <td style="vertical-align: middle;">
-                  {{ u.given_name }} {{ u.family_name }}<br/>
+                  {{ u.given_name }} {{ u.family_name }} ({{ u.organization }})<br/>
 
-                  {{ u.email }}<br/>
-
-                  {{ u.organization }}
+                  {{ u.email }}
 
                   {% if u.provider == "google" %}
                     <i class="fa-brands fa-fw fa-google"></i>
