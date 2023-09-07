@@ -654,7 +654,6 @@ class User(db.Model, UserMixin):
     timezone = db.Column(db.String(50), default="Europe/London", nullable=False)
     otp_secret = db.Column(db.String(32), nullable=False)
     otp_confirmed = db.Column(db.Boolean, default=False, nullable=False)
-    otp_enabled = db.Column(db.Boolean, default=False, nullable=False)
 
     # oauth2 stuff
     provider = db.Column(db.String(64))  # e.g. 'google', 'local'
@@ -837,7 +836,6 @@ class ProtectedUserModelView(ProtectedModelView):
         "is_admin",
         "is_email_confirmed",
         "creation_date",
-        "otp_enabled",
         "otp_confirmed",
     )
     form_columns = (
@@ -863,7 +861,6 @@ class ProtectedUserModelView(ProtectedModelView):
         "is_admin",
         "provider",
         "provider_id",
-        "otp_enabled",
         "otp_confirmed",
     )
     column_searchable_list = ("username", "email")
@@ -1959,8 +1956,6 @@ def profile_complete_required(f):
             return redirect(url_for("pick_group"))
         if not current_user.is_enabled:
             return redirect(url_for("not_activated"))
-        if not current_user.otp_confirmed and ADA2025_USE_2FA and current_user.otp_enabled:
-            return redirect(url_for("otp_setup"))
         if not current_user.ssh_keys:
             logging.info(f"user {current_user.id} is missing ssh keys, creating...")
             current_user.ssh_keys = gen_ssh_keys(current_user.id)
@@ -3041,7 +3036,7 @@ def login():
                 otp_login_perm = False
                 if ADA2025_USE_2FA and totp.verify(form.otp_token.data):
                     otp_login_perm = True
-                elif not ADA2025_USE_2FA or not user.otp_enabled:
+                elif not ADA2025_USE_2FA or not user.otp_confirmed:
                     otp_login_perm = True
                 
                 if otp_login_perm:
