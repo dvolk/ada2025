@@ -836,6 +836,7 @@ class ProtectedUserModelView(ProtectedModelView):
         "is_admin",
         "is_email_confirmed",
         "creation_date",
+        "otp_confirmed",
     )
     form_columns = (
         "is_enabled",
@@ -860,6 +861,7 @@ class ProtectedUserModelView(ProtectedModelView):
         "is_admin",
         "provider",
         "provider_id",
+        "otp_confirmed",
     )
     column_searchable_list = ("username", "email")
     column_sortable_list = ("id", "username", "email", "creation_date")
