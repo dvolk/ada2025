@@ -3491,7 +3491,7 @@ def otp_setup():
                 db.session.commit()
                 return redirect(url_for("login"))
             else:
-                flash(gettext("Invalid OTP provided"))
+                flash(gettext("Invalid OTP provided"), "danger")
 
     # GET PATH
     return render_template("otp_setup.jinja2", title=gettext("OTP Setup"), uri=uri, form=form)
