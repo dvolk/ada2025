@@ -3504,7 +3504,8 @@ def otp_setup():
             if totp.verify(form.otp_token.data):
                 current_user.otp_confirmed = True
                 db.session.commit()
-                return redirect(url_for("welcome"))
+                flash(gettext("2FA has been enabled on your account!"))
+                return redirect(url_for("settings"))
             else:
                 flash(gettext("Invalid OTP provided"), "danger")
 
