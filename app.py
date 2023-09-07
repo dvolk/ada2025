@@ -56,6 +56,7 @@ from flask_admin.contrib.sqla import ModelView
 from flask_admin.model import typefmt
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
+from flask_qrcode import QRcode
 from wtforms.widgets import ListWidget, CheckboxInput
 from wtforms_sqlalchemy.fields import QuerySelectMultipleField
 from wtforms.widgets import TextArea
@@ -248,6 +249,7 @@ app.config["MAIL_USE_SSL"] = str_to_bool(os.environ.get("ADA2025_MAIL_USE_SSL", 
 MAIL_SENDER = os.environ.get("ADA2025_MAIL_SENDER", "")
 mail = Mail(app)
 
+qrcode = QRcode(app)
 
 @app.before_request
 def before_request():
@@ -3461,11 +3463,23 @@ def register():
     )
 
 
+class OtpSetupForm(FlaskForm):
+    otp_token = PasswordField(
+        lazy_gettext("OTP Token"), validators=[DataRequired(), Length(min=6, max=100)]
+    )
+    submit = SubmitField("Submit")
+
+
 @app.route("/otp_setup", methods=["GET", "POST"])
 @limiter.limit("60 per hour")
+@login_required
 def otp_setup():
-    secret = "test"
-    return render_template("otp_setup.jinja2", title=gettext("OTP Setup"))
+    secret = current_user.otp_secret
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(name=current_user.username, issuer_name="Ada 2025")
+
+    # GET PATH
+    form = OtpSetupForm()
+    return render_template("otp_setup.jinja2", title=gettext("OTP Setup"), uri=uri, form=form)
 
 
 @app.route("/")

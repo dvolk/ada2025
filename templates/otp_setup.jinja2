@@ -1,0 +1,22 @@
+{% extends 'base-bare.jinja2' %}
+
+{% block content %}
+<h1 style="text-align: center;">OTP Setup</h1>
+<p style="text-align: left;">
+    {{ idea(gettext("In order to ensure the security of our platform, we require that users use two factor authentication.")) }}
+</p>
+<p style="text-align: left;">
+    {{ info(gettext("Please use Google Authenticator (or another OTP application) to scan the QR code below to generate your OTP, and confirm using the text box below.")) }}
+</p>
+<br/>
+<div class="image-container" style="text-align: center;">
+    <img src="{{ qrcode(uri) }}" alt="QR Code">
+</div>
+<p>
+    {{ form.otp_token.label() }}
+    {{ form.otp_token(class="w3-input w3-round w3-border w3-light-grey") }}
+</p>
+<p style="text-align: center;">
+    {{ form.submit(class="w3-btn w3-blue w3-round") }}
+</p>
+{% endblock %}
