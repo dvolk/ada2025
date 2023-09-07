@@ -837,6 +837,7 @@ class ProtectedUserModelView(ProtectedModelView):
         "is_admin",
         "is_email_confirmed",
         "creation_date",
+        "otp_enabled",
         "otp_confirmed",
     )
     form_columns = (
@@ -862,6 +863,7 @@ class ProtectedUserModelView(ProtectedModelView):
         "is_admin",
         "provider",
         "provider_id",
+        "otp_enabled",
         "otp_confirmed",
     )
     column_searchable_list = ("username", "email")
@@ -1957,7 +1959,7 @@ def profile_complete_required(f):
             return redirect(url_for("pick_group"))
         if not current_user.is_enabled:
             return redirect(url_for("not_activated"))
-        if not current_user.otp_confirmed and ADA2025_USE_2FA:
+        if not current_user.otp_confirmed and ADA2025_USE_2FA and current_user.otp_enabled:
             return redirect(url_for("otp_setup"))
         if not current_user.ssh_keys:
             logging.info(f"user {current_user.id} is missing ssh keys, creating...")
@@ -3039,7 +3041,7 @@ def login():
                 otp_login_perm = False
                 if ADA2025_USE_2FA and totp.verify(form.otp_token.data):
                     otp_login_perm = True
-                elif not ADA2025_USE_2FA:
+                elif not ADA2025_USE_2FA or not user.otp_enabled:
                     otp_login_perm = True
                 
                 if otp_login_perm:
