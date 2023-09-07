@@ -3488,10 +3488,9 @@ def otp_setup():
         if form.validate_on_submit():
             totp = pyotp.TOTP(secret)
             if totp.verify(form.otp_token.data):
-                logging.info("TRUE")
                 current_user.otp_confirmed = True
                 db.session.commit()
-                return redirect(url_for("login"))
+                return redirect(url_for("welcome"))
             else:
                 flash(gettext("Invalid OTP provided"), "danger")
 
