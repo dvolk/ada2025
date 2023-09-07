@@ -196,6 +196,10 @@ ADA2025_USE_EMAIL_CONFIRMATION = str_to_bool(
     os.environ.get("ADA2025_USE_EMAIL_CONFIRMATION", "False")
 )
 
+ADA2025_USE_2FA = str_to_bool(
+    os.environ.get("ADA2025_USE_2FA", "False")
+)
+
 ADA2025_DNS_SECRET_KEY = os.getenv("ADA2025_DNS_SECRET_KEY") or gen_token(32)
 
 ADA2025_INSTANCE_IDENTIFIER = os.getenv("ADA2025_INSTANCE_IDENTIFIER") or ""
@@ -647,6 +651,7 @@ class User(db.Model, UserMixin):
     language = db.Column(db.String(5), default="en", nullable=False)
     timezone = db.Column(db.String(50), default="Europe/London", nullable=False)
     otp_secret = db.Column(db.String(32), nullable=False)
+    otp_confirmed = db.Column(db.Boolean, default=False, nullable=False)
 
     # oauth2 stuff
     provider = db.Column(db.String(64))  # e.g. 'google', 'local'
@@ -1947,6 +1952,8 @@ def profile_complete_required(f):
             return redirect(url_for("pick_group"))
         if not current_user.is_enabled:
             return redirect(url_for("not_activated"))
+        if not current_user.otp_confirmed and ADA2025_USE_2FA:
+            return redirect(url_for("otp_setup"))
         if not current_user.ssh_keys:
             logging.info(f"user {current_user.id} is missing ssh keys, creating...")
             current_user.ssh_keys = gen_ssh_keys(current_user.id)
@@ -3452,6 +3459,13 @@ def register():
         form=form,
         title=gettext("Register account"),
     )
+
+
+@app.route("/otp_setup", methods=["GET", "POST"])
+@limiter.limit("60 per hour")
+def otp_setup():
+    secret = "test"
+    return render_template("otp_setup.jinja2", title=gettext("OTP Setup"))
 
 
 @app.route("/")
