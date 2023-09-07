@@ -197,9 +197,7 @@ ADA2025_USE_EMAIL_CONFIRMATION = str_to_bool(
     os.environ.get("ADA2025_USE_EMAIL_CONFIRMATION", "False")
 )
 
-ADA2025_USE_2FA = str_to_bool(
-    os.environ.get("ADA2025_USE_2FA", "False")
-)
+ADA2025_USE_2FA = str_to_bool(os.environ.get("ADA2025_USE_2FA", "False"))
 
 ADA2025_DNS_SECRET_KEY = os.getenv("ADA2025_DNS_SECRET_KEY") or gen_token(32)
 
@@ -250,6 +248,7 @@ MAIL_SENDER = os.environ.get("ADA2025_MAIL_SENDER", "")
 mail = Mail(app)
 
 qrcode = QRcode(app)
+
 
 @app.before_request
 def before_request():
@@ -3034,11 +3033,15 @@ def login():
             if user and user.check_password(form.password.data):
                 totp = pyotp.TOTP(user.otp_secret)
                 otp_login_perm = False
-                if ADA2025_USE_2FA and totp.verify(form.otp_token.data) and user.otp_confirmed:
+                if (
+                    ADA2025_USE_2FA
+                    and totp.verify(form.otp_token.data)
+                    and user.otp_confirmed
+                ):
                     otp_login_perm = True
                 elif not ADA2025_USE_2FA or not user.otp_confirmed:
                     otp_login_perm = True
-                
+
                 if otp_login_perm:
                     # log user in
                     user.sesh_id = gen_token(2)
@@ -3487,9 +3490,11 @@ class OtpSetupForm(FlaskForm):
 def otp_setup():
     if current_user.otp_confirmed:
         return redirect(url_for("welcome"))
-    
+
     secret = current_user.otp_secret
-    uri = pyotp.totp.TOTP(secret).provisioning_uri(name=current_user.username, issuer_name="Ada 2025")
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(
+        name=current_user.username, issuer_name="Ada 2025"
+    )
     form = OtpSetupForm()
 
     # POST PATH
@@ -3504,7 +3509,9 @@ def otp_setup():
                 flash(gettext("Invalid OTP provided"), "danger")
 
     # GET PATH
-    return render_template("otp_setup.jinja2", title=gettext("OTP Setup"), uri=uri, form=form)
+    return render_template(
+        "otp_setup.jinja2", title=gettext("OTP Setup"), uri=uri, form=form
+    )
 
 
 @app.route("/")
