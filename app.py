@@ -3474,11 +3474,26 @@ class OtpSetupForm(FlaskForm):
 @limiter.limit("60 per hour")
 @login_required
 def otp_setup():
+    if current_user.otp_confirmed:
+        return redirect(url_for("welcome"))
+    
     secret = current_user.otp_secret
     uri = pyotp.totp.TOTP(secret).provisioning_uri(name=current_user.username, issuer_name="Ada 2025")
+    form = OtpSetupForm()
+
+    # POST PATH
+    if request.method == "POST":
+        if form.validate_on_submit():
+            totp = pyotp.TOTP(secret)
+            if totp.verify(form.otp_token.data):
+                logging.info("TRUE")
+                current_user.otp_confirmed = True
+                db.session.commit()
+                return redirect(url_for("login"))
+            else:
+                flash(gettext("Invalid OTP provided"))
 
     # GET PATH
-    form = OtpSetupForm()
     return render_template("otp_setup.jinja2", title=gettext("OTP Setup"), uri=uri, form=form)
 
 
