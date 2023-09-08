@@ -52,6 +52,15 @@ def deploy_user_keys_to_machine(
             scp.putfo(StringIO(public_key), remote_path="~/.ssh/ada-id_rsa.pub")
             ssh.exec_command("chmod 644 ~/.ssh/ada-id_rsa.pub")
             ssh.exec_command("cat ~/.ssh/ada-id_rsa.pub >> ~/.ssh/authorized_keys")
+
+            public_key_username = public_key.split(" ")[-1].strip()
+            scp.putfo(
+                StringIO(f"ADA_SHARE_SSH_USERNAME={public_key_username}"),
+                remote_path="/tmp/ada-env",
+            )
+            ssh.exec_command("sudo mv /tmp/ada-env /etc/ada-env")
+            ssh.exec_command("chown root:root /etc/ada-env")
+
         if authorized_keys:
             tmp_path = "/tmp/authorized_keys"
             scp.putfo(StringIO(authorized_keys), remote_path=tmp_path)
