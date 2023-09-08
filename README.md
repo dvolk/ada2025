@@ -176,7 +176,7 @@ ADA2025_SHARE_TOKEN_SECRET_KEY # share token encoding key
 ADA2025_EMAIL_CONFIRMATION_SECRET_KEY # email confirmation token encoding key
 ADA2025_USE_EMAIL_CONFIRMATION # set to True if you want to require confirmation of email addresses
 ADA2025_INSTANCE_IDENTIFIER # used to identify build machines requested by this instance. optional.
-ADA2025_USE_2FA # set to true/false to enable 2FA for development purposes
+ADA2025_USE_2FA # set to true/false to enable 2FA
 ```
 
 Apply database migrations:
