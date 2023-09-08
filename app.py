@@ -651,7 +651,7 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(200), unique=True, nullable=False)
     language = db.Column(db.String(5), default="en", nullable=False)
     timezone = db.Column(db.String(50), default="Europe/London", nullable=False)
-    otp_secret = db.Column(db.String(32), nullable=False)
+    otp_secret = db.Column(db.String(32), nullable=True)
     otp_confirmed = db.Column(db.Boolean, default=False, nullable=False)
 
     # oauth2 stuff
