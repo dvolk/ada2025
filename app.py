@@ -3532,6 +3532,7 @@ def otp_verify():
 def disable_otp():
     current_user.otp_confirmed = False
     current_user.otp_last_time_confirmed = None
+    current_user.otp_secret = None
     db.session.commit()
     flash("2FA has been disabled!")
     return redirect(url_for("settings"))
