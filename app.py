@@ -653,6 +653,7 @@ class User(db.Model, UserMixin):
     timezone = db.Column(db.String(50), default="Europe/London", nullable=False)
     otp_secret = db.Column(db.String(32), nullable=True)
     otp_confirmed = db.Column(db.Boolean, default=False, nullable=False)
+    otp_last_time_confirmed = db.Column(db.DateTime, nullable=True)
 
     # oauth2 stuff
     provider = db.Column(db.String(64))  # e.g. 'google', 'local'
