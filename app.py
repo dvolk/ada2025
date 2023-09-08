@@ -5102,6 +5102,9 @@ def users_and_keys():
 
     ret = []
     for user in User.query.all():
+        if not user.ssh_keys:
+            logging.warning(f"user {user.id} doesn't have ssh_keys row")
+            continue
         ret.append(
             {"username": f"ada-user_{user.id}", "public_key": user.ssh_keys.public_key}
         )
