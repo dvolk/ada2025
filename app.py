@@ -3492,16 +3492,12 @@ def otp_setup():
     if current_user.otp_confirmed:
         return redirect(url_for("welcome"))
 
-    secret = current_user.otp_secret
-    uri = pyotp.totp.TOTP(secret).provisioning_uri(
-        name=current_user.username, issuer_name="Ada 2025"
-    )
     form = OtpSetupForm()
 
     # POST PATH
     if request.method == "POST":
         if form.validate_on_submit():
-            totp = pyotp.TOTP(secret)
+            totp = pyotp.TOTP(current_user.otp_secret)
             if totp.verify(form.otp_token.data):
                 current_user.otp_confirmed = True
                 db.session.commit()
@@ -3510,9 +3506,13 @@ def otp_setup():
             else:
                 flash(gettext("Invalid OTP provided"), "danger")
 
-    # GET PATH
     current_user.otp_secret = pyotp.random_base32()
     db.session.commit()
+    uri = pyotp.totp.TOTP(current_user.otp_secret).provisioning_uri(
+        name=current_user.username, issuer_name="Ada 2025"
+    )
+
+    # GET PATH
     return render_template(
         "otp_setup.jinja2", title=gettext("OTP Setup"), uri=uri, form=form
     )
