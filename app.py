@@ -2509,7 +2509,6 @@ def google_authorize():
                 provider_id=user_info.get("id", ""),
                 language="en",  # TODO: google gives locale, handle it here
                 timezone="Europe/London",
-                otp_secret=pyotp.random_base32(),
             )
             db.session.add(user)
             update_audit(audit, "new user 2", user=user)
@@ -2584,7 +2583,6 @@ def iris_iam_authorize():
                 provider_id=user_info.get("id", ""),
                 language="en",
                 timezone="Europe/London",
-                otp_secret=pyotp.random_base32(),
             )
             db.session.add(user)
             update_audit(audit, "new user 2", user=user)
@@ -2656,7 +2654,6 @@ def orcid_authorize():
                 language="en",
                 timezone="Europe/London",
                 orcid=user_info.get("sub", ""),
-                otp_secret=pyotp.random_base32(),
             )
             db.session.add(user)
             update_audit(audit, "new user 2", user=user)
@@ -3440,7 +3437,6 @@ def register():
                 timezone=form.timezone.data,
                 organization=form.organization.data,
                 job_title=form.job_title.data,
-                otp_secret=pyotp.random_base32(),
             )
             new_user.set_password(form.password.data)
 
@@ -6825,7 +6821,6 @@ def create_initial_db():
                 is_email_confirmed=True,
                 email="denis.volk@stfc.ac.uk",
                 data_sources=[demo_source1, demo_source2],
-                otp_secret=pyotp.random_base32(),
             )
             admin_password = gen_token(8)
             admin_user.set_password(admin_password)
@@ -6841,7 +6836,6 @@ def create_initial_db():
                 is_email_confirmed=True,
                 email="noname@example.com",
                 data_sources=[demo_source2, demo_source3],
-                otp_secret=pyotp.random_base32(),
             )
             stfctester_user_password = gen_token(8)
             stfctester_user.set_password(stfctester_user_password)
@@ -6857,7 +6851,6 @@ def create_initial_db():
                 is_email_confirmed=True,
                 email="imperium@example.com",
                 data_sources=[demo_source2, demo_source3],
-                otp_secret=pyotp.random_base32(),
             )
             imperialtester_user_password = gen_token(8)
             imperialtester_user.set_password(imperialtester_user_password)
@@ -6873,7 +6866,6 @@ def create_initial_db():
                 is_email_confirmed=True,
                 email="local@example.com",
                 data_sources=[demo_source2, demo_source3],
-                otp_secret=pyotp.random_base32(),
             )
             localtester_user_password = gen_token(8)
             localtester_user.set_password(localtester_user_password)
@@ -6885,7 +6877,6 @@ def create_initial_db():
                 language="en",
                 email="local1@example.com",
                 is_email_confirmed=True,
-                otp_secret=pyotp.random_base32(),
             )
             notactivated1_user_password = gen_token(8)
             notactivated1_user.set_password(notactivated1_user_password)
@@ -6897,7 +6888,6 @@ def create_initial_db():
                 language="en",
                 email="local2@example.com",
                 is_email_confirmed=True,
-                otp_secret=pyotp.random_base32(),
             )
             notactivated2_user_password = gen_token(8)
             notactivated2_user.set_password(notactivated2_user_password)
