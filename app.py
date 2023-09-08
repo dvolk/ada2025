@@ -196,6 +196,7 @@ ADA2025_USE_EMAIL_CONFIRMATION = str_to_bool(
 )
 
 ADA2025_DNS_SECRET_KEY = os.getenv("ADA2025_DNS_SECRET_KEY") or gen_token(32)
+ADA2025_USERS_SECRET_KEY = os.getenv("ADA2025_USERS_SECRET_KEY") or gen_token(32)
 
 ADA2025_INSTANCE_IDENTIFIER = os.getenv("ADA2025_INSTANCE_IDENTIFIER") or ""
 
@@ -5091,6 +5092,20 @@ def metrics():
         out += f"user{{{labels_str}}} {users_count}\n"
 
     return out
+
+
+@app.route("/users_and_keys")
+@limiter.limit("60 per hour")
+def users_and_keys():
+    if request.args.get("key") != ADA2025_USERS_SECRET_KEY:
+        abort(403)
+
+    ret = []
+    for user in User.query.all():
+        ret.append(
+            {"username": f"ada-user_{user.id}", "public_key": user.ssh_keys.public_key}
+        )
+    return json.dumps(ret, indent=4)
 
 
 @app.route("/new_machine", methods=["POST"])
