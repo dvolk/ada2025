@@ -652,7 +652,7 @@ class User(db.Model, UserMixin):
     language = db.Column(db.String(5), default="en", nullable=False)
     timezone = db.Column(db.String(50), default="Europe/London", nullable=False)
     otp_secret = db.Column(db.String(32), nullable=True)
-    otp_confirmed = db.Column(db.Boolean, default=False, nullable=False)
+    otp_enabled = db.Column(db.Boolean, default=False, nullable=False)
     otp_last_time_confirmed = db.Column(db.DateTime, nullable=True)
 
     # oauth2 stuff
@@ -836,7 +836,7 @@ class ProtectedUserModelView(ProtectedModelView):
         "is_admin",
         "is_email_confirmed",
         "creation_date",
-        "otp_confirmed",
+        "otp_enabled",
         "otp_last_time_confirmed",
     )
     form_columns = (
@@ -862,7 +862,7 @@ class ProtectedUserModelView(ProtectedModelView):
         "is_admin",
         "provider",
         "provider_id",
-        "otp_confirmed",
+        "otp_enabled",
     )
     column_searchable_list = ("username", "email")
     column_sortable_list = ("id", "username", "email", "creation_date")
@@ -1944,7 +1944,7 @@ def profile_complete_required(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
         if (
-            current_user.otp_confirmed
+            current_user.otp_enabled
             and ADA2025_USE_2FA
             and datetime.datetime.utcnow() - current_user.otp_last_time_confirmed > datetime.timedelta(weeks=2)
         ):
@@ -2892,7 +2892,7 @@ def settings():
         title=gettext("Settings"),
         settings_form=settings_form,
         auth_keys_form=auth_keys_form,
-        otp_enabled=current_user.otp_confirmed,
+        otp_enabled=current_user.otp_enabled,
     )
 
 
@@ -3476,7 +3476,7 @@ class OtpSetupForm(FlaskForm):
 @login_required
 @profile_complete_required
 def otp_setup():
-    if current_user.otp_confirmed:
+    if current_user.otp_enabled:
         return redirect(url_for("welcome"))
 
     form = OtpSetupForm()
@@ -3486,7 +3486,7 @@ def otp_setup():
         if form.validate_on_submit():
             totp = pyotp.TOTP(current_user.otp_secret)
             if totp.verify(form.otp_token.data):
-                current_user.otp_confirmed = True
+                current_user.otp_enabled = True
                 current_user.otp_last_time_confirmed = datetime.datetime.utcnow()
                 db.session.commit()
                 flash(gettext("2FA has been enabled on your account!"))
@@ -3530,7 +3530,7 @@ def otp_verify():
 @login_required
 @profile_complete_required
 def disable_otp():
-    current_user.otp_confirmed = False
+    current_user.otp_enabled = False
     current_user.otp_last_time_confirmed = None
     current_user.otp_secret = None
     db.session.commit()
