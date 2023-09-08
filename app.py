@@ -3485,6 +3485,7 @@ class OtpSetupForm(FlaskForm):
 @app.route("/otp_setup", methods=["GET", "POST"])
 @limiter.limit("60 per hour")
 @login_required
+@profile_complete_required
 def otp_setup():
     if current_user.otp_confirmed:
         return redirect(url_for("welcome"))
@@ -3518,6 +3519,7 @@ def otp_setup():
 @app.route("/disable_otp", methods=["GET"])
 @limiter.limit("60 per hour")
 @login_required
+@profile_complete_required
 def disable_otp():
     current_user.otp_confirmed = False
     db.session.commit()
