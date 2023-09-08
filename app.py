@@ -2088,9 +2088,6 @@ class LoginForm(FlaskForm):
     password = PasswordField(
         lazy_gettext("Password"), validators=[DataRequired(), Length(min=8, max=100)]
     )
-    otp_token = PasswordField(
-        lazy_gettext("OTP Token"), validators=[DataRequired(), Length(min=6, max=100)]
-    )
     submit = SubmitField("Sign In")
 
 
@@ -3037,27 +3034,12 @@ def login():
 
             # local users or oauth2 users who have set a password
             if user and user.check_password(form.password.data):
-                totp = pyotp.TOTP(user.otp_secret)
-                otp_login_perm = False
-                if (
-                    ADA2025_USE_2FA
-                    and totp.verify(form.otp_token.data)
-                    and user.otp_confirmed
-                ):
-                    otp_login_perm = True
-                elif not ADA2025_USE_2FA or not user.otp_confirmed:
-                    otp_login_perm = True
-
-                if otp_login_perm:
-                    # log user in
-                    user.sesh_id = gen_token(2)
-                    login_user(user)
-                    resp = determine_redirect(session.get("share_accept_token"))
-                    finish_audit(audit, "ok", user=user)
-                    return resp
-                else:
-                    finish_audit(audit, "bad otp")
-                    flash(gettext("Invalid OTP."), "danger")
+                # log user in
+                user.sesh_id = gen_token(2)
+                login_user(user)
+                resp = determine_redirect(session.get("share_accept_token"))
+                finish_audit(audit, "ok", user=user)
+                return resp
             else:
                 finish_audit(audit, "bad password")
                 flash(gettext("Invalid username or password."), "danger")
