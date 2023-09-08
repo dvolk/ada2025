@@ -422,9 +422,23 @@ fi
 
 # OPTIONAL: Install Aspera. REQUIRES conda above
 if [ "$BUILD_INSTALL_ASPERA" = "True" ]; then
+    # install aspera-cli
     su ubuntu << EOF
 /home/ubuntu/miniconda3/bin/conda install -c hcc aspera-cli -y
 EOF
+
+    # install aspera connect
+    wget -q https://d3gcli72yxqn2z.cloudfront.net/downloads/connect/latest/bin/ibm-aspera-connect_4.2.6.393_linux_x86_64.tar.gz
+    tar xzf ibm-aspera-connect_4.2.6.393_linux_x86_64.tar.gz
+    su ubuntu <<EOF
+bash ibm-aspera-connect_4.2.6.393_linux_x86_64.sh
+EOF
+
+    # install aspera connect firefox extension
+    wget -q https://addons.mozilla.org/firefox/downloads/file/3909084/ibm_aspera_connect-4.1.1.1.xpi
+    mkdir -p /usr/local/share/ibm_aspera_connect-4.1.1.1_xpi
+    unzip ibm_aspera_connect-4.1.1.1.xpi -d /usr/local/share/ibm_aspera_connect-4.1.1.1_xpi
+    echo "/usr/local/share/ibm_aspera_connect-4.1.1.1_xpi" > /usr/lib/firefox-addons/extensions/connect@aspera.ibm.com
 fi
 
 # OPTIONAL: Install Aspera. REQUIRES conda above
