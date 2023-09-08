@@ -1946,7 +1946,8 @@ def profile_complete_required(f):
         if (
             current_user.otp_enabled
             and ADA2025_USE_2FA
-            and datetime.datetime.utcnow() - current_user.otp_last_time_confirmed > datetime.timedelta(weeks=2)
+            and datetime.datetime.utcnow() - current_user.otp_last_time_confirmed
+            > datetime.timedelta(weeks=2)
         ):
             return redirect(url_for("otp_verify"))
         if not (
@@ -3502,7 +3503,11 @@ def otp_setup():
 
     # GET PATH
     return render_template(
-        "otp_setup.jinja2", title=gettext("2FA Setup"), uri=uri, form=form, secret=current_user.otp_secret
+        "otp_setup.jinja2",
+        title=gettext("2FA Setup"),
+        uri=uri,
+        form=form,
+        secret=current_user.otp_secret,
     )
 
 
