@@ -8,6 +8,9 @@
 <p style="text-align: left;">
     {{ info(gettext("Please use Google Authenticator (or another OTP application) to scan the QR code below to generate your OTP, and confirm using the text box below.")) }}
 </p>
+<p style="text-align: left;">
+    {{ info(gettext("Once set up, you will need to verify a OTP (one time password) once every two weeks.")) }}
+</p>
 <br/>
 <div class="image-container" style="text-align: center;">
     <img src="{{ qrcode(uri) }}" alt="QR Code">
