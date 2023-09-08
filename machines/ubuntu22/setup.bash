@@ -185,6 +185,7 @@ apt install -y firefox webext-ublock-origin-firefox
 
 
 # set up ada-user-share
+apt install -y sshfs
 mkdir /media/ada-user-share
 chown ubuntu:ubuntu /media/ada-user-share
 cp ada-user-share.service /etc/systemd/system
