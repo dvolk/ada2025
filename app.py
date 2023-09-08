@@ -3502,7 +3502,7 @@ def otp_setup():
 
     # GET PATH
     return render_template(
-        "otp_setup.jinja2", title=gettext("2FA Setup"), uri=uri, form=form
+        "otp_setup.jinja2", title=gettext("2FA Setup"), uri=uri, form=form, secret=current_user.otp_secret
     )
 
 

@@ -14,6 +14,7 @@
 <br/>
 <div class="image-container" style="text-align: center;">
     <img src="{{ qrcode(uri) }}" alt="QR Code">
+    <p>Secret: {{ secret }}</p>
 </div>
 
 <form method="POST" action="{{ url_for('otp_setup') }}">
