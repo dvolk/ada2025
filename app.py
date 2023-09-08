@@ -837,6 +837,7 @@ class ProtectedUserModelView(ProtectedModelView):
         "is_email_confirmed",
         "creation_date",
         "otp_confirmed",
+        "otp_last_time_confirmed",
     )
     form_columns = (
         "is_enabled",
@@ -1942,6 +1943,12 @@ class SwitchGroupForm(FlaskForm):
 def profile_complete_required(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
+        if (
+            current_user.otp_confirmed
+            and ADA2025_USE_2FA
+            and datetime.datetime.utcnow() - current_user.otp_last_time_confirmed > datetime.timedelta(weeks=2)
+        ):
+            return redirect(url_for("otp_verify"))
         if not (
             current_user.given_name
             and current_user.family_name
@@ -3498,6 +3505,7 @@ def otp_setup():
             totp = pyotp.TOTP(current_user.otp_secret)
             if totp.verify(form.otp_token.data):
                 current_user.otp_confirmed = True
+                current_user.otp_last_time_confirmed = datetime.datetime.utcnow()
                 db.session.commit()
                 flash(gettext("2FA has been enabled on your account!"))
                 return redirect(url_for("settings"))
@@ -3516,12 +3524,32 @@ def otp_setup():
     )
 
 
+@app.route("/otp_verify", methods=["GET", "POST"])
+@limiter.limit("60 per hour")
+@login_required
+def otp_verify():
+    form = OtpSetupForm()
+    if request.method == "POST":
+        if form.validate_on_submit():
+            totp = pyotp.TOTP(current_user.otp_secret)
+            if totp.verify(form.otp_token.data):
+                current_user.otp_last_time_confirmed = datetime.datetime.utcnow()
+                db.session.commit()
+                return redirect(url_for("welcome"))
+            else:
+                flash("2FA verification failed!", "danger")
+    return render_template(
+        "otp_verify.jinja2", title=gettext("OTP Verification"), form=form
+    )
+
+
 @app.route("/disable_otp", methods=["GET"])
 @limiter.limit("60 per hour")
 @login_required
 @profile_complete_required
 def disable_otp():
     current_user.otp_confirmed = False
+    current_user.otp_last_time_confirmed = None
     db.session.commit()
     flash("2FA has been disabled!")
     return redirect(url_for("settings"))
