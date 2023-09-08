@@ -3511,6 +3511,8 @@ def otp_setup():
                 flash(gettext("Invalid OTP provided"), "danger")
 
     # GET PATH
+    current_user.otp_secret = pyotp.random_base32()
+    db.session.commit()
     return render_template(
         "otp_setup.jinja2", title=gettext("OTP Setup"), uri=uri, form=form
     )
@@ -3520,7 +3522,7 @@ def otp_setup():
 @limiter.limit("60 per hour")
 @login_required
 def disable_otp():
-    current_user.otp_confirm = False
+    current_user.otp_confirmed = False
     db.session.commit()
     flash("2FA has been disabled!")
     return redirect(url_for("settings"))
