@@ -183,6 +183,15 @@ echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codenam
 
 apt install -y firefox webext-ublock-origin-firefox
 
+
+# set up ada-user-share
+mkdir /media/ada-user-share
+chown ubuntu:ubuntu /media/ada-user-share
+cp ada-user-share.service /etc/systemd/system
+systemctl daemon-reload
+systemctl enable ada-user-share
+
+
 # -------------------------------------------------------------------------
 # -------------------------------------------------------------------------
 # -------------------------------------------------------------------------
