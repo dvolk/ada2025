@@ -386,11 +386,10 @@ fi
 # OPTIONAL: Install paraview
 if [ "$BUILD_INSTALL_PARAVIEW" = "True" ]; then
     # create the desktop file
-    su ubuntu<<EOF
-PV_DL_URL='https://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v5.11&type=binary&os=Linux&downloadFile=ParaView-5.11.1-MPI-Linux-Python3.9-x86_64.tar.gz'
-wget $PV_DL_URL -O ParaView-5.11.1-MPI-Linux-Python3.9-x86_64.tar.gz
-tar xf ParaView-5.11.1-MPI-Linux-Python3.9-x86_64.tar.gz -C /home/ubuntu/Downloads/
+    wget 'https://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v5.11&type=binary&os=Linux&downloadFile=ParaView-5.11.1-MPI-Linux-Python3.9-x86_64.tar.gz' -O ParaView-5.11.1-MPI-Linux-Python3.9-x86_64.tar.gz
+    tar xf ParaView-5.11.1-MPI-Linux-Python3.9-x86_64.tar.gz -C /opt
 
+    su ubuntu << EOF
 cp paraview.desktop /home/ubuntu/Desktop
 chmod a+x /home/ubuntu/Desktop/paraview.desktop
 EOF
