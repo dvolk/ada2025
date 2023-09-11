@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Doppio
+Comment=
+Exec=/opt/doppio/doppio-desktop.AppImage
+Icon=/opt/doppio/doppio-web/ui/logo512_white.png
+Path=/opt/doppio
+Terminal=false
+StartupNotify=false

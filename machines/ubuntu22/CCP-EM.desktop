@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=CCP-EM
+Comment=
+Exec=bash -c "source /opt/ccpem-20221108/setup_ccpem.sh && /opt/ccpem-20221108/bin/ccpem"
+Icon=/opt/ccpem-20221108/share/icons/hicolor/256x256/apps/coot.png
+Path=/opt/ccpem-20221108/bin
+Terminal=false
+StartupNotify=false
