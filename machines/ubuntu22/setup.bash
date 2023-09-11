@@ -395,7 +395,7 @@ EOF
 fi
 
 # OPTIONAL: Install CCP-EM v1
-if [ "$BUILD_INSTALL_CCP-EM-v1" = "True" ]; then
+if [ "$BUILD_INSTALL_CCP_EM_v1" = "True" ]; then
     wget https://www.ccpem.ac.uk/downloads/ccpem_distributions/ccpem-20221108-linux-x86_64.tar.gz
     tar xf ccpem-20221108-linux-x86_64.tar.gz -C /opt
     touch /root/.agree2ccpemv1

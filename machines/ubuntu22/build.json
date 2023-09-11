@@ -132,7 +132,7 @@
       "type": "bool"
     },
     {
-      "name": "BUILD_INSTALL_CCP-EM-v1",
+      "name": "BUILD_INSTALL_CCP_EM_v1",
       "display_name": "Install CPP-EM v1",
       "type": "bool"
     }
