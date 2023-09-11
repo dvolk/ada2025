@@ -6,7 +6,7 @@ Wants=network-online.target
 [Service]
 Type=simple
 EnvironmentFile=/etc/ada-env
-ExecStart=/bin/bash -c "/usr/bin/sshfs -f ${ADA_SHARE_SSH_USERNAME}@130.246.212.23: /media/ada-user-share -o IdentityFile=/home/ubuntu/.ssh/ada-id_rsa,UserKnownHostsFile=/dev/null,StrictHostKeyChecking=no"
+ExecStart=/bin/bash -c "/usr/bin/sshfs -f ${ADA_SHARE_SSH_USERNAME}@ada-userfs.oxfordfun.com: /media/ada-user-share -o IdentityFile=/home/ubuntu/.ssh/ada-id_rsa,UserKnownHostsFile=/dev/null,StrictHostKeyChecking=no"
 ExecStop=/bin/fusermount -u /media/ada-user-share
 User=ubuntu
 Restart=always
