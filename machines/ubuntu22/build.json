@@ -125,6 +125,16 @@
       "name": "BUILD_INSTALL_PARAVIEW",
       "display_name": "Install Paraview",
       "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_DOPPIO",
+      "display_name": "Install CPP-EM DOPPIO",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_CCP-EM-v1",
+      "display_name": "Install CPP-EM v1",
+      "type": "bool"
     }
   ]
 }

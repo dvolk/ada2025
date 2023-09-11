@@ -385,13 +385,37 @@ fi
 
 # OPTIONAL: Install paraview
 if [ "$BUILD_INSTALL_PARAVIEW" = "True" ]; then
-    # create the desktop file
     wget 'https://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v5.11&type=binary&os=Linux&downloadFile=ParaView-5.11.1-MPI-Linux-Python3.9-x86_64.tar.gz' -O ParaView-5.11.1-MPI-Linux-Python3.9-x86_64.tar.gz
     tar xf ParaView-5.11.1-MPI-Linux-Python3.9-x86_64.tar.gz -C /opt
 
     su ubuntu << EOF
 cp paraview.desktop /home/ubuntu/Desktop
 chmod a+x /home/ubuntu/Desktop/paraview.desktop
+EOF
+fi
+
+# OPTIONAL: Install CCP-EM v1
+if [ "$BUILD_INSTALL_CCP-EM-v1" = "True" ]; then
+    wget https://www.ccpem.ac.uk/downloads/ccpem_distributions/ccpem-20221108-linux-x86_64.tar.gz
+    tar xf ccpem-20221108-linux-x86_64.tar.gz -C /opt
+    touch /root/.agree2ccpemv1
+    ./opt/ccpem-20221108-linux-x86_64/install_ccpem.sh
+
+    su ubuntu << EOF
+cp CCP-EM.desktop /home/ubuntu/Desktop
+chmod a+x /home/ubuntu/Desktop/CCP-EM.desktop
+EOF
+fi
+
+# OPTIONAL: Install CCP-EM doppio
+if [ "$BUILD_INSTALL_DOPPIO" = "True" ]; then
+    wget https://www.ccpem.ac.uk/downloads/doppio/doppio-linux-beta4-2023-09-08.zip
+    mkdir /opt/doppio
+    unzip doppio-linux-beta4-2023-09-08.zip -d /opt/doppio
+
+    su ubuntu<<EOF
+cp Doppio.desktop /home/ubuntu/Desktop
+chmod a+x /home/ubuntu/Desktop/Doppio.desktop
 EOF
 fi
 
