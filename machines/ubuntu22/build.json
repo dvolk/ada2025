@@ -120,6 +120,11 @@
       "name": "BUILD_INSTALL_ADA2025_SOFTWARE_INSTALLER",
       "display_name": "Install Ada 2025 Software Installer",
       "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_PARAVIEW",
+      "display_name": "Install Paraview",
+      "type": "bool"
     }
   ]
 }
