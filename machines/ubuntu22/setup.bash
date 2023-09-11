@@ -74,7 +74,8 @@ rm -f filebrowser.tar.gz
 
 # Install some more useful utilities
 apt-get install -y coreutils findutils grep sed gawk gzip tar curl wget git openssl \
-    vim nano tmux htop ncdu tree file less bc zip unzip ssh rsync procps screenfetch s3cmd
+        vim nano tmux htop ncdu tree file less bc zip unzip ssh rsync procps screenfetch s3cmd \
+        rclone rclone-browser
 
 
 # Install novnc
