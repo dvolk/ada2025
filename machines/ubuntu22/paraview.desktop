@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Paraview
+Comment=
+Exec=/home/ubuntu/Downloads/ParaView-5.11.1-MPI-Linux-Python3.9-x86_64/bin/paraview
+Icon=/home/ubuntu/Downloads/ParaView-5.11.1-MPI-Linux-Python3.9-x86_64/share/icons/hicolor/96x96/apps/paraview.png
+Path=
+Terminal=false
+StartupNotify=false

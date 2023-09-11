@@ -383,11 +383,23 @@ if [ "$BUILD_INSTALL_NIX" = "True" ]; then
     yes | ./install --daemon
 fi
 
+# OPTIONAL: Install paraview
+if [ "$BUILD_INSTALL_PARAVIEW" = "True" ]; then
+    # create the desktop file
+    su ubuntu<<EOF
+PV_DL_URL='https://www.paraview.org/paraview-downloads/download.php?submit=Download&version=v5.11&type=binary&os=Linux&downloadFile=ParaView-5.11.1-MPI-Linux-Python3.9-x86_64.tar.gz'
+wget $PV_DL_URL -O ParaView-5.11.1-MPI-Linux-Python3.9-x86_64.tar.gz
+tar xf ParaView-5.11.1-MPI-Linux-Python3.9-x86_64.tar.gz -C /home/ubuntu/Downloads/
+
+cp paraview.desktop /home/ubuntu/Desktop
+chmod a+x /home/ubuntu/Desktop/paraview.desktop
+EOF
+fi
+
 # OPTIONAL: Install Icy
 if [ "$BUILD_INSTALL_ICY" = "True" ]; then
-    cd /
     wget -q https://ada-files.oxfordfun.com/software/Icy/Icy-2.4.3.tar.gz
-    tar -xf Icy-2.4.3.tar.gz
+    tar -xf Icy-2.4.3.tar.gz -C /
     rm Icy-2.4.3.tar.gz
     apt install -y default-jre
     chmod +x /home/ubuntu/Desktop/Icy.desktop
@@ -395,36 +407,32 @@ fi
 
 # OPTIONAL: Install Ilastik
 if [ "$BUILD_INSTALL_ILASTIK" = "True" ]; then
-    cd /
     wget -q https://ada-files.oxfordfun.com/software/Ilastik/Ilasktik-1.4.0.tar.gz
-    tar -xf Ilasktik-1.4.0.tar.gz
+    tar -xf Ilasktik-1.4.0.tar.gz -C /
     rm Ilasktik-1.4.0.tar.gz
     chmod +x /home/ubuntu/Desktop/Ilastik.desktop
 fi
 
 # OPTIONAL: Install ImageJ
 if [ "$BUILD_INSTALL_IMAGEJ" = "True" ]; then
-    cd /
     wget -q https://ada-files.oxfordfun.com/software/ImageJ/ImageJ-1.53.tar.gz
-    tar -xf ImageJ-1.53.tar.gz
+    tar -xf ImageJ-1.53.tar.gz -C /
     rm -f ImageJ-1.53.tar.gz
     chmod +x /home/ubuntu/Desktop/ImageJ2.desktop
 fi
 
 # OPTIONAL: Install MIB
 if [ "$BUILD_INSTALL_MIB" = "True" ]; then
-    cd /
     wget -q https://ada-files.oxfordfun.com/software/MIB/MIB-2.48.tar.gz
-    tar -xf MIB-2.48.tar.gz
+    tar -xf MIB-2.48.tar.gz -C /
     rm -f MIB-2.48.tar.gz
     chmod +x /home/ubuntu/Desktop/MIB.desktop
 fi
 
 # OPTIONAL: Install NAPARI
 if [ "$BUILD_INSTALL_NAPARI" = "True" ]; then
-    cd /
     wget -q https://ada-files.oxfordfun.com/software/Napari/Napari-0.4.17.tar.gz
-    tar -xf Napari-0.4.17.tar.gz
+    tar -xf Napari-0.4.17.tar.gz -C /
     rm -f Napari-0.4.17.tar.gz
     apt install -y libqt5core5a:amd64 libqt5gui5:amd64
     chmod +x /home/ubuntu/Desktop/Napari.desktop
