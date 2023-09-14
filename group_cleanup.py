@@ -14,6 +14,7 @@ from app import (
     Machine,
     MachineState,
     MachineTemplate,
+    User,
     db,
     and_,
     OpenStackService,
@@ -33,13 +34,16 @@ def main(group_id, hours_old_to_delete, do_delete=False):
 
         # get machines from group that are > hours old
         results = (
-            db.session.query(Machine, MachineTemplate)
+            db.session.query(User, Machine, MachineTemplate)
+            .join(Machine, Machine.owner_id == User.id)
             .join(MachineTemplate, Machine.machine_template_id == MachineTemplate.id)
             .filter(
                 and_(
                     MachineTemplate.group_id == group_id,
                     Machine.state.in_([MachineState.READY, MachineState.STOPPED]),
                     Machine.creation_date <= time_hours_ago,
+                    ~User.is_group_admin,
+                    ~User.is_admin,
                 )
             )
         ).all()
@@ -47,8 +51,7 @@ def main(group_id, hours_old_to_delete, do_delete=False):
         # delete expired machines
         for result in results:
             if not do_delete:
-                m = result[0]
-                mt = result[1]
+                u, m, mt = result
                 print(f"{mt.name},{m.display_name},{m.creation_date},{m.state}")
 
             if do_delete:
