@@ -6,6 +6,7 @@ Delete machines belonging to group that are too old.
 
 import logging
 from datetime import datetime, timedelta
+import threading
 
 import argh
 
@@ -17,9 +18,12 @@ from app import (
     User,
     db,
     and_,
+    VirtService,
+    DockerService,
     OpenStackService,
     Audit,
     create_audit,
+    update_audit,
     finish_audit,
 )
 
@@ -29,6 +33,8 @@ def main(group_id, hours_old_to_delete, do_delete=False):
     Delete machines belonging to group that are too old.
     """
     with app.app_context():
+        VirtService.set_app(app)
+
         current_time = datetime.utcnow()
         time_hours_ago = current_time - timedelta(hours=int(hours_old_to_delete))
 
@@ -48,16 +54,15 @@ def main(group_id, hours_old_to_delete, do_delete=False):
             )
         ).all()
 
-        # delete expired machines
-        for result in results:
-            if not do_delete:
-                u, m, mt = result
-                print(f"{mt.name},{m.display_name},{m.creation_date},{m.state}")
-
-            if do_delete:
+        if do_delete:
+            for u, m, mt in results:
                 audit = create_audit("timeout vm", "starting")
-                OpenStackService.stop(m.id, 0)
+                update_audit(audit, machine=m)
+                OpenStackService.stop(m.id, audit.id)
                 finish_audit(audit, "ok")
+        else:
+            for u, m, mt in results:
+                print(mt.name, u.username, m.display_name)
 
 
 if __name__ == "__main__":
