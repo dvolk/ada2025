@@ -194,9 +194,9 @@ if [ "$BUILD_INSTALL_ADA_USER_SHARE" = "True" ]; then
     apt install -y sshfs
     mkdir /media/ada-user-share
     chown ubuntu:ubuntu /media/ada-user-share
-    # cp ada-user-share.service /etc/systemd/system
-    # systemctl daemon-reload
-    # systemctl enable ada-user-share
+    cp ada-user-share.service /etc/systemd/system
+    systemctl daemon-reload
+    systemctl enable ada-user-share
 fi
 
 # OPTIONAL: Install build-essential, gnuplot, cmake, libscalapack
