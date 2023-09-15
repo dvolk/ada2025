@@ -14,7 +14,7 @@
       "name": "BUILD_GROUP_FLAVOR",
       "display_name": "Build group flavor",
       "type": "option",
-      "options": ["generic", "generic training", "sciml", "rfi"]
+      "options": ["generic", "generic-training", "sciml", "rfi"]
     },
     {
       "name": "BUILD_INSTALL_RSTUDIO",
