@@ -201,7 +201,7 @@ fi
 
 # OPTIONAL: Install build-essential, gnuplot, cmake, libscalapack
 if [ "$BUILD_INSTALL_BUILD_ENV" = "True" ]; then
-    apt install -y build-essential gnuplot cmake gfortran libscalapack-mpi-dev libscalapack-mpich-dev libscalapack-openmpi-dev
+    apt install -y build-essential gnuplot cmake gfortran libscalapack-openmpi-dev libopenmpi-dev openmpi-bin libarpack2-dev libarpack++2-dev pyqt5-dev zlib1g-dev
 fi
 
 # OPTIONAL: Install Ada 2025 Software Installer
