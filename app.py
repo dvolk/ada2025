@@ -4222,6 +4222,7 @@ def new_image():
             "options": [
                 "l3.tiny",
                 "daaas.xsmall",
+                "daaas.tiny",
             ],
             "info": "The flavor instance disk space will determine the minimum disk space required on template flavors",
         },
@@ -4239,7 +4240,7 @@ def new_image():
             "options": [
                 ["HTTP", "HTTPS", "SSH"],
                 ["SSH"],
-                ["DAaaS_DMZ_policy_custom"],
+                ["DAaaS_DMZ_policy_custom", "default"],
             ],
         },
         {
