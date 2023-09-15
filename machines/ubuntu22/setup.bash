@@ -184,19 +184,25 @@ echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codenam
 
 apt install -y firefox webext-ublock-origin-firefox
 
-
-# set up ada-user-share
-apt install -y sshfs
-mkdir /media/ada-user-share
-chown ubuntu:ubuntu /media/ada-user-share
-# cp ada-user-share.service /etc/systemd/system
-# systemctl daemon-reload
-# systemctl enable ada-user-share
-
-
 # -------------------------------------------------------------------------
 # -------------------------------------------------------------------------
 # -------------------------------------------------------------------------
+
+# OPTIONAL: Add /media/ada-user-share (stfc cloud only)
+if [ "$BUILD_INSTALL_ADA_USER_SHARE" = "True" ]; then
+    # set up ada-user-share
+    apt install -y sshfs
+    mkdir /media/ada-user-share
+    chown ubuntu:ubuntu /media/ada-user-share
+    # cp ada-user-share.service /etc/systemd/system
+    # systemctl daemon-reload
+    # systemctl enable ada-user-share
+fi
+
+# OPTIONAL: Install build-essential, gnuplot, cmake, libscalapack
+if [ "$BUILD_INSTALL_BUILD_ENV" = "True" ]; then
+    apt install -y build-essential gnuplot cmake gfortran libscalapack-mpi-dev libscalapack-mpich-dev libscalapack-openmpi-dev
+fi
 
 # OPTIONAL: Install Ada 2025 Software Installer
 if [ "$BUILD_INSTALL_ADA2025_SOFTWARE_INSTALLER" = "True" ]; then
@@ -532,6 +538,52 @@ wget -q https://ada-files.oxfordfun.com/software/misc/vEMlogo_purwhitecell.jpg -
 xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitorVNC-0/workspace0/last-image -s /home/ubuntu/.rfi_bg.jpg
 EOF
 fi
+
+if [ "$BUILD_GROUP_FLAVOR" = "generic" ]; then
+    # - Change the theme to Adwaita
+    # - Change the icons to Tango
+    # - Turn off xfce panel dark mode
+    # - Set the background to the stfc sciml image
+
+    # xfconf-query requires DBUS_SESSION_BUS_ADDRESS
+    pid=$(pgrep -u ubuntu xfce4-session)
+    dbus_address=$(grep -z DBUS_SESSION_BUS_ADDRESS /proc/$pid/environ | cut -d= -f2-)
+
+    su ubuntu << EOF
+export DISPLAY=:0
+export DBUS_SESSION_BUS_ADDRESS="$dbus_address"
+xfconf-query -c xsettings -p /Net/ThemeName -s 'Adwaita'
+xfconf-query -c xfwm4 -p /general/theme -s 'Adwaita'
+xfconf-query -c xsettings -p /Net/IconThemeName -s 'Tango'
+xfconf-query -c xfce4-panel -p /panels/dark-mode -s false
+wget -q 'https://i.postimg.cc/0xKPfwRD/ada-bg-normal.png?dl=1' -O /home/ubuntu/.ada-bg-normal.png
+xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitorVNC-0/workspace0/last-image -s /home/ubuntu/.ada-bg-normal.png
+EOF
+fi
+
+if [ "$BUILD_GROUP_FLAVOR" = "generic training" ]; then
+    # - Change the theme to Adwaita
+    # - Change the icons to Tango
+    # - Turn off xfce panel dark mode
+    # - Set the background to the stfc sciml image
+
+    # xfconf-query requires DBUS_SESSION_BUS_ADDRESS
+    pid=$(pgrep -u ubuntu xfce4-session)
+    dbus_address=$(grep -z DBUS_SESSION_BUS_ADDRESS /proc/$pid/environ | cut -d= -f2-)
+
+    su ubuntu << EOF
+export DISPLAY=:0
+export DBUS_SESSION_BUS_ADDRESS="$dbus_address"
+xfconf-query -c xsettings -p /Net/ThemeName -s 'Adwaita'
+xfconf-query -c xfwm4 -p /general/theme -s 'Adwaita'
+xfconf-query -c xsettings -p /Net/IconThemeName -s 'Tango'
+xfconf-query -c xfce4-panel -p /panels/dark-mode -s false
+wget -q 'https://i.postimg.cc/Mqkxrpq4/ada-bg-training.png?dl=1' -O /home/ubuntu/.ada-bg-training.png
+xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitorVNC-0/workspace0/last-image -s /home/ubuntu/.ada-bg-training.png
+EOF
+fi
+
+
 
 # -------------------------------------------------------------------------
 # -------------------------------------------------------------------------

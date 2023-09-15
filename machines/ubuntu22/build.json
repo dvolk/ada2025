@@ -14,7 +14,7 @@
       "name": "BUILD_GROUP_FLAVOR",
       "display_name": "Build group flavor",
       "type": "option",
-      "options": ["sciml", "rfi"]
+      "options": ["generic", "generic training", "sciml", "rfi"]
     },
     {
       "name": "BUILD_INSTALL_RSTUDIO",
@@ -134,6 +134,16 @@
     {
       "name": "BUILD_INSTALL_CCP_EM_v1",
       "display_name": "Install CPP-EM v1",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_BUILD_ENV",
+      "display_name": "Install build-essentials, gfortran and libscalapack",
+      "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_ADA_USER_SHARE",
+      "display_name": "Set up /media/ada-user-share",
       "type": "bool"
     }
   ]
