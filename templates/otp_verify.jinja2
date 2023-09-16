@@ -1,0 +1,31 @@
+{% extends 'base-bare.jinja2' %}
+
+{% block content %}
+<h1 style="text-align: center;">OTP Verification</h1>
+<p style="text-align: left;">
+    {{ idea(gettext("This account has 2FA enabled. Please enter your OTP (one time password) in the box below.")) }}
+</p>
+
+<form method="POST" action="{{ url_for('otp_verify') }}">
+    {{ form.hidden_tag() }}
+    <p>
+        {{ form.otp_token.label() }}
+        {{ form.otp_token(class="w3-input w3-round w3-border w3-light-grey") }}
+    </p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        {% if category == "danger" %}
+            <p class="w3-red w3-padding-large w3-round">{{ message }}</p>
+        {% else %}
+            <p class="w3-green w3-padding-large w3-round">{{ message }}</p>
+        {% endif %}
+        {% endfor %}
+    {% endif %}
+    {% endwith %}
+    <p style="text-align: center;">
+        {{ form.submit(class="w3-btn w3-blue w3-round") }}
+    </p>
+</form>
+
+{% endblock %}

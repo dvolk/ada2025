@@ -22,6 +22,7 @@ from functools import cache
 import collections
 import pathlib
 import email_validator
+import pyotp
 
 # flask and related imports
 from flask import (
@@ -55,6 +56,7 @@ from flask_admin.contrib.sqla import ModelView
 from flask_admin.model import typefmt
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
+from flask_qrcode import QRcode
 from wtforms.widgets import ListWidget, CheckboxInput
 from wtforms_sqlalchemy.fields import QuerySelectMultipleField
 from wtforms.widgets import TextArea
@@ -195,6 +197,8 @@ ADA2025_USE_EMAIL_CONFIRMATION = str_to_bool(
     os.environ.get("ADA2025_USE_EMAIL_CONFIRMATION", "False")
 )
 
+ADA2025_USE_2FA = str_to_bool(os.environ.get("ADA2025_USE_2FA", "False"))
+
 ADA2025_DNS_SECRET_KEY = os.getenv("ADA2025_DNS_SECRET_KEY") or gen_token(32)
 ADA2025_USERS_SECRET_KEY = os.getenv("ADA2025_USERS_SECRET_KEY") or gen_token(32)
 
@@ -243,6 +247,8 @@ app.config["MAIL_USE_TLS"] = str_to_bool(
 app.config["MAIL_USE_SSL"] = str_to_bool(os.environ.get("ADA2025_MAIL_USE_SSL", "True"))
 MAIL_SENDER = os.environ.get("ADA2025_MAIL_SENDER", "")
 mail = Mail(app)
+
+qrcode = QRcode(app)
 
 
 @app.before_request
@@ -646,6 +652,9 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(200), unique=True, nullable=False)
     language = db.Column(db.String(5), default="en", nullable=False)
     timezone = db.Column(db.String(50), default="Europe/London", nullable=False)
+    otp_secret = db.Column(db.String(32), nullable=True)
+    otp_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    otp_last_time_confirmed = db.Column(db.DateTime, nullable=True)
 
     # oauth2 stuff
     provider = db.Column(db.String(64))  # e.g. 'google', 'local'
@@ -828,6 +837,8 @@ class ProtectedUserModelView(ProtectedModelView):
         "is_admin",
         "is_email_confirmed",
         "creation_date",
+        "otp_enabled",
+        "otp_last_time_confirmed",
     )
     form_columns = (
         "is_enabled",
@@ -852,6 +863,7 @@ class ProtectedUserModelView(ProtectedModelView):
         "is_admin",
         "provider",
         "provider_id",
+        "otp_enabled",
     )
     column_searchable_list = ("username", "email")
     column_sortable_list = ("id", "username", "email", "creation_date")
@@ -1932,6 +1944,13 @@ class SwitchGroupForm(FlaskForm):
 def profile_complete_required(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
+        if (
+            current_user.otp_enabled
+            and ADA2025_USE_2FA
+            and datetime.datetime.utcnow() - current_user.otp_last_time_confirmed
+            > datetime.timedelta(weeks=2)
+        ):
+            return redirect(url_for("otp_verify"))
         if not (
             current_user.given_name
             and current_user.family_name
@@ -2875,6 +2894,7 @@ def settings():
         title=gettext("Settings"),
         settings_form=settings_form,
         auth_keys_form=auth_keys_form,
+        otp_enabled=current_user.otp_enabled,
     )
 
 
@@ -3444,6 +3464,84 @@ def register():
         form=form,
         title=gettext("Register account"),
     )
+
+
+class OtpSetupForm(FlaskForm):
+    otp_token = PasswordField(
+        lazy_gettext("OTP"), validators=[DataRequired(), Length(min=6, max=100)]
+    )
+    submit = SubmitField("Submit")
+
+
+@app.route("/otp_setup", methods=["GET", "POST"])
+@limiter.limit("60 per hour")
+@login_required
+@profile_complete_required
+def otp_setup():
+    if current_user.otp_enabled:
+        return redirect(url_for("welcome"))
+
+    form = OtpSetupForm()
+
+    # POST PATH
+    if request.method == "POST":
+        if form.validate_on_submit():
+            totp = pyotp.TOTP(current_user.otp_secret)
+            if totp.verify(form.otp_token.data):
+                current_user.otp_enabled = True
+                current_user.otp_last_time_confirmed = datetime.datetime.utcnow()
+                db.session.commit()
+                flash(gettext("2FA has been enabled on your account!"))
+                return redirect(url_for("settings"))
+            else:
+                flash(gettext("Invalid OTP provided"), "danger")
+
+    current_user.otp_secret = pyotp.random_base32()
+    db.session.commit()
+    uri = pyotp.totp.TOTP(current_user.otp_secret).provisioning_uri(
+        name=current_user.username, issuer_name="Ada 2025"
+    )
+
+    # GET PATH
+    return render_template(
+        "otp_setup.jinja2",
+        title=gettext("2FA Setup"),
+        uri=uri,
+        form=form,
+        secret=current_user.otp_secret,
+    )
+
+
+@app.route("/otp_verify", methods=["GET", "POST"])
+@limiter.limit("60 per hour")
+@login_required
+def otp_verify():
+    form = OtpSetupForm()
+    if request.method == "POST":
+        if form.validate_on_submit():
+            totp = pyotp.TOTP(current_user.otp_secret)
+            if totp.verify(form.otp_token.data):
+                current_user.otp_last_time_confirmed = datetime.datetime.utcnow()
+                db.session.commit()
+                return redirect(url_for("welcome"))
+            else:
+                flash("2FA verification failed!", "danger")
+    return render_template(
+        "otp_verify.jinja2", title=gettext("OTP Verification"), form=form
+    )
+
+
+@app.route("/disable_otp", methods=["GET"])
+@limiter.limit("60 per hour")
+@login_required
+@profile_complete_required
+def disable_otp():
+    current_user.otp_enabled = False
+    current_user.otp_last_time_confirmed = None
+    current_user.otp_secret = None
+    db.session.commit()
+    flash("2FA has been disabled!")
+    return redirect(url_for("settings"))
 
 
 @app.route("/")

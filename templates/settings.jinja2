@@ -93,6 +93,21 @@
   </div>
   <br/>
 
+  <div class="w3-container w3-yellow">
+    <h2>{{ gettext("2FA") }}</h2>
+  </div>
+  <div class="w3-container w3-pale-yellow">
+    {% if not otp_enabled %}
+      {{ idea(gettext("You can enable 2FA to secure your account using the button below.")) }}
+      <a href="/otp_setup" class="w3-button w3-round w3-blue" style="margin-left: 5px;">Setup 2FA</a>
+    {% else %}
+      {{ idea(gettext("You can disable 2FA using the button below.")) }}
+      <a href="/disable_otp" class="w3-button w3-round w3-blue" style="margin-left: 5px;">Disable 2FA</a>
+    {% endif %}
+    <br/><br/>
+  </div>
+  <br/>
+
 {% endblock %}
 
 {% block javascript %}
