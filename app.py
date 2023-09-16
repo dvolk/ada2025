@@ -1138,6 +1138,7 @@ class MachineProvider(db.Model):
     machine_templates = db.relationship(
         "MachineTemplate", back_populates="machine_provider"
     )
+    machines = db.relationship("Machine", back_populates="machine_provider")
 
     def __repr__(self):
         if self.customer:
@@ -1480,6 +1481,7 @@ class Machine(db.Model):
     )
     owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     machine_template_id = db.Column(db.Integer, db.ForeignKey("machine_template.id"))
+    machine_provider_id = db.Column(db.Integer, db.ForeignKey("machine_provider.id"))
     image_id = db.Column(db.Integer, db.ForeignKey("image.id"))
 
     owner = db.relationship(
@@ -1489,6 +1491,7 @@ class Machine(db.Model):
         "User", secondary=shared_user_machine, back_populates="shared_machines"
     )
     machine_template = db.relationship("MachineTemplate", back_populates="machines")
+    machine_provider = db.relationship("MachineProvider", back_populates="machines", foreign_keys=[machine_provider_id])
     image = db.relationship("Image", back_populates="machines", foreign_keys=[image_id])
     data_transfer_jobs = db.relationship(
         "DataTransferJob",
@@ -1532,6 +1535,7 @@ class ProtectedMachineModelView(ProtectedModelView):
         "owner",
         "machine_template",
         "image",
+        "machine_provider",
         "screenshot",
     )
     form_columns = (
@@ -1576,6 +1580,7 @@ class ProtectedMachineModelView(ProtectedModelView):
         "state": _color_formatter,
         "machine_template": _color_formatter,
         "image": _color_formatter,
+        "machine_provider": _color_formatter,
         "screenshot": _list_thumbnail,
     }
 
@@ -5244,6 +5249,7 @@ def new_machine():
         shared_users=[],
         machine_template=mt,
         image=mt.image,
+        machine_provider=mt.machine_provider,
     )
     update_audit(audit, machine=m)
 
@@ -6123,7 +6129,7 @@ class OpenStackService(VirtService):
             try:
                 m = Machine.query.filter_by(id=m_id).first()
                 mt = m.machine_template
-                mp = mt.machine_provider
+                mp = m.machine_provider
 
                 vm_name = m.name
                 flavor_name = mt.extra_data.get("flavor_name")
@@ -6235,8 +6241,7 @@ class OpenStackService(VirtService):
             audit = get_audit(audit_id)
             try:
                 m = Machine.query.filter_by(id=m_id).first()
-                mt = m.machine_template
-                mp = mt.machine_provider
+                mp = m.machine_provider
                 conn, _ = OpenStackService.conn_from_mp(mp)
 
                 # Check if the server exists
@@ -6258,8 +6263,7 @@ class OpenStackService(VirtService):
             audit = get_audit(audit_id)
             try:
                 m = Machine.query.filter_by(id=m_id).first()
-                mt = m.machine_template
-                mp = mt.machine_provider
+                mp = m.machine_provider
                 conn, _ = OpenStackService.conn_from_mp(mp)
 
                 server = conn.compute.find_server(m.name)
@@ -6280,8 +6284,7 @@ class OpenStackService(VirtService):
             audit = get_audit(audit_id)
             try:
                 m = Machine.query.filter_by(id=m_id).first()
-                mt = m.machine_template
-                mp = mt.machine_provider
+                mp = m.machine_provider
                 conn, _ = OpenStackService.conn_from_mp(mp)
 
                 server = conn.compute.find_server(m.name)
@@ -6472,7 +6475,7 @@ class DockerService(VirtService):
             try:
                 m = Machine.query.filter_by(id=m_id).first()
                 mt = m.machine_template
-                mp = mt.machine_provider
+                mp = m.machine_provider
 
                 network = mp.provider_data.get("network")
                 cpu_cores = mt.cpu_limit_cores
@@ -6540,11 +6543,9 @@ class DockerService(VirtService):
             audit = get_audit(audit_id)
             try:
                 machine = Machine.query.filter_by(id=machine_id).first()
-                mt = machine.machine_template
-                mp = mt.machine_provider
+                mp = machine.machine_provider
 
                 network = mp.provider_data.get("network")
-                machine_ip = machine.ip
                 docker_base_url = mp.provider_data.get("base_url")
                 client = docker.DockerClient(docker_base_url)
 
@@ -6621,7 +6622,7 @@ class LibvirtService(VirtService):
             try:
                 m = Machine.query.filter_by(id=m_id).first()
                 mt = m.machine_template
-                mp = mt.machine_provider
+                mp = m.machine_provider
 
                 qemu_url = mp.provider_data.get("base_url")
 
@@ -6728,8 +6729,7 @@ class LibvirtService(VirtService):
             audit = get_audit(audit_id)
             try:
                 m = Machine.query.filter_by(id=m_id).first()
-                mt = m.machine_template
-                mp = mt.machine_provider
+                mp = m.machine_provider
                 vm_name = m.name
                 qemu_base_url = mp.provider_data.get("base_url")
 
