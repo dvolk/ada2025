@@ -6273,7 +6273,7 @@ class OpenStackService(VirtService):
                 conn, _ = OpenStackService.conn_from_mp(mp)
 
                 server = conn.compute.find_server(m.name)
-                conn.compute.stop_server(server)
+                conn.compute.shelve_server(server)
                 finish_audit(audit, "ok")
                 logging.info(f"OpenStack VM {m.name} stopped successfully.")
 
@@ -6295,7 +6295,7 @@ class OpenStackService(VirtService):
                 conn, _ = OpenStackService.conn_from_mp(mp)
 
                 server = conn.compute.find_server(m.name)
-                conn.compute.start_server(server)
+                conn.compute.unshelve_server(server)
                 finish_audit(audit, "ok")
                 wait_for_nginx(m, timeout=600)
                 logging.info(f"OpenStack VM {m.name} started successfully.")
