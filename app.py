@@ -5634,7 +5634,7 @@ def run_machine_command(machine, command):
 
 
 @log_function_call
-def wait_for_nginx(machine, timeout=1200):
+def wait_for_nginx(machine, timeout=3600):
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
 
@@ -6311,7 +6311,7 @@ class OpenStackService(VirtService):
                 server = conn.compute.find_server(m.name)
                 conn.compute.unshelve_server(server)
                 finish_audit(audit, "ok")
-                wait_for_nginx(m, timeout=600)
+                wait_for_nginx(m, timeout=7200)
                 logging.info(f"OpenStack VM {m.name} unshelved successfully.")
 
             except Exception:
