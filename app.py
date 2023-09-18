@@ -1491,7 +1491,9 @@ class Machine(db.Model):
         "User", secondary=shared_user_machine, back_populates="shared_machines"
     )
     machine_template = db.relationship("MachineTemplate", back_populates="machines")
-    machine_provider = db.relationship("MachineProvider", back_populates="machines", foreign_keys=[machine_provider_id])
+    machine_provider = db.relationship(
+        "MachineProvider", back_populates="machines", foreign_keys=[machine_provider_id]
+    )
     image = db.relationship("Image", back_populates="machines", foreign_keys=[image_id])
     data_transfer_jobs = db.relationship(
         "DataTransferJob",
@@ -6241,7 +6243,9 @@ class OpenStackService(VirtService):
             audit = get_audit(audit_id)
             try:
                 m = Machine.query.filter_by(id=m_id).first()
-                mp = m.machine_provider
+                if not (mp := m.machine_provider):
+                    mp = m.machine_template.machine_provider
+
                 conn, _ = OpenStackService.conn_from_mp(mp)
 
                 # Check if the server exists
@@ -6263,7 +6267,9 @@ class OpenStackService(VirtService):
             audit = get_audit(audit_id)
             try:
                 m = Machine.query.filter_by(id=m_id).first()
-                mp = m.machine_provider
+                if not (mp := m.machine_provider):
+                    mp = m.machine_template.machine_provider
+
                 conn, _ = OpenStackService.conn_from_mp(mp)
 
                 server = conn.compute.find_server(m.name)
@@ -6284,7 +6290,8 @@ class OpenStackService(VirtService):
             audit = get_audit(audit_id)
             try:
                 m = Machine.query.filter_by(id=m_id).first()
-                mp = m.machine_provider
+                if not (mp := m.machine_provider):
+                    mp = m.machine_template.machine_provider
                 conn, _ = OpenStackService.conn_from_mp(mp)
 
                 server = conn.compute.find_server(m.name)
@@ -6543,7 +6550,8 @@ class DockerService(VirtService):
             audit = get_audit(audit_id)
             try:
                 machine = Machine.query.filter_by(id=machine_id).first()
-                mp = machine.machine_provider
+                if not (mp := machine.machine_provider):
+                    mp = machine.machine_template.machine_provider
 
                 network = mp.provider_data.get("network")
                 docker_base_url = mp.provider_data.get("base_url")
@@ -6729,7 +6737,8 @@ class LibvirtService(VirtService):
             audit = get_audit(audit_id)
             try:
                 m = Machine.query.filter_by(id=m_id).first()
-                mp = m.machine_provider
+                if not (mp := m.machine_provider):
+                    mp = m.machine_template.machine_provider
                 vm_name = m.name
                 qemu_base_url = mp.provider_data.get("base_url")
 
