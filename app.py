@@ -6275,8 +6275,19 @@ class OpenStackService(VirtService):
 
                 server = conn.compute.find_server(m.name)
                 conn.compute.shelve_server(server)
-                finish_audit(audit, "ok")
-                logging.info(f"OpenStack VM {m.name} stopped successfully.")
+
+                start_time = time.time()
+                TIMEOUT = 7200
+                while True:
+                    server = conn.compute.get_server(server.id)
+                    if server.status == "SHELVED_OFFLOADED":
+                        break
+                    elif time.time() - start_time > TIMEOUT:
+                        raise Exception("Shelve operation timed out after 1 hour.")
+                    time.sleep(5)
+
+                    finish_audit(audit, "ok")
+                    logging.info(f"OpenStack VM {m.name} stopped successfully.")
 
             except Exception:
                 m.state = MachineState.FAILED
