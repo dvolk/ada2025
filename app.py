@@ -3996,6 +3996,7 @@ def setup_user(user_id):
 @login_required
 def logout():
     audit = create_audit("logout", user=current_user)
+    current_user.otp_last_time_confirmed = datetime.datetime(1980, 1, 1)
     logout_user()
     finish_audit(audit, state="ok")
     return redirect(url_for("index"))
