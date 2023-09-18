@@ -3474,7 +3474,7 @@ def register():
 
 
 class OtpSetupForm(FlaskForm):
-    otp_token = PasswordField(
+    otp_token = StringField(
         lazy_gettext("OTP"), validators=[DataRequired(), Length(min=6, max=100)]
     )
     submit = SubmitField("Submit")
