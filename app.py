@@ -6278,7 +6278,7 @@ class OpenStackService(VirtService):
                 conn.compute.shelve_server(server)
 
                 start_time = time.time()
-                TIMEOUT = 7200
+                TIMEOUT = 3600 * 6
                 while True:
                     server = conn.compute.get_server(server.id)
                     if server.status == "SHELVED_OFFLOADED":
