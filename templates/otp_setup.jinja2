@@ -3,7 +3,7 @@
 {% block content %}
 <h1 style="text-align: center;">2FA Setup</h1>
 <p style="text-align: left;">
-    {{ info(gettext("Please use FreeOTP or Google Authenticator (or another two-factor authentication app) to scan the QR code below, generate your OTP (one time password), and confirm using the text box below.")) }}
+    {{ info(gettext("Please use FreeOTP or Google Authenticator (or another two-factor TOTP authentication app) to scan the QR code below, generate your OTP (one time password), and confirm using the text box below.")) }}
 </p>
 <p style="text-align: left;">
     {{ info(gettext("Once set up, you will need to verify your OTP once every two weeks or after you click 'Sign Out' in the side bar.")) }}
@@ -17,8 +17,8 @@
 <form method="POST" action="{{ url_for('otp_setup') }}">
     {{ form.hidden_tag() }}
     <p>
-        {{ form.otp_token.label() }}
-        {{ form.otp_token(class="w3-input w3-round w3-border w3-light-grey") }}
+        {{ form.otp_token.label(class="w3-center") }}
+        {{ form.otp_token(class="w3-input w3-round w3-border w3-large w3-light-grey w3-center") }}
     </p>
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -32,7 +32,7 @@
     {% endif %}
     {% endwith %}
     <p style="text-align: center;">
-        {{ form.submit(class="w3-btn w3-blue w3-round") }}
+        {{ form.submit(class="w3-btn w3-center ada-blue w3-round") }}
     </p>
 </form>
 

@@ -3,14 +3,14 @@
 {% block content %}
 <h1 style="text-align: center;">OTP Verification</h1>
 <p style="text-align: left;">
-    {{ idea(gettext("This account has two-factor authentication enabled. Please enter your OTP (one time password) displayed in your authenticator in the box below.")) }}
+    {{ gettext("Please check your authenticator device to generate a one-time password.") }}
 </p>
 
 <form method="POST" action="{{ url_for('otp_verify') }}">
     {{ form.hidden_tag() }}
     <p>
-        {{ form.otp_token.label() }}
-        {{ form.otp_token(class="w3-input w3-round w3-border w3-light-grey") }}
+        {{ form.otp_token.label(class="w3-center") }}
+        {{ form.otp_token(class="w3-input w3-round w3-border w3-large w3-light-grey w3-center") }}
     </p>
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -24,7 +24,7 @@
     {% endif %}
     {% endwith %}
     <p style="text-align: center;">
-        {{ form.submit(class="w3-btn w3-blue w3-round") }}
+        {{ form.submit(class="w3-btn w3-center ada-blue w3-round") }}
     </p>
 </form>
 
