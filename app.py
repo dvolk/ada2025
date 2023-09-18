@@ -6281,11 +6281,11 @@ class OpenStackService(VirtService):
                 TIMEOUT = 3600 * 6
                 while True:
                     server = conn.compute.get_server(server.id)
-                    if server.status == "SHELVED_OFFLOADED":
+                    if server.status in ["SHELVED", "SHELVED_OFFLOADED"]:
                         break
                     elif time.time() - start_time > TIMEOUT:
                         raise Exception("Shelve operation timed out after 1 hour.")
-                    time.sleep(5)
+                    time.sleep(30)
 
                     finish_audit(audit, "ok")
                     logging.info(f"OpenStack VM {m.name} shelved successfully.")
