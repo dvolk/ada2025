@@ -6287,12 +6287,12 @@ class OpenStackService(VirtService):
                     time.sleep(5)
 
                     finish_audit(audit, "ok")
-                    logging.info(f"OpenStack VM {m.name} stopped successfully.")
+                    logging.info(f"OpenStack VM {m.name} shelved successfully.")
 
             except Exception:
                 m.state = MachineState.FAILED
                 finish_audit(audit, "error")
-                logging.exception("Couldn't shut down openstack vm: ")
+                logging.exception("Couldn't shelve openstack vm:")
             m.state = MachineState.STOPPED
             db.session.commit()
 
@@ -6310,12 +6310,12 @@ class OpenStackService(VirtService):
                 conn.compute.unshelve_server(server)
                 finish_audit(audit, "ok")
                 wait_for_nginx(m, timeout=600)
-                logging.info(f"OpenStack VM {m.name} started successfully.")
+                logging.info(f"OpenStack VM {m.name} unshelved successfully.")
 
             except Exception:
-                m.state = MachineState.FAILED
+                m.state = MachineState.STOPPED
                 finish_audit(audit, "error")
-                logging.exception("Couldn't resume openstack vm: ")
+                logging.exception("Couldn't unshelve openstack vm:")
             m.state = MachineState.READY
             db.session.commit()
 
