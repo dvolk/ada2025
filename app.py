@@ -196,6 +196,7 @@ ADA2025_EMAIL_CONFIRMATION_SECRET_KEY = os.getenv(
 ADA2025_USE_EMAIL_CONFIRMATION = str_to_bool(
     os.environ.get("ADA2025_USE_EMAIL_CONFIRMATION", "False")
 )
+ADA2025_SYS_MSG = os.environ.get("ADA2025_SYS_MSG")
 
 ADA2025_USE_2FA = str_to_bool(os.environ.get("ADA2025_USE_2FA", "False"))
 
@@ -2956,6 +2957,7 @@ def login():
         show_iris_iam_button = True
     if os.environ.get("ADA2025_ORCID_OAUTH2_CLIENT_ID"):
         show_orcid_button = True
+    system_message = ADA2025_SYS_MSG
 
     form = LoginForm()
 
@@ -2969,6 +2971,7 @@ def login():
             "login.jinja2",
             title=gettext("Login"),
             form=form,
+            system_message=system_message,
             show_google_button=show_google_button,
             show_iris_iam_button=show_iris_iam_button,
             show_orcid_button=show_orcid_button,
@@ -2985,6 +2988,7 @@ def login():
                     "login.jinja2",
                     title=gettext("Login"),
                     form=form,
+                    system_message=system_message,
                     show_google_button=show_google_button,
                     show_iris_iam_button=show_iris_iam_button,
                     show_orcid_button=show_orcid_button,
@@ -3018,6 +3022,7 @@ def login():
                         "login.jinja2",
                         title=gettext("Login"),
                         form=form,
+                        system_message=system_message,
                         show_google_button=show_google_button,
                         show_iris_iam_button=show_iris_iam_button,
                         show_orcid_button=show_orcid_button,
@@ -3036,6 +3041,7 @@ def login():
                     "login.jinja2",
                     title=gettext("Login"),
                     form=form,
+                    system_message=system_message,
                     show_google_button=show_google_button,
                     show_iris_iam_button=show_iris_iam_button,
                     show_orcid_button=show_orcid_button,
@@ -3068,6 +3074,7 @@ def login():
         "login.jinja2",
         title=gettext("Login"),
         form=form,
+        system_message=system_message,
         show_google_button=show_google_button,
         show_iris_iam_button=show_iris_iam_button,
         show_orcid_button=show_orcid_button,
