@@ -54,17 +54,16 @@ def main(group_id, hours_old_to_delete, do_delete=False):
             )
         ).all()
 
-        if do_delete:
-            for u, m, mt in results:
-                machine_age = current_time - m.creation_date
-                print(
-                    f"template: {mt.name}, owner: {u.username}, name: {m.display_name}, age: {machine_age}"
-                )
-                if do_delete:
-                    audit = create_audit("timeout vm", "starting")
-                    update_audit(audit, machine=m)
-                    OpenStackService.stop(m.id, audit.id)
-                    finish_audit(audit, "ok")
+        for u, m, mt in results:
+            machine_age = current_time - m.creation_date
+            print(
+                f"template: {mt.name}, owner: {u.username}, name: {m.display_name}, age: {machine_age}"
+            )
+            if do_delete:
+                audit = create_audit("timeout vm", "starting")
+                update_audit(audit, machine=m)
+                OpenStackService.stop(m.id, audit.id)
+                finish_audit(audit, "ok")
 
 
 if __name__ == "__main__":
