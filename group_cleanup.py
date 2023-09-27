@@ -48,7 +48,6 @@ def main(group_id, hours_old_to_delete, do_delete=False):
                     MachineTemplate.group_id == group_id,
                     Machine.state.in_([MachineState.READY, MachineState.STOPPED]),
                     Machine.creation_date <= time_hours_ago,
-                    ~User.is_group_admin,
                     ~User.is_admin,
                 )
             )
