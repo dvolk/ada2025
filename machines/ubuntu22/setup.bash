@@ -207,11 +207,9 @@ fi
 # OPTIONAL: Install Ada 2025 Software Installer
 if [ "$BUILD_INSTALL_ADA2025_SOFTWARE_INSTALLER" = "True" ]; then
     apt install -y python3-pip python3-venv
-    wget -q https://ada-files.oxfordfun.com/software/Ada2025_SI/ada2025_si.tar.gz
-    tar -xvf ada2025_si.tar.gz -C /
-    rm -f ada2025_si.tar.gz
-    python3 -m venv /opt/ada2025-software-installer/env
-    /opt/ada2025-software-installer/env/bin/pip3 install -r /opt/ada2025-software-installer/requirements.txt
+    git clone https://github.com/oxfordfun/ada2025-software-installer.git /home/ubuntu/ada2025-software-installer
+    python3 -m venv /home/ubuntu/ada2025-software-installer/env
+    /home/ubuntu/ada2025-software-installer/env/bin/pip3 install -r /home/ubuntu/ada2025-software-installer/requirements.txt
 fi
 
 # OPTIONAL: Install libreoffice
