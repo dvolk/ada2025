@@ -6292,16 +6292,16 @@ class OpenStackService(VirtService):
                     if server.status in ["SHELVED", "SHELVED_OFFLOADED"]:
                         break
                     elif time.time() - start_time > TIMEOUT:
-                        raise Exception("Shelve operation timed out after 1 hour.")
+                        raise Exception("Shelve operation timed out after 6 hours.")
                     time.sleep(30)
 
                     finish_audit(audit, "ok")
                     logging.info(f"OpenStack VM {m.name} shelved successfully.")
 
             except Exception:
-                m.state = MachineState.FAILED
                 finish_audit(audit, "error")
                 logging.exception("Couldn't shelve openstack vm:")
+
             m.state = MachineState.STOPPED
             db.session.commit()
 
@@ -6309,6 +6309,7 @@ class OpenStackService(VirtService):
     def resume(m_id: int, audit_id: int):
         with OpenStackService.app.app_context():
             audit = get_audit(audit_id)
+            # we first try to unshelve it
             try:
                 m = Machine.query.filter_by(id=m_id).first()
                 if not (mp := m.machine_provider):
@@ -6320,13 +6321,30 @@ class OpenStackService(VirtService):
                 finish_audit(audit, "ok")
                 wait_for_nginx(m, timeout=7200)
                 logging.info(f"OpenStack VM {m.name} unshelved successfully.")
+                m.state = MachineState.READY
+                db.session.commit()
 
             except Exception:
-                m.state = MachineState.STOPPED
-                finish_audit(audit, "error")
-                logging.exception("Couldn't unshelve openstack vm:")
-            m.state = MachineState.READY
-            db.session.commit()
+                # sometimes shelving fails, and the machine is left in a shut down but not shelved state
+                # so if unshelving fails, try to just power it on
+                try:
+                    m = Machine.query.filter_by(id=m_id).first()
+                    if not (mp := m.machine_provider):
+                        mp = m.machine_template.machine_provider
+                    conn, _ = OpenStackService.conn_from_mp(mp)
+
+                    server = conn.compute.find_server(m.name)
+                    conn.compute.start_server(server)
+                    finish_audit(audit, "ok")
+                    wait_for_nginx(m, timeout=7200)
+                    logging.info(f"OpenStack VM {m.name} started successfully.")
+                    m.state = MachineState.READY
+                    db.session.commit()
+
+                except Exception:
+                    m.state = MachineState.STOPPED
+                    finish_audit(audit, "error")
+                    logging.exception("Couldn't unshelve openstack vm:")
 
     @log_function_call
     @staticmethod
