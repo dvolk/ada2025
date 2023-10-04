@@ -207,9 +207,15 @@ fi
 # OPTIONAL: Install Ada 2025 Software Installer
 if [ "$BUILD_INSTALL_ADA2025_SOFTWARE_INSTALLER" = "True" ]; then
     apt install -y python3-pip python3-venv
-    git clone https://github.com/oxfordfun/ada2025-software-installer.git /home/ubuntu/ada2025-software-installer
-    python3 -m venv /home/ubuntu/ada2025-software-installer/env
-    /home/ubuntu/ada2025-software-installer/env/bin/pip3 install -r /home/ubuntu/ada2025-software-installer/requirements.txt
+    su ubuntu<<EOF
+git clone https://github.com/oxfordfun/ada2025-software-installer.git /home/ubuntu/ada2025-software-installer
+python3 -m venv /home/ubuntu/ada2025-software-installer/env
+/home/ubuntu/ada2025-software-installer/env/bin/pip3 install -r /home/ubuntu/ada2025-software-installer/requirements.txt
+
+cp /home/ubuntu/ada2025-software-installer/ada2025-software-installer.desktop /home/ubuntu/Desktop/
+chown ubuntu /home/ubuntu/Desktop/ada2025-software-installer.desktop
+chmod +x /home/ubuntu/Desktop/ada2025-software-installer.desktop
+EOF
 fi
 
 # OPTIONAL: Install libreoffice
