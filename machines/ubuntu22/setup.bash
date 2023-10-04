@@ -489,10 +489,10 @@ if [ "$BUILD_INSTALL_ASPERA" = "True" ]; then
 EOF
 
     # install aspera connect
-    wget -q https://d3gcli72yxqn2z.cloudfront.net/downloads/connect/latest/bin/ibm-aspera-connect_4.2.6.393_linux_x86_64.tar.gz
-    tar xzf ibm-aspera-connect_4.2.6.393_linux_x86_64.tar.gz
+    wget -q https://d3gcli72yxqn2z.cloudfront.net/downloads/connect/latest/bin/ibm-aspera-connect_4.2.7.445_linux_x86_64.tar.gz
+    tar xzf ibm-aspera-connect_4.2.7.445_linux_x86_64.tar.gz
     su ubuntu <<EOF
-bash ibm-aspera-connect_4.2.6.393_linux_x86_64.sh
+bash ibm-aspera-connect_4.2.7.445_linux_x86_64.sh
 EOF
 
     # install aspera connect firefox extension
