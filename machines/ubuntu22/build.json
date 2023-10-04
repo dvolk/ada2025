@@ -145,6 +145,11 @@
       "name": "BUILD_INSTALL_ADA_USER_SHARE",
       "display_name": "Set up /media/ada-user-share",
       "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_RFI_EXAMPLE_DATASETS",
+      "display_name": "Add rfi example dataset 10.5281.zenodo.7936982",
+      "type": "bool"
     }
   ]
 }

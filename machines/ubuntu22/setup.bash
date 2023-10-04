@@ -465,6 +465,16 @@ if [ "$BUILD_INSTALL_NAPARI" = "True" ]; then
     chmod +x /home/ubuntu/Desktop/Napari.desktop
 fi
 
+# OPTIONAL: Download RFI example datasets
+if [ "$BUILD_INSTALL_RFI_EXAMPLE_DATASETS" = "True" ]; then
+    su ubuntu << EOF
+mkdir -p /home/ubuntu/datasets
+wget -q --content-disposition 'https://zenodo.org/record/7936982/files/EM04468_2_63x_pos8T_LM_raw.tif?download=1' -O /home/ubuntu/datasets/EM04468_2_63x_pos8T_LM_raw.tif
+wget -q --content-disposition 'https://zenodo.org/record/7936982/files/em_20nm_z_40_145.tif?download=1' -O /home/ubuntu/datasets/em_20nm_z_40_145.tif
+EOF
+fi
+
+
 # OPTIONAL: Install Aspera. REQUIRES conda above
 if [ "$BUILD_INSTALL_ASPERA" = "True" ]; then
     # install aspera-cli
