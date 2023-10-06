@@ -1,7 +1,10 @@
 secret_key: your_key_here
 
-networks:
+txt_records:
+  '_acme-challenge.machine.ada.oxfordfun.com.': '9ihDbjYfTExAYeDs4DBUeuTo18KBzwvTEjUnSwd32-c'
+  '_acme-challenge.www.machine.ada.oxfordfun.com.': '9ihDbjxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx'
 
+networks:
   - name: stfc cloud internal ips
     resolved_networks:
       - 172.16.104.0/21

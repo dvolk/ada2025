@@ -8,10 +8,11 @@ import time
 from ipaddress import ip_network, ip_address
 import random
 import logging
+import json
 from logging.handlers import TimedRotatingFileHandler
 
 import yaml
-from dnslib import RR, QTYPE, RCODE, A
+from dnslib import RR, QTYPE, RCODE, A, TXT
 from dnslib.server import DNSServer, DNSHandler, BaseResolver, DNSLogger
 import argh
 
@@ -37,11 +38,12 @@ class Config:
     def __init__(self, filename):
         with open(filename) as f:
             config = yaml.safe_load(f)
-        print(config)
+        print(json.dumps(config, indent=4))
         self.secret_key = config["secret_key"]
         self.networks = [Network(**c) for c in config["networks"]]
         self.networks_by_name = {n.name: n for n in self.networks}
         self.networks_by_resolved_subnet = {}
+        self.txt_records = config.get("txt_records", {})
         for n in self.networks:
             for rn in n.resolved_networks:
                 self.networks_by_resolved_subnet[rn] = n
@@ -62,6 +64,13 @@ class MyResolver(BaseResolver):
         reply = request.reply()
         qname = request.q.qname
         qn = str(qname)
+
+        # Check for TXT record requests.
+        if request.q.qtype == QTYPE.TXT:
+            if qn in config.txt_records:
+                txt_data = config.txt_records[qn]
+                reply.add_answer(RR(qname, QTYPE.TXT, rdata=TXT(txt_data), ttl=60))
+                return reply
 
         parsed_host = qn[0:13].lower()
         client_ip = ip_address(handler.client_address[0])
