@@ -2241,11 +2241,14 @@ def gen_unique_username(
         attempt = attempt + 1
 
 
+MISSING_EMAIL_DOMAIN = "@example.com"
+
+
 def set_user_email_missing():
-    return str(uuid.uuid4()) + "@example.com"
+    return str(uuid.uuid4()) + MISSING_EMAIL_DOMAIN
 
 
-def is_user_email_missing():
+def is_user_email_missing(user):
     """Check if the user's email is set.
 
     A federated login provider might not return an email for a user,
@@ -2256,7 +2259,7 @@ def is_user_email_missing():
     if not user.email:
         logging.error("user has empty email which is an error")
         return True
-    if user.email and user.email[-12:] == "@example.com":
+    if user.email.endswith(MISSING_EMAIL_DOMAIN):
         return True
     return False
 
