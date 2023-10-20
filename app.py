@@ -2241,7 +2241,11 @@ def gen_unique_username(
         attempt = attempt + 1
 
 
-def is_user_email_missing(user):
+def set_user_email_missing():
+    return str(uuid.uuid4()) + "@example.com"
+
+
+def is_user_email_missing():
     """Check if the user's email is set.
 
     A federated login provider might not return an email for a user,
@@ -2252,7 +2256,7 @@ def is_user_email_missing(user):
     if not user.email:
         logging.error("user has empty email which is an error")
         return True
-    if user.email == f"missing-{user.id}@example.com":
+    if user.email and user.email[-12:] == "@example.com":
         return True
     return False
 
@@ -2531,7 +2535,7 @@ def google_authorize():
                 username=gen_unique_username(
                     user_info.get("given_name", ""),
                     user_info.get("family_name", ""),
-                    user_info.get("email", f"missing-{user.id}@example.com"),
+                    user_info.get("email", set_user_email_missing()),
                 ),
                 given_name=user_info.get("given_name", ""),
                 family_name=user_info.get("family_name", ""),
@@ -2605,7 +2609,7 @@ def iris_iam_authorize():
                 username=gen_unique_username(
                     user_info.get("given_name", ""),
                     user_info.get("family_name", ""),
-                    user_info.get("email", f"missing-{user.id}@example.com"),
+                    user_info.get("email", set_user_email_missing()),
                 ),
                 given_name=user_info.get("given_name", ""),
                 family_name=user_info.get("family_name", ""),
@@ -2672,7 +2676,7 @@ def orcid_authorize():
             given_name, family_name, email = (
                 user_info.get("given_name", ""),
                 user_info.get("family_name", ""),
-                user_info.get("email", f"missing-{user.id}@example.com"),
+                user_info.get("email", set_user_email_missing()),
             )
 
             username = gen_unique_username(given_name, family_name, email)
