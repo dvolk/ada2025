@@ -1962,7 +1962,7 @@ def profile_complete_required(f):
         if not (
             current_user.given_name
             and current_user.family_name
-            and current_user.email
+            and not is_user_email_missing(current_user)
             and current_user.organization
             and current_user.job_title
         ):
@@ -2241,6 +2241,22 @@ def gen_unique_username(
         attempt = attempt + 1
 
 
+def is_user_email_missing(user):
+    """Check if the user's email is set.
+
+    A federated login provider might not return an email for a user,
+    in which case we need to set a unique and known value for missing emails.
+
+    It should not be empty because emails have to be unique.
+    """
+    if not user.email:
+        logging.error("user has empty email which is an error")
+        return True
+    if user.email == f"missing-{user.id}@example.com":
+        return True
+    return False
+
+
 def generate_complete_profile_form(user):
     # dynamically generate the flask-wtform, based on what fields the user
     # is missing. the user will typically be missing information if they
@@ -2268,7 +2284,7 @@ def generate_complete_profile_form(user):
             ),
         )
         fields.append("family_name")
-    if not user.email:
+    if is_user_email_missing(user):
         setattr(
             CompleteProfileForm,
             "email",
@@ -2515,7 +2531,7 @@ def google_authorize():
                 username=gen_unique_username(
                     user_info.get("given_name", ""),
                     user_info.get("family_name", ""),
-                    user_info.get("email", ""),
+                    user_info.get("email", f"missing-{user.id}@example.com"),
                 ),
                 given_name=user_info.get("given_name", ""),
                 family_name=user_info.get("family_name", ""),
@@ -2589,7 +2605,7 @@ def iris_iam_authorize():
                 username=gen_unique_username(
                     user_info.get("given_name", ""),
                     user_info.get("family_name", ""),
-                    user_info.get("email", ""),
+                    user_info.get("email", f"missing-{user.id}@example.com"),
                 ),
                 given_name=user_info.get("given_name", ""),
                 family_name=user_info.get("family_name", ""),
@@ -2656,8 +2672,9 @@ def orcid_authorize():
             given_name, family_name, email = (
                 user_info.get("given_name", ""),
                 user_info.get("family_name", ""),
-                user_info.get("email", ""),
+                user_info.get("email", f"missing-{user.id}@example.com"),
             )
+
             username = gen_unique_username(given_name, family_name, email)
             user = User(
                 username=username,
