@@ -469,6 +469,9 @@ if [ "$BUILD_INSTALL_NAPARI" = "True" ]; then
     rm -f Napari-0.4.17.tar.gz
     apt install -y libqt5core5a:amd64 libqt5gui5:amd64
     chmod +x /home/ubuntu/Desktop/Napari.desktop
+su ubuntu << EOF
+/home/ubuntu/napari-env/bin/pip install okapi-em napari-ome-zarr
+EOF
 fi
 
 # OPTIONAL: Download RFI example datasets
