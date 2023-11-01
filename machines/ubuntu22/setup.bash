@@ -184,6 +184,11 @@ echo 'Unattended-Upgrade::Allowed-Origins:: "LP-PPA-mozillateam:${distro_codenam
 
 apt install -y firefox webext-ublock-origin-firefox
 
+# create user datasets directory
+su ubuntu <<EOF
+mkdir -p /home/ubuntu/datasets
+EOF
+
 # -------------------------------------------------------------------------
 # -------------------------------------------------------------------------
 # -------------------------------------------------------------------------
@@ -469,7 +474,7 @@ if [ "$BUILD_INSTALL_NAPARI" = "True" ]; then
     rm -f Napari-0.4.17.tar.gz
     apt install -y libqt5core5a:amd64 libqt5gui5:amd64
     chmod +x /home/ubuntu/Desktop/Napari.desktop
-su ubuntu << EOF
+    su ubuntu << EOF
 /home/ubuntu/napari-env/bin/pip install okapi-em napari-ome-zarr
 EOF
 fi
@@ -478,8 +483,8 @@ fi
 if [ "$BUILD_INSTALL_RFI_EXAMPLE_DATASETS" = "True" ]; then
     su ubuntu << EOF
 mkdir -p /home/ubuntu/datasets
-wget -q --content-disposition 'https://zenodo.org/record/7936982/files/EM04468_2_63x_pos8T_LM_raw.tif?download=1' -O /home/ubuntu/datasets/EM04468_2_63x_pos8T_LM_raw.tif
-wget -q --content-disposition 'https://zenodo.org/record/7936982/files/em_20nm_z_40_145.tif?download=1' -O /home/ubuntu/datasets/em_20nm_z_40_145.tif
+wget -q --content-disposition 'https://zenodo.org/record/7936982/files/EM04468_2_63x_pos8T_LM_raw.tif?download=1' -O /home/ubuntu/datasets/CLEM-Reg-tutorial/EM04468_2_63x_pos8T_LM_raw.tif
+wget -q --content-disposition 'https://zenodo.org/record/7936982/files/em_20nm_z_40_145.tif?download=1' -O /home/ubuntu/datasets/CLEM-Reg-tutorial/em_20nm_z_40_145.tif
 EOF
 fi
 
