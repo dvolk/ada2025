@@ -553,6 +553,7 @@ xfconf-query -c xsettings -p /Net/IconThemeName -s 'Tango'
 xfconf-query -c xfce4-panel -p /panels/dark-mode -s false
 wget -q https://ada-files.oxfordfun.com/software/misc/vEMlogo_purwhitecell.jpg -O /home/ubuntu/.rfi_bg.jpg
 xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitorVNC-0/workspace0/last-image -s /home/ubuntu/.rfi_bg.jpg
+wget -q --content-disposition https://ada-files.oxfordfun.com/software/misc/README.pdf -O /home/ubuntu/Desktop/README.pdf
 EOF
 fi
 
