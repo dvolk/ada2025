@@ -4986,7 +4986,7 @@ def start_data_transfer(job_id, audit_id):
                 source_port=job.data_source.source_port,
                 source_dir=job.data_source.source_dir,
                 dest_host=f"{job.machine.machine_template.os_username}@{job.machine.ip}",
-                dest_dir="",
+                dest_dir="datasets",
             )
 
         if result:
