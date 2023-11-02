@@ -23,6 +23,7 @@ import collections
 import pathlib
 import email_validator
 import pyotp
+import itertools
 
 # flask and related imports
 from flask import (
@@ -1306,16 +1307,33 @@ class Software(db.Model):
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
+    type = db.Column(db.String(25), nullable=True)
+    description = db.Column(db.String(1000), nullable=True)
+    version = db.Column(db.String(1000), nullable=True)
+    desktop_file = db.Column(db.String(100), nullable=True)
+    icon_file = db.Column(db.String(100), nullable=True)
+    apptainer_file = db.Column(db.String(100), nullable=True)
     images = db.relationship(
         "Image", secondary=software_image_table, backref="softwares"
     )
+
 
     def __repr__(self):
         return f"<{self.name}>"
 
 
 class ProtectedSoftwareModelView(ProtectedModelView):
-    column_list = ["name", "images", "creation_date"]
+    column_list = [
+        "name",
+        "images",
+        "creation_date",
+        "type",
+        "description",
+        "version",
+        "desktop_file",
+        "icon_file",
+        "apptainer_file"
+        ]
     form_excluded_columns = ["id"]  # Exclude 'id' from the form
     column_formatters = {
         "images": _list_color_formatter,
