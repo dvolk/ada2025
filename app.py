@@ -1309,10 +1309,10 @@ class Software(db.Model):
     )
     type = db.Column(db.String(25), nullable=True)
     description = db.Column(db.String(1000), nullable=True)
-    version = db.Column(db.String(1000), nullable=True)
-    desktop_file = db.Column(db.String(100), nullable=True)
-    icon_file = db.Column(db.String(100), nullable=True)
-    apptainer_file = db.Column(db.String(100), nullable=True)
+    version = db.Column(db.String(100), nullable=True)
+    desktop_file = db.Column(db.String(300), nullable=True)
+    icon_file = db.Column(db.String(300), nullable=True)
+    apptainer_file = db.Column(db.String(300), nullable=True)
     images = db.relationship(
         "Image", secondary=software_image_table, backref="softwares"
     )
@@ -5638,6 +5638,7 @@ def unshare_machine():
     return "OK"
 
 
+# Serves the Software table in JSON format, matching the software.json file in the ada file server
 @app.route("/software_db")
 def software_database_json():
     softwares = [x.__dict__ for x in Software.query.all()]
