@@ -5639,6 +5639,39 @@ def unshare_machine():
     return "OK"
 
 
+@app.route("/software_db")
+def software_database_json():
+    rows = [x.__dict__ for x in Software.query.all()]
+    for row in rows:
+        del row["_sa_instance_state"]
+
+    flat = json.dumps(rows, indent=4)
+
+    softwares = eval(flat)
+
+    output = {}
+
+    softwares = itertools.groupby(softwares, key=lambda x: x["name"])
+
+    for name, variants in softwares:
+        output[name] = {}
+        output[name]["variants"] = []
+        for variant in variants:
+            output[name]["name"] = variant["name"]
+            output[name]["type"] = variant["type"]
+            output[name]["description"] = variant["description"]
+            output[name]["variants"].append(
+                {
+                    "version": variant["version"],
+                    "desktop_file": variant["desktop_file"],
+                    "icon_file": variant["icon_file"],
+                    "apptainer_file": variant["apptainer_file"],
+                }
+            )
+    output = list(output.values())
+
+    return json.dumps(output, indent=4)
+
 @log_function_call
 def run_machine_command(machine, command):
     escaped_command = shlex.quote(command)
