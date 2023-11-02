@@ -1317,7 +1317,6 @@ class Software(db.Model):
         "Image", secondary=software_image_table, backref="softwares"
     )
 
-
     def __repr__(self):
         return f"<{self.name}>"
 
@@ -1332,8 +1331,8 @@ class ProtectedSoftwareModelView(ProtectedModelView):
         "version",
         "desktop_file",
         "icon_file",
-        "apptainer_file"
-        ]
+        "apptainer_file",
+    ]
     form_excluded_columns = ["id"]  # Exclude 'id' from the form
     column_formatters = {
         "images": _list_color_formatter,
@@ -5641,18 +5640,9 @@ def unshare_machine():
 
 @app.route("/software_db")
 def software_database_json():
-    rows = [x.__dict__ for x in Software.query.all()]
-    for row in rows:
-        del row["_sa_instance_state"]
-
-    flat = json.dumps(rows, indent=4)
-
-    softwares = eval(flat)
-
-    output = {}
-
+    softwares = [x.__dict__ for x in Software.query.all()]
     softwares = itertools.groupby(softwares, key=lambda x: x["name"])
-
+    output = {}
     for name, variants in softwares:
         output[name] = {}
         output[name]["variants"] = []
@@ -5671,6 +5661,7 @@ def software_database_json():
     output = list(output.values())
 
     return json.dumps(output, indent=4)
+
 
 @log_function_call
 def run_machine_command(machine, command):
