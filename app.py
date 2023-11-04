@@ -23,6 +23,7 @@ import collections
 import pathlib
 import email_validator
 import pyotp
+import itertools
 
 # flask and related imports
 from flask import (
@@ -1306,6 +1307,12 @@ class Software(db.Model):
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
+    type = db.Column(db.String(25), nullable=True)
+    description = db.Column(db.String(1000), nullable=True)
+    version = db.Column(db.String(100), nullable=True)
+    desktop_file = db.Column(db.String(300), nullable=True)
+    icon_file = db.Column(db.String(300), nullable=True)
+    apptainer_file = db.Column(db.String(300), nullable=True)
     images = db.relationship(
         "Image", secondary=software_image_table, backref="softwares"
     )
@@ -1315,7 +1322,17 @@ class Software(db.Model):
 
 
 class ProtectedSoftwareModelView(ProtectedModelView):
-    column_list = ["name", "images", "creation_date"]
+    column_list = [
+        "name",
+        "images",
+        "creation_date",
+        "type",
+        "description",
+        "version",
+        "desktop_file",
+        "icon_file",
+        "apptainer_file",
+    ]
     form_excluded_columns = ["id"]  # Exclude 'id' from the form
     column_formatters = {
         "images": _list_color_formatter,
@@ -5643,6 +5660,32 @@ def unshare_machine():
     db.session.commit()
 
     return "OK"
+
+
+# Serves the Software table in JSON format, matching the software.json file in the ada file server
+@app.route("/software_db")
+def software_database_json():
+    softwares = [x.__dict__ for x in Software.query.all()]
+    softwares = itertools.groupby(softwares, key=lambda x: x["name"])
+    output = {}
+    for name, variants in softwares:
+        output[name] = {}
+        output[name]["variants"] = []
+        for variant in variants:
+            output[name]["name"] = variant["name"]
+            output[name]["type"] = variant["type"]
+            output[name]["description"] = variant["description"]
+            output[name]["variants"].append(
+                {
+                    "version": variant["version"],
+                    "desktop_file": variant["desktop_file"],
+                    "icon_file": variant["icon_file"],
+                    "apptainer_file": variant["apptainer_file"],
+                }
+            )
+    output = list(output.values())
+
+    return json.dumps(output, indent=4)
 
 
 @log_function_call
