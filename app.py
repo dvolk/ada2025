@@ -1324,14 +1324,10 @@ class Software(db.Model):
 class ProtectedSoftwareModelView(ProtectedModelView):
     column_list = [
         "name",
-        "images",
         "creation_date",
         "type",
-        "description",
         "version",
-        "desktop_file",
-        "icon_file",
-        "apptainer_file",
+        "images",
     ]
     form_excluded_columns = ["id"]  # Exclude 'id' from the form
     column_formatters = {
@@ -5664,23 +5660,25 @@ def unshare_machine():
 
 # Serves the Software table in JSON format, matching the software.json file in the ada file server
 @app.route("/software_db")
+@limiter.limit("60 per minute")
 def software_database_json():
-    softwares = [x.__dict__ for x in Software.query.all()]
-    softwares = itertools.groupby(softwares, key=lambda x: x["name"])
+    softwares = Software.query.all()
+    softwares = itertools.groupby(softwares, key=lambda x: x.name)
+
     output = {}
     for name, variants in softwares:
         output[name] = {}
         output[name]["variants"] = []
         for variant in variants:
-            output[name]["name"] = variant["name"]
-            output[name]["type"] = variant["type"]
-            output[name]["description"] = variant["description"]
+            output[name]["name"] = variant.name
+            output[name]["type"] = variant.type
+            output[name]["description"] = variant.description
             output[name]["variants"].append(
                 {
-                    "version": variant["version"],
-                    "desktop_file": variant["desktop_file"],
-                    "icon_file": variant["icon_file"],
-                    "apptainer_file": variant["apptainer_file"],
+                    "version": variant.version,
+                    "desktop_file": variant.desktop_file,
+                    "icon_file": variant.icon_file,
+                    "apptainer_file": variant.apptainer_file,
                 }
             )
     output = list(output.values())
