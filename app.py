@@ -19,6 +19,7 @@ import re
 import html
 import hashlib
 from functools import cache
+from cachetools import TTLCache, cached
 import collections
 import pathlib
 import email_validator
@@ -251,7 +252,6 @@ MAIL_SENDER = os.environ.get("ADA2025_MAIL_SENDER", "")
 mail = Mail(app)
 
 qrcode = QRcode(app)
-
 
 @app.before_request
 def before_request():
@@ -5659,6 +5659,7 @@ def unshare_machine():
 
 
 # Serves the Software table in JSON format, matching the software.json file in the ada file server
+@cached(cache=TTLCache(maxsize=1, ttl=10))
 @app.route("/software_db")
 @limiter.limit("60 per minute")
 def software_database_json():
@@ -5685,6 +5686,7 @@ def software_database_json():
 
     return json.dumps(output, indent=4)
 
+software_db_json = software_database_json()
 
 @log_function_call
 def run_machine_command(machine, command):
