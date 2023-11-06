@@ -5668,7 +5668,6 @@ def software_database_json():
     global SOFTWARE_DB_RESULT
     global SOFTWARE_DB_RESULT_TIME
     if (diff := datetime.datetime.utcnow() - SOFTWARE_DB_RESULT_TIME).seconds < 10:
-        print(diff)
         return SOFTWARE_DB_RESULT
 
     softwares = db.session.query(Software).filter(Software.type != "in-image").all()
@@ -5691,7 +5690,6 @@ def software_database_json():
                 }
             )
     output = list(output.values())
-    logging.warning("function ran")
 
     SOFTWARE_DB_RESULT = json.dumps(output, indent=4)
     SOFTWARE_DB_RESULT_TIME = datetime.datetime.utcnow()
