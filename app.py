@@ -19,7 +19,6 @@ import re
 import html
 import hashlib
 from functools import cache
-from cachetools import TTLCache, cached
 import collections
 import pathlib
 import email_validator
@@ -252,6 +251,7 @@ MAIL_SENDER = os.environ.get("ADA2025_MAIL_SENDER", "")
 mail = Mail(app)
 
 qrcode = QRcode(app)
+
 
 @app.before_request
 def before_request():
@@ -5658,11 +5658,19 @@ def unshare_machine():
     return "OK"
 
 
+SOFTWARE_DB_RESULT = "[]"
+SOFTWARE_DB_RESULT_TIME = datetime.datetime(1990,1,1)
+
 # Serves the Software table in JSON format, matching the software.json file in the ada file server
-@cached(cache=TTLCache(maxsize=1, ttl=10))
 @app.route("/software_db")
 @limiter.limit("60 per minute")
 def software_database_json():
+    global SOFTWARE_DB_RESULT
+    global SOFTWARE_DB_RESULT_TIME
+    if (diff := datetime.datetime.utcnow() - SOFTWARE_DB_RESULT_TIME).seconds < 10:
+        print(diff)
+        return SOFTWARE_DB_RESULT
+
     softwares = db.session.query(Software).filter(Software.type != "in-image").all()
     softwares = itertools.groupby(softwares, key=lambda x: x.name)
 
@@ -5683,10 +5691,13 @@ def software_database_json():
                 }
             )
     output = list(output.values())
+    logging.warning("function ran")
+
+    SOFTWARE_DB_RESULT = json.dumps(output, indent=4)
+    SOFTWARE_DB_RESULT_TIME = datetime.datetime.utcnow()
 
     return json.dumps(output, indent=4)
 
-software_db_json = software_database_json()
 
 @log_function_call
 def run_machine_command(machine, command):
