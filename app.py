@@ -5662,7 +5662,7 @@ def unshare_machine():
 @app.route("/software_db")
 @limiter.limit("60 per minute")
 def software_database_json():
-    softwares = Software.query.all()
+    softwares = db.session.query(Software).filter(Software.type != "in-image").all()
     softwares = itertools.groupby(softwares, key=lambda x: x.name)
 
     output = {}
