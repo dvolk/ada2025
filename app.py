@@ -5658,10 +5658,18 @@ def unshare_machine():
     return "OK"
 
 
+SOFTWARE_DB_RESULT = "[]"
+SOFTWARE_DB_RESULT_TIME = datetime.datetime(1990,1,1)
+
 # Serves the Software table in JSON format, matching the software.json file in the ada file server
 @app.route("/software_db")
 @limiter.limit("60 per minute")
 def software_database_json():
+    global SOFTWARE_DB_RESULT
+    global SOFTWARE_DB_RESULT_TIME
+    if (diff := datetime.datetime.utcnow() - SOFTWARE_DB_RESULT_TIME).seconds < 10:
+        return SOFTWARE_DB_RESULT
+
     softwares = db.session.query(Software).filter(Software.type != "in-image").all()
     softwares = itertools.groupby(softwares, key=lambda x: x.name)
 
@@ -5682,6 +5690,9 @@ def software_database_json():
                 }
             )
     output = list(output.values())
+
+    SOFTWARE_DB_RESULT = json.dumps(output, indent=4)
+    SOFTWARE_DB_RESULT_TIME = datetime.datetime.utcnow()
 
     return json.dumps(output, indent=4)
 
