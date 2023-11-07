@@ -5663,6 +5663,7 @@ def unshare_machine():
 @limiter.limit("60 per minute")
 def software_database_json():
     softwares = db.session.query(Software).filter(Software.type != "in-image").all()
+    softwares = sorted(softwares, key=lambda x: x.name)
     softwares = itertools.groupby(softwares, key=lambda x: x.name)
 
     output = {}
