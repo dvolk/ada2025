@@ -62,12 +62,12 @@
               {{ u.given_name }} {{ u.family_name }}
             </td>
             <td style="vertical-align: middle; text-align: right">
-              <a href="#"
-                  title="Remove user from machine"
-                  class="w3-button w3-grey w3-round user-remove"
-                  data-user-id="{{ u.id }}">
-                  {{ icon('user-xmark') }}
-              </a>
+              <form method="POST" action="/unshare_machine/{{ machine.id }}">
+                <input type="hidden" name="user_id" value="{{ u.id }}">
+                  <button class="w3-button w3-grey w3-round user-remove">
+                    {{ icon('user-xmark') }} {{ gettext("Remove user from machine") }}
+                  </button>
+              </form>
             </td>
           </tr>
         {% endfor %}
@@ -88,28 +88,4 @@
 
   {% endif %}
 <br/>
-{% endblock %}
-
-{% block javascript %}
-
-<script type="text/javascript">
- document.addEventListener('DOMContentLoaded', function() {
-     const sendPostRequest = (url, userId) => {
-         fetch(url, {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ user_id: userId, machine_id: {{ machine.id }} })
-         })
-             .then(response => location.reload())
-             .catch(error => console.error('Error:', error));
-     };
-     document.querySelectorAll('.user-remove').forEach(item => {
-         item.addEventListener('click', event => {
-             event.preventDefault();
-             sendPostRequest('/unshare_machine', item.dataset.userId);
-         });
-     });
- });
-</script>
-
 {% endblock %}
