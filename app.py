@@ -5688,13 +5688,12 @@ def unshare_machine_from_self():
     return redirect(url_for("machines"))
 
 
-@app.route("/unshare_machine", methods=["POST"])
+@app.route("/unshare_machine/<machine_id>", methods=["POST"])
 @limiter.limit("60 per minute")
 @login_required
 @profile_complete_required
-def unshare_machine():
-    user_id = request.json.get("user_id")
-    machine_id = request.json.get("machine_id")
+def unshare_machine(machine_id):
+    user_id = request.form.get("user_id")
 
     if not user_id:
         abort(404)
@@ -5709,17 +5708,28 @@ def unshare_machine():
     if not perm_ok:
         abort(403)
 
+    flash(gettext("User removed from share list"))
     machine.shared_users.remove(user)
     db.session.commit()
 
-    return "OK"
+    return redirect(url_for("machines"))
+
+
+SOFTWARE_DB_RESULT = "[]"
+SOFTWARE_DB_RESULT_TIME = datetime.datetime(1990, 1, 1)
 
 
 # Serves the Software table in JSON format, matching the software.json file in the ada file server
 @app.route("/software_db")
 @limiter.limit("60 per minute")
 def software_database_json():
+    global SOFTWARE_DB_RESULT
+    global SOFTWARE_DB_RESULT_TIME
+    if (diff := datetime.datetime.utcnow() - SOFTWARE_DB_RESULT_TIME).seconds < 10:
+        return SOFTWARE_DB_RESULT
+
     softwares = db.session.query(Software).filter(Software.type != "in-image").all()
+    softwares = sorted(softwares, key=lambda x: x.name)
     softwares = itertools.groupby(softwares, key=lambda x: x.name)
 
     output = {}
@@ -5739,6 +5749,9 @@ def software_database_json():
                 }
             )
     output = list(output.values())
+
+    SOFTWARE_DB_RESULT = json.dumps(output, indent=4)
+    SOFTWARE_DB_RESULT_TIME = datetime.datetime.utcnow()
 
     return json.dumps(output, indent=4)
 
