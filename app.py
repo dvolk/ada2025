@@ -1137,6 +1137,11 @@ class MachineProvider(db.Model):
     creation_date = db.Column(
         db.DateTime, default=datetime.datetime.utcnow, nullable=False
     )
+
+    limit_memory_gb = db.Column(db.Integer, nullable=True)
+    limit_cpu_cores = db.Column(db.Integer, nullable=True)
+    limit_disk_size_gb = db.Column(db.Integer, nullable=True)
+
     machine_templates = db.relationship(
         "MachineTemplate", back_populates="machine_provider"
     )
@@ -1192,6 +1197,9 @@ class ProtectedMachineProviderModelView(ProtectedModelView):
         "name",
         "type",
         "customer",
+        "limit_cpu_cores",
+        "limit_memory_gb",
+        "limit_disk_size_gb",
         "creation_date",
         "provider_data",
         "machine_templates",
@@ -4116,6 +4124,54 @@ def machines():
     """
     The machine page displays and controls the user's machines
     """
+
+    # Calculate project(s) free resources
+    mts = MachineTemplate.query.filter_by(group_id=current_user.group_id).all()
+    ms = (
+        db.session.query(Machine)
+        .filter(
+            and_(
+                ~Machine.state.in_([MachineState.STOPPED, MachineState.DELETED]),
+                Machine.machine_template_id.in_([x.id for x in mts]),
+            )
+        )
+        .all()
+    )
+
+    machines_by_template = {}
+    ms.sort(key=lambda x: x.machine_template_id)
+    for k, v in itertools.groupby(ms, key=lambda x: x.machine_template_id):
+        machines_by_template[k] = len(list(v))
+
+    free_by_provider = {}
+    for mt in mts:
+        mp = mt.machine_provider
+        if mp.id not in free_by_provider:
+            free_by_provider[mp.id] = {"cpu": None, "mem": None, "disk": None}
+            if mp.limit_memory_gb:
+                free_by_provider[mp.id]["cpu"] = mp.limit_cpu_cores
+            if mp.limit_cpu_cores:
+                free_by_provider[mp.id]["mem"] = mp.limit_memory_gb
+            if mp.limit_disk_size_gb:
+                free_by_provider[mp.id]["disk"] = mp.limit_disk_size_gb
+        if mt.id in machines_by_template:
+            if mt.cpu_limit_cores and free_by_provider[mp.id]["cpu"]:
+                free_by_provider[mp.id]["cpu"] -= (
+                    machines_by_template[mt.id] * mt.cpu_limit_cores
+                )
+            if mt.memory_limit_gb and free_by_provider[mp.id]["mem"]:
+                free_by_provider[mp.id]["mem"] -= (
+                    machines_by_template[mt.id] * mt.memory_limit_gb
+                )
+            if mt.disk_size_gb and free_by_provider[mp.id]["disk"]:
+                free_by_provider[mp.id]["disk"] -= (
+                    machines_by_template[mt.id] * mt.disk_size_gb
+                )
+
+    free_by_template = {}
+    for mt in mts:
+        free_by_template[mt.id] = free_by_provider[mt.machine_provider_id]
+
     # Query for user's owned machines
     owned_machines_query = db.session.query(Machine).filter(
         and_(
@@ -4157,6 +4213,7 @@ def machines():
         Machine=Machine,
         now=datetime.datetime.utcnow(),
         machine_format_dtj=machine_format_dtj,
+        free_by_template=free_by_template,
     )
 
 

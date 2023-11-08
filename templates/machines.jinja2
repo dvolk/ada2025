@@ -16,9 +16,20 @@
         {{ info(gettext("Machine creation usually takes between one and ten minutes.")) }}
         <p>
           {% for mt in machine_templates %}
+
+	    {# check project quota #}
+	    {% set p_quota = free_by_template[mt.id] %}
+	    {% set p_quota_cpu_reached = mt.cpu_limit_cores and p_quota["cpu"] and mt.cpu_limit_cores > p_quota["cpu"] %}
+	    {% set p_quota_mem_reached = mt.memory_limit_gb and p_quota["mem"] and mt.memory_limit_gb > p_quota["mem"] %}
+	    {% set p_quota_disk_reached = mt.disk_size_gb and p_quota["disk"] and mt.disk_size_gb > p_quota["disk"] %}
+	    {% set p_quota_reached = p_quota_cpu_reached or p_quota_mem_reached or p_quota_disk_reached %}
+
+	    {# check template quota #}
             {% set count = count_machines(mt) %}
             {% set quota = mt.extra_data.get("quota") %}
-            {% set quota_reached = quota - count <= 0 %}
+
+            {% set quota_reached = (quota and quota - count <= 0) or p_quota_reached %}
+
             <p>
               <div class="w3-card w3-padding w3-round">
                 <div class="w3-row" style="display: flex; align-items: center;">
@@ -59,11 +70,11 @@
                   <div class="w3-col m5 w3-right-align">
                     <p>
                       {{ gettext("Provider:") }} {{ mt.machine_provider.name }}<br/>
-                      {{ gettext("Image:") }} 
-                      {% if mt.image %} 
-                        {{ mt.image.name }} 
-                      {% else %} 
-                        {{ icon("triangle-exclamation") }} 
+                      {{ gettext("Image:") }}
+                      {% if mt.image %}
+                        {{ mt.image.name }}
+                      {% else %}
+                        {{ icon("triangle-exclamation") }}
                       {% endif %}<br/>
                       {% if mt.cpu_limit_cores %}
                         {{ gettext("CPUs:") }} {{ mt.cpu_limit_cores }}
@@ -77,10 +88,10 @@
                         {{ gettext("Disk:") }} {{ mt.disk_size_gb }} GB
                       {% endif %}
                       <br/>
-                    {{ gettext("Updated:") }} {% if mt.image %} 
-                      {{ humanize.naturaldelta(now - mt.image.creation_date) }} {{ gettext("ago") }} 
-                    {% else %} 
-                      {{ gettext("N/A") }} 
+                    {{ gettext("Updated:") }} {% if mt.image %}
+                      {{ humanize.naturaldelta(now - mt.image.creation_date) }} {{ gettext("ago") }}
+                    {% else %}
+                      {{ gettext("N/A") }}
                     {% endif %}<br/>
                     {{ gettext("Instances running:") }} {{ count }}
                       {% if quota %}
