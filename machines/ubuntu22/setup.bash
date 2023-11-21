@@ -209,6 +209,11 @@ if [ "$BUILD_INSTALL_BUILD_ENV" = "True" ]; then
     apt install -y build-essential gnuplot cmake gfortran libscalapack-openmpi-dev libopenmpi-dev openmpi-bin libarpack2-dev libarpack++2-dev pyqt5-dev zlib1g-dev
 fi
 
+# OPTIONAL: Install ollama
+if [ "$BUILD_INSTALL_BUILD_OLLAMA" = "True" ]; then
+    curl https://ollama.ai/install.sh | sh
+fi
+
 # OPTIONAL: Install Ada 2025 Software Installer
 if [ "$BUILD_INSTALL_ADA2025_SOFTWARE_INSTALLER" = "True" ]; then
     apt install -y python3-pip python3-venv

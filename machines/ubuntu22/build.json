@@ -150,6 +150,11 @@
       "name": "BUILD_INSTALL_RFI_EXAMPLE_DATASETS",
       "display_name": "Add rfi example dataset 10.5281.zenodo.7936982",
       "type": "bool"
+    },
+    {
+      "name": "BUILD_INSTALL_BUILD_OLLAMA",
+      "display_name": "Install Ollama local large language model tool",
+      "type": "bool"
     }
   ]
 }
