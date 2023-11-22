@@ -1,7 +1,6 @@
 import json
 import logging
 import subprocess
-
 from app import app, MachineProvider, VirtService
 
 
@@ -10,15 +9,14 @@ def main(machine_provider_id):
         VirtService.set_app(app)
 
         result = MachineProvider.query.filter_by(id=machine_provider_id).first()
-        prov_data = result.provider_data
 
         env = {
-            "OS_AUTH_URL": prov_data["auth_url"],
-            "OS_USER_DOMAIN_NAME": prov_data["user_domain_name"],
-            "OS_PROJECT_DOMAIN_NAME": prov_data["project_domain_name"],
-            "OS_USERNAME": prov_data["username"],
-            "OS_PASSWORD": prov_data["password"],
-            "OS_PROJECT_NAME": prov_data["project_name"],
+            "OS_AUTH_URL": result.provider_data["auth_url"],
+            "OS_USER_DOMAIN_NAME": result.provider_data["user_domain_name"],
+            "OS_PROJECT_DOMAIN_NAME": result.provider_data["project_domain_name"],
+            "OS_USERNAME": result.provider_data["username"],
+            "OS_PASSWORD": result.provider_data["password"],
+            "OS_PROJECT_NAME": result.provider_data["project_name"],
         }
 
         result = subprocess.run(
@@ -73,13 +71,32 @@ def main(machine_provider_id):
         total_ram = active_ram + shelved_ram
         total_cpu = active_cpu + shelved_cpu
 
-        usage = {
-            "active_ram": active_ram,
+        if total_ram >= (result.mem_limit_gb * 1024):
+            over_ram_qutoa = True
+        else:
+            over_ram_qutoa = False
+
+        if total_cpu >= result.cpu_limit_cores:
+            over_cpu_qutoa = True
+        else:
+            over_cpu_qutoa = False
+
+        provider_data = {
+            "auth_url": result.provider_data["auth_url"],
+            "user_domain_name": result.provider_data["user_domain_name"],
+            "project_domain_name": result.provider_data["project_domain_name"],
+            "username": result.provider_data["username"],
+            "password": result.provider_data["password"],
+            "project_name": result.provider_data["project_name"],
+            "active_ram_mb": active_ram,
             "active_cpu": active_cpu,
-            "shelved_ram": shelved_ram,
+            "shelved_ram_mb": shelved_ram,
             "shelved_cpu": shelved_cpu,
-            "total_ram": total_ram,
-            "total_cpu": total_cpu
+            "total_ram_mb": total_ram,
+            "total_cpu": total_cpu,
+            "over_ram_quota": over_ram_quota,
+            "over_cpu_qutoa": over_cpu_qutoa,
+            "shut_down_instances": shut_down,
         }
 
-        return json.dump(usage, indent=4)
+        return json.dumps(usage, indent=4)
