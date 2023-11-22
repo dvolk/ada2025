@@ -92,6 +92,6 @@ def main(machine_provider_id):
             "monitored_date_time": datetime.utcnow(),
         }
 
-        provider = MachineProvider()
+        provider = MachineProvider.query.get(machine_provider_id)
         provider.provider_data = provider_data
         db.session.commit()
