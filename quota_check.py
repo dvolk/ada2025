@@ -1,7 +1,7 @@
 import json
 import logging
 import subprocess
-from app import app, MachineProvider, VirtService
+from app import app, MachineProvider, VirtService, db
 from datetime import datetime
 
 
@@ -23,21 +23,21 @@ def main(machine_provider_id):
             "OS_PROJECT_NAME": result.provider_data["project_name"],
         }
 
-        result = subprocess.run(
+        output = subprocess.run(
             ["openstack", "server", "list", "-f", "json"],
             capture_output=True,
             env=env,
         )
 
-        server_list = json.loads(result.stdout.decode())
+        server_list = json.loads(output.stdout.decode())
 
-        result = subprocess.run(
+        output = subprocess.run(
             ["openstack", "flavor", "list", "-f", "json"],
             capture_output=True,
             env=env,
         )
 
-        flavor_list = json.loads(result.stdout.decode())
+        flavor_list = json.loads(output.stdout.decode())
 
         instance_count = 0
         active_ram = 0
@@ -75,16 +75,6 @@ def main(machine_provider_id):
         total_ram = active_ram + shelved_ram
         total_cpu = active_cpu + shelved_cpu
 
-        if total_ram >= (result.mem_limit_gb * 1024):
-            over_ram_qutoa = True
-        else:
-            over_ram_qutoa = False
-
-        if total_cpu >= result.cpu_limit_cores:
-            over_cpu_qutoa = True
-        else:
-            over_cpu_qutoa = False
-
         provider_data = {
             "auth_url": result.provider_data["auth_url"],
             "user_domain_name": result.provider_data["user_domain_name"],
@@ -98,10 +88,10 @@ def main(machine_provider_id):
             "shelved_cpu": shelved_cpu,
             "total_ram_mb": total_ram,
             "total_cpu": total_cpu,
-            "over_ram_quota": over_ram_quota,
-            "over_cpu_qutoa": over_cpu_qutoa,
             "shut_down_instances": shut_down,
-            "monitored_date_time": datetime.utcnow()
+            "monitored_date_time": datetime.utcnow(),
         }
 
-        return json.dumps(usage, indent=4)
+        provider = MachineProvider()
+        provider.provider_data = provider_data
+        db.session.commit()
