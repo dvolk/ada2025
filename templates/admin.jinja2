@@ -75,11 +75,11 @@
     <thead>
       <th>{{ gettext("Provider Name") }}</th>
       <th>{{ gettext("Active CPUs") }}</th>
-      <th>{{ gettext("Active RAM (Mb)") }}</th>
+      <th>{{ gettext("Active RAM (Gb)") }}</th>
       <th>{{ gettext("Shelved CPUs") }}</th>
-      <th>{{ gettext("Shelved RAM (Mb)") }}</th>
+      <th>{{ gettext("Shelved RAM (Gb)") }}</th>
       <th>{{ gettext("Total CPUs") }}</th>
-      <th>{{ gettext("Total Ram (Mb)") }}</th>
+      <th>{{ gettext("Total Ram (Gb)") }}</th>
       <th>{{ gettext("Date Monitored") }}</th>
     </thead>
     {% for provider in MachineProvider.query.all() %}
@@ -91,19 +91,19 @@
           {{ provider.provider_data["active_cpu"] }}
         </td>
         <td>
-          {{ provider.provider_data["active_ram"] }}
+          {{ provider.provider_data["active_ram_gb"] }}
         </td>
         <td>
           {{ provider.provider_data["shelved_cpu"] }}
         </td>
         <td>
-          {{ provider.provider_data["shelved_ram"] }}
+          {{ provider.provider_data["shelved_ram_gb"] }}
         </td>
         <td>
           {{ provider.provider_data["total_cpu"] }}
         </td>
         <td>
-          {{ provider.provider_data["total_ram"] }}
+          {{ provider.provider_data["total_ram_gb"] }}
         </td>
         <td>
           {{ provider.provider_data["monitored_date_time"] }}
