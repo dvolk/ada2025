@@ -2,9 +2,13 @@ import json
 import logging
 import subprocess
 from app import app, MachineProvider, VirtService
+from datetime import datetime
 
 
 def main(machine_provider_id):
+    """
+    Checks if the quota has been reached or exceeded by a particular machine provider
+    """
     with app.app_context():
         VirtService.set_app(app)
 
@@ -97,6 +101,7 @@ def main(machine_provider_id):
             "over_ram_quota": over_ram_quota,
             "over_cpu_qutoa": over_cpu_qutoa,
             "shut_down_instances": shut_down,
+            "monitored_date_time": datetime.utcnow()
         }
 
         return json.dumps(usage, indent=4)
