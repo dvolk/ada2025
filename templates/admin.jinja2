@@ -70,6 +70,48 @@
     {% endfor %}
   </table>
 
+  <h2>{{ gettext("Resource Usage") }}</h2>
+  <table>
+    <thead>
+      <th>{{ gettext("Provider Name") }}</th>
+      <th>{{ gettext("Active CPUs") }}</th>
+      <th>{{ gettext("Active RAM (Mb)") }}</th>
+      <th>{{ gettext("Shelved CPUs") }}</th>
+      <th>{{ gettext("Shelved RAM (Mb)") }}</th>
+      <th>{{ gettext("Total CPUs") }}</th>
+      <th>{{ gettext("Total Ram (Mb)") }}</th>
+      <th>{{ gettext("Date Monitored") }}</th>
+    </thead>
+    {% for provider in MachineProvider %}
+      <tr>
+        <td>
+          {{ provider.name }}
+        </td>
+        <td>
+          {{ provider.provider_data["active_cpu"] }}
+        </td>
+        <td>
+          {{ provider.provider_data["active_ram"] }}
+        </td>
+        <td>
+          {{ provider.provider_data["shelved_cpu"] }}
+        </td>
+        <td>
+          {{ provider.provider_data["shelved_ram"] }}
+        </td>
+        <td>
+          {{ provider.provider_data["total_cpu"] }}
+        </td>
+        <td>
+          {{ provider.provider_data["total_ram"] }}
+        </td>
+        <td>
+          {{ provider.provider_data["monitored_date_time"] }}
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+
   <h2>{{ gettext("Email test") }}</h2>
   <form method="POST" action="/send_test_email">
     <button
