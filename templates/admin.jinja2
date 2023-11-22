@@ -71,7 +71,7 @@
   </table>
 
   <h2>{{ gettext("Resource Usage") }}</h2>
-  <table>
+  <table class="w3-table-all">
     <thead>
       <th>{{ gettext("Provider Name") }}</th>
       <th>{{ gettext("Active CPUs") }}</th>
@@ -82,7 +82,7 @@
       <th>{{ gettext("Total Ram (Mb)") }}</th>
       <th>{{ gettext("Date Monitored") }}</th>
     </thead>
-    {% for provider in MachineProvider %}
+    {% for provider in MachineProvider.query.all() %}
       <tr>
         <td>
           {{ provider.name }}
