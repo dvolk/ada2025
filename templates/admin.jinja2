@@ -75,11 +75,11 @@
     <thead>
       <th>{{ gettext("Provider Name") }}</th>
       <th>{{ gettext("Active CPUs") }}</th>
-      <th>{{ gettext("Active RAM (Gb)") }}</th>
+      <th>{{ gettext("Active RAM (GB)") }}</th>
       <th>{{ gettext("Shelved CPUs") }}</th>
-      <th>{{ gettext("Shelved RAM (Gb)") }}</th>
+      <th>{{ gettext("Shelved RAM (GB)") }}</th>
       <th>{{ gettext("Total CPUs") }}</th>
-      <th>{{ gettext("Total Ram (Gb)") }}</th>
+      <th>{{ gettext("Total Ram (GB)") }}</th>
       <th>{{ gettext("Date Monitored") }}</th>
     </thead>
     {% for provider in MachineProvider.query.all() %}
