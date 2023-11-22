@@ -4512,6 +4512,7 @@ def admin():
         "admin.jinja2",
         title=gettext("Admin"),
         Group=Group,
+        MachineProvider=MachineProvider,
         env=os.environ,
     )
 
