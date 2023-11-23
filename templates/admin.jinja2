@@ -83,32 +83,34 @@
       <th>{{ gettext("Date Monitored") }}</th>
     </thead>
     {% for provider in MachineProvider.query.all() %}
-      <tr>
-        <td>
-          {{ provider.name }}
-        </td>
-        <td>
-          {{ provider.provider_data["active_cpu"] }}
-        </td>
-        <td>
-          {{ provider.provider_data["active_ram_gb"] }}
-        </td>
-        <td>
-          {{ provider.provider_data["shelved_cpu"] }}
-        </td>
-        <td>
-          {{ provider.provider_data["shelved_ram_gb"] }}
-        </td>
-        <td>
-          {{ provider.provider_data["total_cpu"] }}
-        </td>
-        <td>
-          {{ provider.provider_data["total_ram_gb"] }}
-        </td>
-        <td>
-          {{ provider.provider_data["monitored_date_time"] }}
-        </td>
-      </tr>
+      {% if "OpenStack" in provider.name %}
+        <tr>
+          <td>
+            {{ provider.name }}
+          </td>
+          <td>
+            {{ provider.provider_data["active_cpu"] }}
+          </td>
+          <td>
+            {{ provider.provider_data["active_ram_gb"] }}
+          </td>
+          <td>
+            {{ provider.provider_data["shelved_cpu"] }}
+          </td>
+          <td>
+            {{ provider.provider_data["shelved_ram_gb"] }}
+          </td>
+          <td>
+            {{ provider.provider_data["total_cpu"] }}
+          </td>
+          <td>
+            {{ provider.provider_data["total_ram_gb"] }}
+          </td>
+          <td>
+            {{ provider.provider_data["monitored_date_time"] }}
+          </td>
+        </tr>
+      {% endif %}
     {% endfor %}
   </table>
 
