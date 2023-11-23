@@ -15,17 +15,16 @@ def main(machine_provider_id):
         result = MachineProvider.query.filter_by(id=machine_provider_id).first()
 
         if type(result.provider_data) == str:
-            prov_data = json.loads(result.provider_data)
+            provider_data = json.loads(result.provider_data)
         else:
-            prov_data = result.provider_data
+            provider_data = result.provider_data
 
         env = {
-            "OS_AUTH_URL": prov_data["auth_url"],
-            "OS_USER_DOMAIN_NAME": prov_data["user_domain_name"],
-            "OS_PROJECT_DOMAIN_NAME": prov_data["project_domain_name"],
-            "OS_USERNAME": prov_data["username"],
-            "OS_PASSWORD": prov_data["password"],
-            "OS_PROJECT_NAME": prov_data["project_name"],
+            "OS_AUTH_URL": provider_data["auth_url"],
+            "OS_USER_DOMAIN_NAME": provider_data["user_domain_name"],
+            "OS_PROJECT_DOMAIN_NAME": provider_data["project_domain_name"],
+            "OS_USERNAME": provider_data["username"],
+            "OS_PASSWORD": provider_data["password"],
         }
 
         output = subprocess.run(
@@ -80,23 +79,22 @@ def main(machine_provider_id):
         total_ram = active_ram + shelved_ram
         total_cpu = active_cpu + shelved_cpu
 
-        provider_data = {
-            "auth_url": prov_data["auth_url"],
-            "user_domain_name": prov_data["user_domain_name"],
-            "project_domain_name": prov_data["project_domain_name"],
-            "username": prov_data["username"],
-            "password": prov_data["password"],
-            "project_name": prov_data["project_name"],
-            "active_ram_gb": int(active_ram / 1024),
-            "active_cpu": active_cpu,
-            "shelved_ram_gb": int(shelved_ram / 1024),
-            "shelved_cpu": shelved_cpu,
-            "total_ram_gb": int(total_ram / 1024),
-            "total_cpu": total_cpu,
-            "shut_down_instances": shut_down,
-            "monitored_date_time": str(datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
-        }
+        provider_data.update(
+            {
+                "active_ram_gb": int(active_ram / 1024),
+                "active_cpu": active_cpu,
+                "shelved_ram_gb": int(shelved_ram / 1024),
+                "shelved_cpu": shelved_cpu,
+                "total_ram_gb": int(total_ram / 1024),
+                "total_cpu": total_cpu,
+                "shut_down_instances": shut_down,
+                "monitored_date_time": str(
+                    datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                ),
+            }
+        )
 
         provider = MachineProvider.query.get(machine_provider_id)
         provider.provider_data = provider_data
         db.session.commit()
+
