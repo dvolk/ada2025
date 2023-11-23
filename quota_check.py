@@ -94,7 +94,7 @@ def main(machine_provider_id):
             "total_ram_gb": int(total_ram / 1024),
             "total_cpu": total_cpu,
             "shut_down_instances": shut_down,
-            "monitored_date_time": str(datetime.utcnow()),
+            "monitored_date_time": str(datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
         }
 
         provider = MachineProvider.query.get(machine_provider_id)
