@@ -113,6 +113,34 @@
       {% endif %}
     {% endfor %}
   </table>
+  <br/>
+
+  {% if database_mismatches %}
+    <div class="w3-container w3-red">
+      <h2>{{ gettext("Database Mismatches") }}</h2>
+    </div>
+    <div class="w3-container w3-pale-red">
+      <p>
+        <table class="w3-table-all">
+          <thead>
+            <th>{{ gettext("Machine Name") }}</th>
+            <th>{{ gettext("Issue") }}</th>
+          </thead>
+          {% for mismatch in database_mismatches %}
+            <tr>
+              <td>
+                {{ mismatch["name"] }}
+              </td>
+              <td>
+                {{ mismatch["issue"] }}
+              </td>
+            </tr>
+          {% endfor %}
+        </table>
+      </p>
+    </div>
+  {% endif %}
+
 
   <h2>{{ gettext("Email test") }}</h2>
   <form method="POST" action="/send_test_email">
