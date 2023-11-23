@@ -48,9 +48,12 @@ def main(machine_provider_id):
         active_cpu = 0
         shelved_ram = 0
         shelved_cpu = 0
+        other = []
+        shelved = []
         shut_down = []
         for instance in server_list:
             if server_list[instance_count]["Status"] == "ACTIVE":
+                other.append(server_list[instance_count]["Name"])
                 flavor = server_list[instance_count]["Flavor"]
                 flavor_count = 0
                 for flavors in flavor_list:
@@ -62,6 +65,7 @@ def main(machine_provider_id):
                         active_cpu += flavor_list[flavor_count]["VCPUs"]
                     flavor_count += 1
             elif server_list[instance_count]["Status"] == "SHELVED_OFFLOADED":
+                shelved.append(server_list[instance_count]["Name"])
                 flavor = server_list[instance_count]["Flavor"]
                 flavor_count = 0
                 for flavors in flavor_list:
@@ -73,11 +77,13 @@ def main(machine_provider_id):
                         shelved_cpu += flavor_list[flavor_count]["VCPUs"]
                     flavor_count += 1
             elif server_list[instance_count]["Status"] == "SHUTOFF":
-                shut_down.append(server_list[instance_count]["Name"])
+                other.append(server_list[instance_count]["Name"])
             instance_count += 1
 
         total_ram = active_ram + shelved_ram
         total_cpu = active_cpu + shelved_cpu
+
+        monitored = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
         provider_data.update(
             {
@@ -88,13 +94,14 @@ def main(machine_provider_id):
                 "total_ram_gb": int(total_ram / 1024),
                 "total_cpu": total_cpu,
                 "shut_down_instances": shut_down,
-                "monitored_date_time": str(
-                    datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+                "monitored_date_time": datetime.strptime(
+                    monitored, "%Y-%m-%d %H:%M:%S"
                 ),
+                "machines_shelved": shelved,
+                "machines_other": other,
             }
         )
 
         provider = MachineProvider.query.get(machine_provider_id)
         provider.provider_data = provider_data
         db.session.commit()
-
