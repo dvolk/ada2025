@@ -1,7 +1,7 @@
 import json
 import logging
 import subprocess
-from app import app, MachineProvider, VirtService, db
+from app import app, MachineProvider, VirtService, db, Machine
 from datetime import datetime
 
 
@@ -33,15 +33,20 @@ def main(machine_provider_id):
             env=env,
         )
 
-        server_list = json.loads(output.stdout.decode())
+        if output.stdout.decode() != "":
+            server_list = json.loads(output.stdout.decode())
+        else:
+            server_list = []
 
         output = subprocess.run(
             ["openstack", "flavor", "list", "-f", "json"],
             capture_output=True,
             env=env,
         )
-
-        flavor_list = json.loads(output.stdout.decode())
+        if output.stdout.decode() != "":
+            flavor_list = json.loads(output.stdout.decode())
+        else:
+            flavor_list = []
 
         instance_count = 0
         active_ram = 0
@@ -50,7 +55,6 @@ def main(machine_provider_id):
         shelved_cpu = 0
         other = []
         shelved = []
-        shut_down = []
         for instance in server_list:
             if server_list[instance_count]["Status"] == "ACTIVE":
                 other.append(server_list[instance_count]["Name"])
@@ -83,7 +87,7 @@ def main(machine_provider_id):
         total_ram = active_ram + shelved_ram
         total_cpu = active_cpu + shelved_cpu
 
-        monitored = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        monitored = datetime.utcnow()
 
         provider_data.update(
             {
@@ -93,8 +97,7 @@ def main(machine_provider_id):
                 "shelved_cpu": shelved_cpu,
                 "total_ram_gb": int(total_ram / 1024),
                 "total_cpu": total_cpu,
-                "shut_down_instances": shut_down,
-                "monitored_date_time": datetime.strptime(
+                "monitored_date_time": datetime.strftime(
                     monitored, "%Y-%m-%d %H:%M:%S"
                 ),
                 "machines_shelved": shelved,
@@ -102,6 +105,6 @@ def main(machine_provider_id):
             }
         )
 
-        provider = MachineProvider.query.get(machine_provider_id)
-        provider.provider_data = provider_data
+        provider = db.session.get(MachineProvider, machine_provider_id)
+        provider.provider_data = json.dumps(provider_data)
         db.session.commit()
