@@ -55,6 +55,7 @@ def main(machine_provider_id):
         shelved_cpu = 0
         other = []
         shelved = []
+        shut_down = []
         for instance in server_list:
             if server_list[instance_count]["Status"] == "ACTIVE":
                 other.append(server_list[instance_count]["Name"])
@@ -81,7 +82,7 @@ def main(machine_provider_id):
                         shelved_cpu += flavor_list[flavor_count]["VCPUs"]
                     flavor_count += 1
             elif server_list[instance_count]["Status"] == "SHUTOFF":
-                other.append(server_list[instance_count]["Name"])
+                shut_down.append(server_list[instance_count]["Name"])
             instance_count += 1
 
         total_ram = active_ram + shelved_ram
@@ -101,6 +102,7 @@ def main(machine_provider_id):
                     monitored, "%Y-%m-%d %H:%M:%S"
                 ),
                 "machines_shelved": shelved,
+                "machines_shut_down": shut_down,
                 "machines_other": other,
             }
         )
