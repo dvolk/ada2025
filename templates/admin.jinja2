@@ -7,6 +7,38 @@
     {{ icon('unlock') }}
     {{ gettext("Click here to access the flask-admin interface.") }}
   </a>
+  <br/>
+  <br/>
+
+  <div class="w3-container w3-red">
+    <h2>{{ gettext("Database Mismatches") }}</h2>
+  </div>
+  <div class="w3-container w3-pale-red">
+    <p>
+      <table class="w3-table-all">
+        {% if database_mismatches %}
+          <thead>
+            <th style="width: 40%">{{ gettext("Machine Name") }}</th>
+            <th>{{ gettext("Issue") }}</th>
+          </thead>
+          {% for mismatch in database_mismatches %}
+            <tr>
+              <td>
+                {{ mismatch["name"] }}
+              </td>
+              <td>
+                {{ mismatch["issue"] }}
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <thead>
+            <th>{{ gettext("No Mismatches Found") }}</th>
+          </thead>
+        {% endif %}
+      </table>
+    </p>
+  </div>
 
   {% set keys = ["ADA2025_MAIL_SENDER", "ADA2025_MAIL_SERVER", "ADA2025_MAIL_PORT", "ADA2025_MAIL_USERNAME", "ADA2025_MAIL_PASSWORD", "ADA2025_MAIL_USE_TLS", "ADA2025_MAIL_USE_SSL", "ADA2025_SENTRY_DSN", "ADA2025_SENTRY_ENVIRONMENT", "ADA2025_FLASK_SECRET_KEY", "ADA2025_SQLALCHEMY_URL", "LOGIN_RECAPTCHA", "RECAPTCHA_SITE_KEY", "RECAPTCHA_SECRET_KEY", "GOOGLE_OAUTH2_CLIENT_ID", "GOOGLE_OAUTH2_CLIENT_SECRET", "ADA2025_IRIS_IAM_OAUTH2_CLIENT_ID", "ADA2025_IRIS_IAM_OAUTH2_CLIENT_SECRET"] %}
   <h2>{{ gettext("App configuration") }}</h2>
@@ -82,65 +114,38 @@
       <th>{{ gettext("Total Ram (GB)") }}</th>
       <th>{{ gettext("Date Monitored") }}</th>
     </thead>
-    {% for provider in MachineProvider.query.all() %}
-      {% if "OpenStack" in provider.name %}
+    {% for provider in resource_usage %}
+      {% if "OpenStack" in provider["name"] %}
         <tr>
           <td>
-            {{ provider.name }}
+            {{ provider["name"] }}
           </td>
           <td>
-            {{ provider.provider_data["active_cpu"] }}
+            {{ provider["active_cpu"] }}
           </td>
           <td>
-            {{ provider.provider_data["active_ram_gb"] }}
+            {{ provider["active_ram_gb"] }}
           </td>
           <td>
-            {{ provider.provider_data["shelved_cpu"] }}
+            {{ provider["shelved_cpu"] }}
           </td>
           <td>
-            {{ provider.provider_data["shelved_ram_gb"] }}
+            {{ provider["shelved_ram_gb"] }}
           </td>
           <td>
-            {{ provider.provider_data["total_cpu"] }}
+            {{ provider["total_cpu"] }}
           </td>
           <td>
-            {{ provider.provider_data["total_ram_gb"] }}
+            {{ provider["total_ram_gb"] }}
           </td>
           <td>
-            {{ provider.provider_data["monitored_date_time"] }}
+            {{ provider["monitored_date_time"] }}
           </td>
         </tr>
       {% endif %}
     {% endfor %}
   </table>
   <br/>
-
-  {% if database_mismatches %}
-    <div class="w3-container w3-red">
-      <h2>{{ gettext("Database Mismatches") }}</h2>
-    </div>
-    <div class="w3-container w3-pale-red">
-      <p>
-        <table class="w3-table-all">
-          <thead>
-            <th>{{ gettext("Machine Name") }}</th>
-            <th>{{ gettext("Issue") }}</th>
-          </thead>
-          {% for mismatch in database_mismatches %}
-            <tr>
-              <td>
-                {{ mismatch["name"] }}
-              </td>
-              <td>
-                {{ mismatch["issue"] }}
-              </td>
-            </tr>
-          {% endfor %}
-        </table>
-      </p>
-    </div>
-  {% endif %}
-
 
   <h2>{{ gettext("Email test") }}</h2>
   <form method="POST" action="/send_test_email">
