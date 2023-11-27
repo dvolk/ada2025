@@ -4505,6 +4505,93 @@ def new_image():
 @login_required
 @profile_complete_required
 def admin():
+    database_mismatches = []
+    database_names = []
+    openstack_names = []
+
+    for machine in Machine.query.all():
+        database_names.append(machine.name)
+
+    for provider in MachineProvider.query.all():
+        if "OpenStack" in provider.name:
+            for name in json.loads(provider.provider_data)["machines_other"]:
+                openstack_names.append(name)
+
+    name_count = 0
+    for name in database_names:
+        if database_names[name_count] not in openstack_names:
+            if Machine.query.filter_by(name=name).first().state != MachineState.DELETED:
+                database_mismatches.append(
+                    {
+                        "name": database_names[name_count],
+                        "issue": "In the Ada database, not in the OpenStack database",
+                    }
+                )
+        name_count += 1
+
+    name_count = 0
+    for name in openstack_names:
+        if (openstack_names[name_count] != []) and (name not in database_names):
+            database_mismatches.append(
+                {
+                    "name": name,
+                    "issue": "In the OpenStack database, but not in the Ada database",
+                }
+            )
+        name_count += 1
+
+    for provider in MachineProvider.query.all():
+        if "OpenStack" in provider.name:
+            for name in json.loads(provider.provider_data)["machines_shelved"]:
+                if (
+                    Machine.query.filter_by(name=name).first() != None
+                    and Machine.query.filter_by(name=name).first().state
+                    != MachineState.STOPPED
+                ):
+                    database_mismatches.append(
+                        {
+                            "name": name,
+                            "issue": "State shown in Ada database is not the same as the state shown in the OpenStack database",
+                        }
+                    )
+
+    for provider in MachineProvider.query.all():
+        if "OpenStack" in provider.name:
+            for name in json.loads(provider.provider_data)["machines_other"]:
+                if (
+                    Machine.query.filter_by(name=name).first() != None
+                    and Machine.query.filter_by(name=name).first().state
+                    == MachineState.STOPPED
+                ):
+                    database_mismatches.append(
+                        {
+                            "name": name,
+                            "issue": "State shown in Ada database is not the same as the state shown in the OpenStack database",
+                        }
+                    )
+
+    resource_usage = []
+    for provider in MachineProvider.query.all():
+        if "OpenStack" in provider.name:
+            resource_usage.append(
+                {
+                    "name": provider.name,
+                    "active_cpu": json.loads(provider.provider_data)["active_cpu"],
+                    "active_ram_gb": json.loads(provider.provider_data)[
+                        "active_ram_gb"
+                    ],
+                    "shelved_cpu": json.loads(provider.provider_data)["shelved_cpu"],
+                    "shelved_ram_gb": json.loads(provider.provider_data)[
+                        "shelved_ram_gb"
+                    ],
+                    "total_cpu": json.loads(provider.provider_data)["total_cpu"],
+                    "total_ram_gb": json.loads(provider.provider_data)["total_ram_gb"],
+                    "monitored_date_time": json.loads(provider.provider_data)[
+                        "monitored_date_time"
+                    ],
+                }
+            )
+
     if not current_user.is_admin:
         return redirect(url_for("login"))
 
@@ -4513,7 +4600,10 @@ def admin():
         title=gettext("Admin"),
         Group=Group,
         MachineProvider=MachineProvider,
+        Machine=Machine,
         env=os.environ,
+        database_mismatches=database_mismatches,
+        resource_usage=resource_usage,
     )
 
 
