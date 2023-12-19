@@ -58,7 +58,7 @@ oslo.i18n==6.0.0
 oslo.serialization==5.1.1
 oslo.utils==6.2.0
 packaging==23.1
-paramiko==3.2.0
+paramiko==3.4.0
 pbr==5.11.1
 prettytable==3.8.0
 psycopg2==2.9.6
